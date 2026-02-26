@@ -1,5 +1,5 @@
 {
-  "folders": [{ "path": "karachato" }],
+  "folders": [{ "path": "./karachato" }],
   "settings": {
     "terminal.integrated.cwd": "${workspaceFolder}",
   },
