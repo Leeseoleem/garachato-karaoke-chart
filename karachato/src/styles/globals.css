@@ -24,6 +24,9 @@
   /** Status */
   --status-up: #ff6b6b;
   --status-down: #6b9fff;
+
+  /** Page Width */
+  --max-width-page: 480px;
 }
 
 @theme inline {
@@ -52,6 +55,9 @@
   /* Status */
   --color-status-up: var(--status-up);
   --color-status-down: var(--status-down);
+
+  /** Page Width */
+  --width-page: var(--max-width-page);
 }
 
 body {
@@ -59,4 +65,28 @@ body {
   color: var(--content-primary);
   font-family: "Pretendard", sans-serif;
   font-variant-numeric: tabular-nums;
+}
+
+button {
+  cursor: pointer;
+}
+
+/** 텍스트 드래그 색상 */
+::selection {
+  background: var(--brand-main);
+  color: var(--content-primary);
+}
+
+/** 스크롤바 설정 */
+::-webkit-scrollbar {
+  width: 6px; /* 스크롤바 전체 너비 */
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-40); /* 스크롤바 뒤 배경색 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--content-secondary);
+  border-radius: 999px;
 }
