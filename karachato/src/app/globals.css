@@ -1,26 +1,60 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Gray Scale */
+  --gray-50: #121216;
+  --gray-40: #1c1c22;
+  --gray-30: #232329;
+  --gray-20: #2a2a32;
+  --gray-10: #848188;
+  --gray-white: #ffffff;
+
+  /* Brand */
+  --brand-main: #7c5cbf;
+  --brand-light: #b294ee;
+  --brand-dark: #372647;
+  --brand-accent: #ff99e5;
+
+  /** Content */
+  --content-primary: #f0eeff;
+  --content-secondary: #9b96b8;
+  --content-muted: #ededed;
+
+  /** Status */
+  --status-up: #ff6b6b;
+  --status-down: #6b9fff;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Font */
+  --font-sans: "Pretendard", sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Gray */
+  --color-gray-50: var(--gray-50);
+  --color-gray-40: var(--gray-40);
+  --color-gray-30: var(--gray-30);
+  --color-gray-20: var(--gray-20);
+  --color-gray-10: var(--gray-10);
+  --color-gray-white: var(--gray-white);
+
+  /* Brand */
+  --color-brand-main: var(--brand-main);
+  --color-brand-light: var(--brand-light);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-accent: var(--brand-accent);
+
+  /* Content */
+  --color-content-primary: var(--content-primary);
+  --color-content-secondary: var(--content-secondary);
+  --color-content-muted: var(--content-muted);
+
+  /* Status */
+  --color-status-up: var(--status-up);
+  --color-status-down: var(--status-down);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--gray-50);
+  color: var(--content-primary);
   font-family: "Pretendard", sans-serif;
 }
