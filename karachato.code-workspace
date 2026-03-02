@@ -1,0 +1,6 @@
+{
+  "folders": [{ "path": "./karachato" }],
+  "settings": {
+    "terminal.integrated.cwd": "${workspaceFolder}",
+  },
+}

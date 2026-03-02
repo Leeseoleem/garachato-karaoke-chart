@@ -1,0 +1,65 @@
+@layer components {
+  /* Title-01 — 24px/30 */
+  .typo-title-01 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.03em;
+  }
+
+  /* Title-02 — 20px/25 */
+  .typo-title-02 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  /* Subtitle — 16px/21 */
+  .typo-subtitle {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3125;
+    letter-spacing: -0.01em;
+  }
+
+  /* Body — 16px/21 */
+  .typo-body {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.3125;
+    letter-spacing: -0.01em;
+  }
+
+  /* Caption — 14px/19 */
+  .typo-caption {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.357;
+    letter-spacing: 0em;
+  }
+
+  /* Description — 12px/16 */
+  .typo-description {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.333;
+    letter-spacing: 0em;
+  }
+
+  /* Label — 12px/18 */
+  .typo-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+  }
+
+  /* Tag — 10px/Auto */
+  .typo-tag {
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+}
