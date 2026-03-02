@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./typography.css";
 
 :root {
   /* Gray Scale */
@@ -57,4 +58,5 @@ body {
   background: var(--gray-50);
   color: var(--content-primary);
   font-family: "Pretendard", sans-serif;
+  font-variant-numeric: tabular-nums;
 }
