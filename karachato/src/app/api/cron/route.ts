@@ -25,11 +25,10 @@ export async function GET(request: Request) {
     }
   }
 
-  // Secret Key 사용을 위한 클라이언트
-  const supabase = createServerClient();
-  const today = getToday(); // 오늘 날짜 — rank_history.chart_date에 저장할 값
-
   try {
+    // Secret Key 사용을 위한 클라이언트
+    const supabase = createServerClient();
+    const today = getToday(); // 오늘 날짜 — rank_history.chart_date에 저장할 값
     const songs = await fetchTJJpopChart();
 
     for (const song of songs) {
