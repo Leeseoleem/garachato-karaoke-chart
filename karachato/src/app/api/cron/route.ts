@@ -35,12 +35,20 @@ export async function GET(request: Request) {
       const titleNorm = normalize(song.title);
       const artistNorm = normalize(song.artist);
 
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from("songs") // songs 테이블에서
         .select("id") // id 컬럼만 가져와
         .eq("title_norm", titleNorm) // title_norm 이 titleNorm 과 같고
         .eq("artist_norm", artistNorm) // artist_norm 이 artistNorm 과 같은 행
         .maybeSingle(); // 결과가 1개면 객체로, 0개면 null로 반환
+
+      if (existingError) {
+        console.error(
+          `[crawl] songs SELECT 실패: ${song.title}`,
+          existingError,
+        );
+        continue;
+      }
 
       let songId: Song["id"];
 
@@ -60,15 +68,23 @@ export async function GET(request: Request) {
           .select("id")
           .single();
 
-        if (insertError) {
+        if (insertError?.code === "23505") {
+          const { data: conflicted } = await supabase
+            .from("songs")
+            .select("id")
+            .eq("title_norm", titleNorm)
+            .eq("artist_norm", artistNorm)
+            .single();
+          songId = conflicted!.id;
+        } else if (insertError) {
           console.error(
             `[crawl] songs INSERT 실패: ${song.title}`,
             insertError,
           );
           continue;
+        } else {
+          songId = inserted.id;
         }
-
-        songId = inserted.id;
       }
       // STEP 3. karaoke_tracks 테이블 처리
       const { data: track, error: trackError } = await supabase
