@@ -110,7 +110,23 @@ export async function fetchTJJpopChart(): Promise<TJSong[]> {
 
   const json = (await res.json()) as TJApiResponse;
 
-  const items = json.resultData?.items ?? []; // resultData.items가 없으면 빈 배열
+  // TJ API 자체 응답 코드 검증
+  // 99 = 정상, 98 = 요청 거부 (토큰 만료, 파라미터 오류 등)
+  // HTTP 200이어도 resultCode가 99가 아니면 데이터가 없으므로 에러 처리
+  if (json.resultCode !== "99") {
+    throw new Error(
+      `TJ API returned non-success resultCode: ${json.resultCode}`,
+    );
+  }
+
+  // 응답 구조 검증
+  // resultData.items가 배열이 아니면 TJ 사이트 구조가 바뀐 것
+  // 이 경우 크롤러 셀렉터 점검 필요
+  if (!Array.isArray(json.resultData?.items)) {
+    throw new Error("TJ API response is missing resultData.items");
+  }
+
+  const items = json.resultData.items;
 
   // TJ API 응답 필드명 → TJSong 필드명으로 변환
   return items.map((item: TJApiItem) => ({
