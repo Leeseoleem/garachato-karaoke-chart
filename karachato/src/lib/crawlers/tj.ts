@@ -39,6 +39,12 @@ async function getCsrfToken(): Promise<{ token: string; cookie: string }> {
     },
   });
 
+  if (!mainRes.ok) {
+    throw new Error(
+      `Failed to load TJ chart page: ${mainRes.status} ${mainRes.statusText}`,
+    );
+  }
+
   const setCookieRaw = mainRes.headers.get("set-cookie") ?? "";
 
   // CSRF_TOKEN 값 추출
@@ -49,6 +55,10 @@ async function getCsrfToken(): Promise<{ token: string; cookie: string }> {
   // JSESSIONID 값 추출
   const sessionMatch = setCookieRaw.match(/JSESSIONID=([^;]+)/);
   const sessionId = sessionMatch ? sessionMatch[1] : "";
+
+  if (!token || !sessionId) {
+    throw new Error("Failed to extract CSRF_TOKEN or JSESSIONID");
+  }
 
   // Cookie 헤더에 담을 문자열 조합
   const cookie = [
@@ -91,6 +101,12 @@ export async function fetchTJJpopChart(): Promise<TJSong[]> {
       strType: "3", // 장르 코드. 3 = JPOP
     }),
   });
+
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch TJ chart: ${res.status} ${res.statusText}`,
+    );
+  }
 
   const json = (await res.json()) as TJApiResponse;
 
