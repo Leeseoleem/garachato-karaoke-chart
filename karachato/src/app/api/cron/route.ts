@@ -8,7 +8,23 @@ import type { Song } from "@/types/database";
 import { getToday } from "@/utils/date";
 import { normalize } from "@/utils/string";
 
-export async function GET() {
+// TODO: 배포 전 Vercel 대시보드 Settings → Environment Variables 에 추가 필요
+// - CRON_SECRET: 랜덤 문자열 (터미널에서 `openssl rand -base64 32` 로 생성)
+
+export async function GET(request: Request) {
+  // 배포 환경에서만 인증 검증
+  // CRON_SECRET이 설정된 환경(Vercel)에서만 체크
+  // 로컬은 CRON_SECRET이 없으니까 자동으로 통과
+  if (process.env.CRON_SECRET) {
+    const authorization = request.headers.get("authorization");
+    if (authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+      return Response.json(
+        { ok: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+  }
+
   // Secret Key 사용을 위한 클라이언트
   const supabase = createServerClient();
   const today = getToday(); // 오늘 날짜 — rank_history.chart_date에 저장할 값
