@@ -1,5 +1,7 @@
-import type { TJSong, TJApiItem } from "@/types/crawler";
+import type { TJSong, TJApiResponse, TJApiItem } from "@/types/crawler";
 import { TJ_CHART_API_URL } from "@/constants/api";
+
+import { getToday } from "@/utils/date";
 
 /**
  * 개요:
@@ -8,7 +10,7 @@ import { TJ_CHART_API_URL } from "@/constants/api";
 
 // TJ J-POP TOP 100을 가져오는 메인 함수
 export async function fetchTJJpopChart(): Promise<TJSong[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getToday();
 
   const res = await fetch(TJ_CHART_API_URL, {
     method: "POST",
@@ -23,7 +25,7 @@ export async function fetchTJJpopChart(): Promise<TJSong[]> {
     }),
   });
 
-  const json = await res.json();
+  const json = (await res.json()) as TJApiResponse;
   const items = json.resultData?.items ?? []; // resultData.items가 없으면 빈 배열로 처리
 
   // TJ API 응답 필드명 → 우리가 쓸 TJSong 필드명으로 변환
