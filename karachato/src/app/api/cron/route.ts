@@ -31,6 +31,8 @@ export async function GET(request: Request) {
     const today = getToday(); // 오늘 날짜 — rank_history.chart_date에 저장할 값
     const songs = await fetchTJJpopChart();
 
+    let processedCount = 0;
+
     for (const song of songs) {
       const titleNorm = normalize(song.title);
       const artistNorm = normalize(song.artist);
@@ -129,9 +131,16 @@ export async function GET(request: Request) {
           `[crawl] rank_history Upsert 실패: ${song.title}`,
           rankError,
         );
+      } else {
+        processedCount += 1;
       }
     }
-    return Response.json({ ok: true, count: songs.length, date: today });
+    return Response.json({
+      ok: true,
+      fetched: songs.length,
+      processed: processedCount,
+      date: today,
+    });
   } catch (error) {
     return Response.json({ ok: false, error: String(error) }, { status: 500 }); // ← 추가
   }
