@@ -22,17 +22,48 @@ import {
 } from "@/constants/api";
 import { getToday, getFirstDayOfMonth } from "@/utils/date";
 
+// fetch 요청 timeout 시간 (10초)
+// TJ 서버가 응답하지 않을 때 무한 대기를 방지
+const FETCH_TIMEOUT_MS = 10_000;
+
+// ─────────────────────────────────────────
+// fetchWithTimeout: timeout이 적용된 fetch 래퍼
+//
+// 지정한 시간(timeoutMs) 안에 응답이 없으면 요청을 강제 취소합니다.
+// TJ 서버가 먹통일 때 크론 작업 전체가 블로킹되는 것을 방지합니다.
+//
+// AbortController: fetch 요청을 외부에서 강제 취소하는 브라우저/Node 내장 API
+//   controller.abort() 호출 시 → fetch가 AbortError를 throw
+// ─────────────────────────────────────────
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+
+  // timeoutMs 후 자동으로 요청 취소
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    // 정상 응답이 오면 타이머 제거 (불필요한 abort 방지)
+    clearTimeout(timer);
+  }
+}
+
 // ─────────────────────────────────────────
 // getCsrfToken: TJ 차트 페이지에서 CSRF 토큰 추출
 //
 // 반환값:
-//   token  → x-csrf-token 헤더에 담을 값 (encodeURIComponent 적용됨)
+//   token  → x-csrf-token 헤더에 담을 값
 //   cookie → Cookie 헤더에 담을 값 (CSRF_TOKEN + JSESSIONID 조합)
 //
 // export 없음 — tj.ts 내부에서만 사용하는 함수
 // ─────────────────────────────────────────
 async function getCsrfToken(): Promise<{ token: string; cookie: string }> {
-  const mainRes = await fetch(TJ_CHART_URL, {
+  const mainRes = await fetchWithTimeout(TJ_CHART_URL, {
     method: "GET",
     headers: {
       "User-Agent": USER_AGENT,
@@ -62,7 +93,7 @@ async function getCsrfToken(): Promise<{ token: string; cookie: string }> {
 
   // Cookie 헤더에 담을 문자열 조합
   const cookie = [
-    token ? `CSRF_TOKEN=${token}` : "", // encodeURIComponent 제거
+    token ? `CSRF_TOKEN=${token}` : "",
     sessionId ? `JSESSIONID=${sessionId}` : "",
   ]
     .filter(Boolean)
@@ -75,6 +106,11 @@ async function getCsrfToken(): Promise<{ token: string; cookie: string }> {
 // fetchTJJpopChart: TJ JPOP TOP 100을 가져오는 메인 함수
 //
 // 반환값: TJSong 배열 (최대 100개)
+//
+// TODO: TJ 서버 먹통 시 UI 폴백 처리 필요 (UI 개발 단계에서 구현)
+//       - rank_history에서 가장 최근 chart_date를 조회
+//       - 해당 날짜 기준으로 차트 표시
+//       - UI에 "XX월 XX일 기준 차트 (오늘 데이터 준비 중)" 안내 문구 표시
 // ─────────────────────────────────────────
 export async function fetchTJJpopChart(): Promise<TJSong[]> {
   const today = getToday();
@@ -83,15 +119,15 @@ export async function fetchTJJpopChart(): Promise<TJSong[]> {
   const { token, cookie } = await getCsrfToken();
 
   // STEP 2. 차트 API 호출
-  const res = await fetch(TJ_CHART_API_URL, {
+  const res = await fetchWithTimeout(TJ_CHART_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Referer: TJ_CHART_URL,
       Origin: TJ_BASE_URL,
       "x-requested-with": "XMLHttpRequest",
-      "x-csrf-token": token, // 특수문자 인코딩
-      Cookie: cookie, // getCsrfToken에서 조합된 값
+      "x-csrf-token": token,
+      Cookie: cookie,
       "User-Agent": USER_AGENT,
     },
     body: new URLSearchParams({
