@@ -1,15 +1,16 @@
 import { getGemini } from "./gemini";
 import type { TranslateResult } from "@/types/gemini";
 
+const SYSTEM_INSTRUCTION =
+  "당신은 J-POP 전문 번역가이자 음악 큐레이터입니다. 요청된 곡 정보를 분석하고 반드시 지정된 JSON 형식으로만 응답하세요.";
+
 export const buildTranslatePrompt = (
   title: string,
   artist: string,
   provider: "TJ" | "KY",
 ): string =>
   `
-당신은 J-POP 전문 번역가이자 음악 큐레이터입니다.
 아래 노래방(${provider}) 곡 정보를 분석하고, JSON으로만 응답하세요.
-마크다운 코드블록(\`\`\`json)이나 추가 설명 없이 순수 JSON만 반환하세요.
 
 곡 제목 (원문): ${title}
 가수명 (원문): ${artist}
@@ -45,7 +46,6 @@ export const buildTranslatePrompt = (
 - ai_category_detail: 확실하지 않으면 반드시 null
 `.trim();
 
-// 실제 번역 실행 함수
 export const translateSong = async (
   title: string,
   artist: string,
@@ -53,14 +53,19 @@ export const translateSong = async (
 ): Promise<TranslateResult | null> => {
   try {
     const gemini = getGemini();
-    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = gemini.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      systemInstruction: SYSTEM_INSTRUCTION,
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    });
 
     const prompt = buildTranslatePrompt(title, artist, provider);
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
 
-    // 혹시 Gemini가 ```json ... ``` 으로 감쌌을 경우 제거
-    const clean = text.replace(/^```json\s*|\s*```$/g, "").trim();
+    const clean = text.replace(/^[^{]*|[^}]*$/g, "").trim();
     const parsed: TranslateResult = JSON.parse(clean);
 
     // 필수 필드 검증
@@ -77,6 +82,6 @@ export const translateSong = async (
     return parsed;
   } catch (err) {
     console.error(`[translateSong] 실패 - ${title} / ${artist}`, err);
-    return null; // null 반환 시 호출부에서 ai_status: failed 처리
+    return null;
   }
 };
