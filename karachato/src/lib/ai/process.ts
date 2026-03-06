@@ -143,13 +143,20 @@ export const processPendingSongs = async (): Promise<void> => {
           continue;
         }
 
-        await supabase
+        const { error: trackUpdateError } = await supabase
           .from("karaoke_tracks")
           .update({
             title_ko_jp: trackResult.title_ko_jp,
             title_ko_full: trackResult.title_ko_full,
           })
           .eq("id", track.id);
+
+        if (trackUpdateError) {
+          console.error(
+            `[processPendingSongs] karaoke_tracks 업데이트 실패 - track_id: ${track.id}`,
+            trackUpdateError,
+          );
+        }
       }
 
       console.log(`[processPendingSongs] 완료 - song_id: ${input.songId}`);
