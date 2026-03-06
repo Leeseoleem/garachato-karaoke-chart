@@ -141,6 +141,17 @@ export const translateSong = async (
       throw new Error("필수 필드 누락");
     }
 
+    if (
+      typeof parsed.ai_vocal_score !== "number" ||
+      parsed.ai_vocal_score < 1 ||
+      parsed.ai_vocal_score > 5 ||
+      typeof parsed.ai_pronunciation_score !== "number" ||
+      parsed.ai_pronunciation_score < 1 ||
+      parsed.ai_pronunciation_score > 5
+    ) {
+      throw new Error("점수 범위 오류");
+    }
+
     return parsed;
   } catch (err) {
     console.error(`[translateSong] 실패 - ${title} / ${artist}`, err);
