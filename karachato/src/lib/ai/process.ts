@@ -122,8 +122,10 @@ export const processPendingSongs = async (): Promise<void> => {
 
       // karaoke_tracks 업데이트
       for (const track of input.allTracks) {
+        // title_in_provider가 첫 번째 트랙과 같으면 결과 재사용
+        // 다르면 (예: KY 원제가 다른 경우) 별도 배치 호출
         const trackResult =
-          track.id === input.trackId
+          track.title_in_provider === input.title
             ? result
             : await translateSongBatch([
                 {
