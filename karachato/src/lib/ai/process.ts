@@ -43,18 +43,24 @@ export const processPendingSongs = async (): Promise<void> => {
       }[];
     }[] = [];
 
+    const songIds = chunk.map((s) => s.id);
+    const { data: allTracks, error: trackError } = await supabase
+      .from("karaoke_tracks")
+      .select("id, song_id, provider, title_in_provider, artist_in_provider")
+      .in("song_id", songIds);
+
+    if (trackError) {
+      console.error(`[processPendingSongs] 트랙 일괄 조회 실패`, trackError);
+      continue;
+    }
+
     for (let j = 0; j < chunk.length; j++) {
       const song = chunk[j];
 
-      const { data: tracks, error: trackError } = await supabase
-        .from("karaoke_tracks")
-        .select("id, provider, title_in_provider, artist_in_provider")
-        .eq("song_id", song.id);
+      const tracks = allTracks?.filter((t) => t.song_id === song.id);
 
-      if (trackError || !tracks || tracks.length === 0) {
-        console.error(
-          `[processPendingSongs] 트랙 조회 실패 - song_id: ${song.id}`,
-        );
+      if (!tracks || tracks.length === 0) {
+        console.error(`[processPendingSongs] 트랙 없음 - song_id: ${song.id}`);
         continue;
       }
 
