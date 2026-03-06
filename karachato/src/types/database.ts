@@ -3,6 +3,8 @@ import type {
   KaraokeProvider,
   ThumbnailSource,
   DeltaStatus,
+  AiCategory,
+  AiTrait,
 } from "./domain";
 
 // ─────────────────────────────────────────
@@ -17,9 +19,9 @@ export interface Song {
   description: string | null;
 
   // AI 분석
-  ai_category: string | null;
+  ai_category: AiCategory | null;
   ai_category_detail: string | null;
-  ai_traits: string[] | null;
+  ai_traits: AiTrait[] | null;
   ai_genres: string[] | null;
   ai_vibes: string[] | null;
   ai_vocal_score: number | null;
