@@ -128,8 +128,13 @@ export const translateSong = async (
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
 
-    const clean = text.replace(/^[^{]*|[^}]*$/g, "").trim();
-    const parsed: TranslateResult = JSON.parse(clean);
+    let parsed: TranslateResult;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const clean = text.replace(/^[^{]*|[^}]*$/g, "").trim();
+      parsed = JSON.parse(clean);
+    }
 
     if (
       !parsed.title_ko ||
@@ -166,7 +171,7 @@ export const translateSongBatch = async (
   try {
     const gemini = getGemini();
     const model = gemini.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_INSTRUCTION,
       generationConfig: {
         responseMimeType: "application/json",
