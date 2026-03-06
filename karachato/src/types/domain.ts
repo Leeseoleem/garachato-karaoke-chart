@@ -15,3 +15,14 @@ export type DeltaStatus =
   | "NEW"
   | "REENTRY"
   | "UNKNOWN";
+
+// AI 카테고리 (ai_category)
+export type AiCategory =
+  | "애니메이션 OST"
+  | "극장판 OST"
+  | "게임 OST"
+  | "보컬로이드"
+  | "J-POP";
+
+// AI 트레잇 (ai_traits)
+export type AiTrait = "역주행" | "바이럴" | "최신곡" | "예전곡" | "커버곡";

@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { fetchTJJpopChart } from "@/lib/crawlers/tj";
+import { processPendingSongs } from "@/lib/ai/process";
 
 // == types ===
 import type { Song } from "@/types/database";
@@ -135,6 +136,9 @@ export async function GET(request: Request) {
         processedCount += 1;
       }
     }
+    // STEP 5. AI 번역 처리 (pending 곡만)
+
+    await processPendingSongs();
     return Response.json({
       ok: true,
       fetched: songs.length,
