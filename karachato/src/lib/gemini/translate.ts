@@ -1,6 +1,8 @@
 import { getGemini } from "./gemini";
 import type { TranslateResult } from "@/types/gemini";
 
+import type { AiCategory, AiTrait } from "@/types/domain";
+
 const SYSTEM_INSTRUCTION =
   "당신은 J-POP 전문 번역가이자 음악 큐레이터입니다. 요청된 곡 정보를 분석하고 반드시 지정된 JSON 형식으로만 응답하세요.";
 
@@ -14,6 +16,59 @@ interface BatchInput {
 
 // 배치용 출력 타입
 type BatchResult = (TranslateResult & { index: number }) | null;
+
+const VALID_CATEGORIES = new Set<AiCategory>([
+  "애니메이션 OST",
+  "극장판 OST",
+  "게임 OST",
+  "보컬로이드",
+  "J-POP",
+]);
+
+const VALID_TRAITS = new Set<AiTrait>([
+  "역주행",
+  "바이럴",
+  "최신곡",
+  "예전곡",
+  "커버곡",
+]);
+
+const isShortStringArray = (value: unknown, max: number) =>
+  Array.isArray(value) &&
+  value.length <= max &&
+  value.every((v) => typeof v === "string");
+
+const isValidTranslateResult = (value: unknown): value is TranslateResult => {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+
+  return (
+    typeof item.title_ko === "string" &&
+    typeof item.title_ko_jp === "string" &&
+    typeof item.title_ko_full === "string" &&
+    typeof item.description === "string" &&
+    typeof item.ai_category === "string" &&
+    VALID_CATEGORIES.has(item.ai_category as AiCategory) &&
+    (item.ai_category_detail === null ||
+      typeof item.ai_category_detail === "string") &&
+    Array.isArray(item.ai_traits) &&
+    item.ai_traits.every(
+      (trait) =>
+        typeof trait === "string" && VALID_TRAITS.has(trait as AiTrait),
+    ) &&
+    isShortStringArray(item.ai_genres, 3) &&
+    isShortStringArray(item.ai_vibes, 3) &&
+    typeof item.ai_vocal_reason === "string" &&
+    typeof item.ai_pronunciation_reason === "string" &&
+    typeof item.ai_karaoke_tip === "string" &&
+    typeof item.ai_vocal_score === "number" &&
+    item.ai_vocal_score >= 1 &&
+    item.ai_vocal_score <= 5 &&
+    typeof item.ai_pronunciation_score === "number" &&
+    item.ai_pronunciation_score >= 1 &&
+    item.ai_pronunciation_score <= 5
+  );
+};
 
 export const buildTranslatePrompt = (
   title: string,
@@ -117,7 +172,7 @@ export const translateSong = async (
   try {
     const gemini = getGemini();
     const model = gemini.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_INSTRUCTION,
       generationConfig: {
         responseMimeType: "application/json",
@@ -136,25 +191,8 @@ export const translateSong = async (
       parsed = JSON.parse(clean);
     }
 
-    if (
-      !parsed.title_ko ||
-      !parsed.title_ko_jp ||
-      !parsed.title_ko_full ||
-      !parsed.description ||
-      !parsed.ai_category
-    ) {
-      throw new Error("필수 필드 누락");
-    }
-
-    if (
-      typeof parsed.ai_vocal_score !== "number" ||
-      parsed.ai_vocal_score < 1 ||
-      parsed.ai_vocal_score > 5 ||
-      typeof parsed.ai_pronunciation_score !== "number" ||
-      parsed.ai_pronunciation_score < 1 ||
-      parsed.ai_pronunciation_score > 5
-    ) {
-      throw new Error("점수 범위 오류");
+    if (!isValidTranslateResult(parsed)) {
+      throw new Error("응답 스키마 오류");
     }
 
     return parsed;
@@ -168,7 +206,7 @@ export const translateSong = async (
 export const translateSongBatch = async (
   songs: BatchInput[],
 ): Promise<BatchResult[]> => {
-  if (songs.length === 0) return []; // 빈 배열이면 Gemini 호출 없이 바로 반환
+  if (songs.length === 0) return [];
 
   try {
     const gemini = getGemini();
@@ -184,7 +222,6 @@ export const translateSongBatch = async (
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
 
-    // 배열 파싱: 직접 파싱, 실패 시에만 정규식 적용
     let parsed: (TranslateResult & { index: number })[];
     try {
       parsed = JSON.parse(text);
@@ -193,34 +230,11 @@ export const translateSongBatch = async (
       parsed = JSON.parse(clean);
     }
 
-    // index 기준으로 정렬 후 개별 검증
     return songs.map((s) => {
       const item = parsed.find((p) => p.index === s.index);
-      if (
-        !item ||
-        !item.title_ko ||
-        !item.title_ko_jp ||
-        !item.title_ko_full ||
-        !item.description ||
-        !item.ai_category
-      ) {
+      if (!item || !isValidTranslateResult(item)) {
         console.error(
-          `[translateSongBatch] 개별 곡 검증 실패 - index: ${s.index} / ${s.title}`,
-        );
-        return null;
-      }
-
-      // 점수 범위 검증
-      if (
-        typeof item.ai_vocal_score !== "number" ||
-        item.ai_vocal_score < 1 ||
-        item.ai_vocal_score > 5 ||
-        typeof item.ai_pronunciation_score !== "number" ||
-        item.ai_pronunciation_score < 1 ||
-        item.ai_pronunciation_score > 5
-      ) {
-        console.error(
-          `[translateSongBatch] 점수 범위 오류 - index: ${s.index} / ${s.title}`,
+          `[translateSongBatch] 응답 스키마 오류 - index: ${s.index} / ${s.title}`,
         );
         return null;
       }
@@ -228,7 +242,6 @@ export const translateSongBatch = async (
     });
   } catch (err) {
     console.error(`[translateSongBatch] 배치 전체 실패`, err);
-    // 전체 실패 시 songs 개수만큼 null 배열 반환
     return songs.map(() => null);
   }
 };
