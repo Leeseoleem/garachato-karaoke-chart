@@ -168,6 +168,8 @@ export const translateSong = async (
 export const translateSongBatch = async (
   songs: BatchInput[],
 ): Promise<BatchResult[]> => {
+  if (songs.length === 0) return []; // 빈 배열이면 Gemini 호출 없이 바로 반환
+
   try {
     const gemini = getGemini();
     const model = gemini.getGenerativeModel({
