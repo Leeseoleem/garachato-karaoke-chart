@@ -202,6 +202,21 @@ export const translateSongBatch = async (
         );
         return null;
       }
+
+      // 점수 범위 검증
+      if (
+        typeof item.ai_vocal_score !== "number" ||
+        item.ai_vocal_score < 1 ||
+        item.ai_vocal_score > 5 ||
+        typeof item.ai_pronunciation_score !== "number" ||
+        item.ai_pronunciation_score < 1 ||
+        item.ai_pronunciation_score > 5
+      ) {
+        console.error(
+          `[translateSongBatch] 점수 범위 오류 - index: ${s.index} / ${s.title}`,
+        );
+        return null;
+      }
       return item;
     });
   } catch (err) {
