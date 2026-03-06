@@ -13,8 +13,20 @@ export interface Song {
   title_norm: string;
   artist_norm: string;
   title_ko: string | null;
+  title_ko_norm: string | null;
   description: string | null;
-  ai_tags: string[] | null;
+
+  // AI 분석
+  ai_category: string | null;
+  ai_category_detail: string | null;
+  ai_traits: string[] | null;
+  ai_genres: string[] | null;
+  ai_vibes: string[] | null;
+  ai_vocal_score: number | null;
+  ai_vocal_reason: string | null;
+  ai_pronunciation_score: number | null;
+  ai_pronunciation_reason: string | null;
+  ai_karaoke_tip: string | null;
   ai_status: ProcessStatus;
 
   youtube_video_id: string | null;
@@ -24,20 +36,22 @@ export interface Song {
   thumbnail_source: ThumbnailSource;
   youtube_thumbnail_url: string | null;
 
-  created_at: string; // TIMESTAMPTZ (ISO string)
-  updated_at: string; // TIMESTAMPTZ (ISO string)
+  created_at: string;
+  updated_at: string;
 }
 
 // ─────────────────────────────────────────
 // karaoke_tracks 테이블
 // ─────────────────────────────────────────
 export interface KaraokeTrack {
-  id: number; // SERIAL
-  song_id: string; // UUID
+  id: number;
+  song_id: string;
   provider: KaraokeProvider;
   karaoke_no: string;
   title_in_provider: string;
   artist_in_provider: string;
+  title_ko_jp: string | null;
+  title_ko_full: string | null;
   created_at: string; // TIMESTAMPTZ (ISO string)
   updated_at: string; // TIMESTAMPTZ (ISO string)
 }
