@@ -177,9 +177,14 @@ export const translateSongBatch = async (
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
 
-    // 배열 파싱: [ ... ] 형태로 추출
-    const clean = text.replace(/^[^\[]*|[^\]]*$/g, "").trim();
-    const parsed: (TranslateResult & { index: number })[] = JSON.parse(clean);
+    // 배열 파싱: 직접 파싱, 실패 시에만 정규식 적용
+    let parsed: (TranslateResult & { index: number })[];
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const clean = text.replace(/^[^\[]*|[^\]]*$/g, "").trim();
+      parsed = JSON.parse(clean);
+    }
 
     // index 기준으로 정렬 후 개별 검증
     return songs.map((s) => {
