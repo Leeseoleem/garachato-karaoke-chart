@@ -34,9 +34,8 @@ export async function searchYoutubeVideo(
 
   if (!item) return null;
 
-  const videoId: string = item.id?.videoId;
-  // maxres → high → medium → default 순으로 fallback
-  const thumbnailUrl: string =
+  const videoId = item.id?.videoId;
+  const thumbnailUrl =
     item.snippet?.thumbnails?.maxres?.url ??
     item.snippet?.thumbnails?.high?.url ??
     item.snippet?.thumbnails?.medium?.url ??
