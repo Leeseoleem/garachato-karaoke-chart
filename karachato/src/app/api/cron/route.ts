@@ -9,9 +9,7 @@ import type { Song } from "@/types/database";
 import { getToday } from "@/utils/date";
 import { normalize } from "@/utils/string";
 
-// TODO: 배포 전 Vercel 대시보드 Settings → Environment Variables 에 추가 필요
 // - CRON_SECRET: 랜덤 문자열 (터미널에서 `openssl rand -base64 32` 로 생성)
-
 export async function GET(request: Request) {
   // 배포 환경에서만 인증 검증
   // CRON_SECRET이 설정된 환경(Vercel)에서만 체크
@@ -27,10 +25,30 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Secret Key 사용을 위한 클라이언트
     const supabase = createServerClient();
-    const today = getToday(); // 오늘 날짜 — rank_history.chart_date에 저장할 값
+    const today = getToday();
     const songs = await fetchTJJpopChart();
+
+    // STEP 1. 전날 rank_history 조회 → Map으로 만들어두기
+    // (karaoke_track_id → rank)
+    const { data: prevRanks } = await supabase
+      .from("rank_history")
+      .select("karaoke_track_id, rank, chart_date")
+      .lt("chart_date", today)
+      .order("chart_date", { ascending: false })
+      .limit(100);
+
+    const prevRankMap = new Map<number, number>();
+    if (prevRanks) {
+      // 가장 최근 날짜 기준으로 Map 구성
+      // lt + order + limit으로 가져왔으니 앞쪽이 가장 최근
+      const latestDate = prevRanks[0]?.chart_date;
+      for (const row of prevRanks) {
+        if (row.chart_date === latestDate) {
+          prevRankMap.set(row.karaoke_track_id, row.rank);
+        }
+      }
+    }
 
     let processedCount = 0;
 
@@ -89,7 +107,8 @@ export async function GET(request: Request) {
           songId = inserted.id;
         }
       }
-      // STEP 3. karaoke_tracks 테이블 처리
+
+      // STEP 2. karaoke_tracks upsert
       const { data: track, error: trackError } = await supabase
         .from("karaoke_tracks")
         .upsert(
@@ -124,18 +143,41 @@ export async function GET(request: Request) {
         trackId = existingTrack.id;
       }
 
-      // STEP 4. rank_history 테이블 처리
+      // STEP 3. delta 계산
+      const prevRank = prevRankMap.get(trackId!);
+      let deltaStatus: "NEW" | "UP" | "DOWN" | "SAME" | "UNKNOWN";
+      let deltaValue: number | null = null;
+
+      if (prevRank === undefined) {
+        // 이전 차트 데이터 자체가 없는 경우 (첫 크롤링)
+        // vs 차트에 새로 진입한 경우 구분 불가 → prevRankMap이 비어있으면 UNKNOWN
+        deltaStatus = prevRankMap.size === 0 ? "UNKNOWN" : "NEW";
+      } else if (prevRank === song.rank) {
+        deltaStatus = "SAME";
+        deltaValue = 0;
+      } else if (prevRank > song.rank) {
+        deltaStatus = "UP";
+        deltaValue = prevRank - song.rank; // 양수
+      } else {
+        deltaStatus = "DOWN";
+        deltaValue = prevRank - song.rank; // 음수
+      }
+
+      // STEP 4. rank_history upsert
       const { error: rankError } = await supabase.from("rank_history").upsert(
         {
           karaoke_track_id: trackId,
           chart_date: today,
           rank: song.rank,
-          delta_status: "UNKNOWN",
+          delta_status: deltaStatus,
+          delta_value: deltaValue,
         },
         {
           onConflict: "karaoke_track_id,chart_date",
+          ignoreDuplicates: true,
         },
       );
+
       if (rankError) {
         console.error(
           `[crawl] rank_history Upsert 실패: ${song.title}`,
@@ -145,9 +187,10 @@ export async function GET(request: Request) {
         processedCount += 1;
       }
     }
-    // STEP 5. AI 번역 처리 (pending 곡만)
 
+    // STEP 5. AI 번역 처리
     await processPendingSongs();
+
     return Response.json({
       ok: true,
       fetched: songs.length,
@@ -155,6 +198,6 @@ export async function GET(request: Request) {
       date: today,
     });
   } catch (error) {
-    return Response.json({ ok: false, error: String(error) }, { status: 500 }); // ← 추가
+    return Response.json({ ok: false, error: String(error) }, { status: 500 });
   }
 }
