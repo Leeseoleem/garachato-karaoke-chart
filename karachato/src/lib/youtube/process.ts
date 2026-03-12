@@ -1,5 +1,5 @@
-import { createServerClient } from "../supabase/server";
-import { searchYoutubeVideo } from "./search";
+import { createServerClient } from "@/lib/supabase/server";
+import { searchYoutubeVideo } from "@/lib/youtube/search";
 import { delay } from "@/utils/delay";
 
 const DAILY_LIMIT = 80; // YouTube API 일일 할당량 보호 (100 유닛/건 × 80 = 8,000 유닛)
@@ -103,6 +103,13 @@ export async function processPendingYoutube(): Promise<void> {
         );
       }
     } catch (err) {
+      // 할당량 초과 시 pending 유지 후 루프 중단 (내일 크론 때 자동 재시도)
+      if (String(err).includes("quotaExceeded")) {
+        console.warn("[youtube] 할당량 초과, 남은 곡은 내일 재시도");
+        break;
+      }
+
+      // 그 외 에러는 failed 처리
       console.error(`[youtube] 처리 실패: ${query}`, err);
       await supabase
         .from("songs")
