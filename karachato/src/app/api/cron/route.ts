@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { fetchTJJpopChart } from "@/lib/crawlers/tj";
 import { processPendingSongs } from "@/lib/ai/process";
+import { processPendingYoutube } from "@/lib/youtube/process";
 
 // == types ===
 import type { Song } from "@/types/database";
@@ -52,6 +53,7 @@ export async function GET(request: Request) {
         }
       }
     }
+
     let processedCount = 0;
 
     for (const song of songs) {
@@ -192,6 +194,9 @@ export async function GET(request: Request) {
 
     // STEP 5. AI 번역 처리
     await processPendingSongs();
+
+    // STEP 6. 유튜브 썸네일 처리
+    await processPendingYoutube();
 
     return Response.json({
       ok: true,
