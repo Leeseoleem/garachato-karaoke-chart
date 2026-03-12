@@ -29,27 +29,29 @@ export async function GET(request: Request) {
     const today = getToday();
     const songs = await fetchTJJpopChart();
 
-    // STEP 1. 전날 rank_history 조회 → Map으로 만들어두기
+    // STEP 1. 직전 크롤링 날짜 조회 후 해당 날짜 rank_history 전체를 Map으로 만들어두기
     // (karaoke_track_id → rank)
-    const { data: prevRanks } = await supabase
+    const { data: latestDateRow } = await supabase
       .from("rank_history")
-      .select("karaoke_track_id, rank, chart_date")
+      .select("chart_date")
       .lt("chart_date", today)
       .order("chart_date", { ascending: false })
-      .limit(100);
+      .limit(1)
+      .single();
 
     const prevRankMap = new Map<number, number>();
-    if (prevRanks) {
-      // 가장 최근 날짜 기준으로 Map 구성
-      // lt + order + limit으로 가져왔으니 앞쪽이 가장 최근
-      const latestDate = prevRanks[0]?.chart_date;
-      for (const row of prevRanks) {
-        if (row.chart_date === latestDate) {
+    if (latestDateRow) {
+      const { data: prevRanks } = await supabase
+        .from("rank_history")
+        .select("karaoke_track_id, rank")
+        .eq("chart_date", latestDateRow.chart_date);
+
+      if (prevRanks) {
+        for (const row of prevRanks) {
           prevRankMap.set(row.karaoke_track_id, row.rank);
         }
       }
     }
-
     let processedCount = 0;
 
     for (const song of songs) {
