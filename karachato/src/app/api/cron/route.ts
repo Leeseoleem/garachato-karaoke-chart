@@ -105,28 +105,37 @@ export async function GET(request: Request) {
         .select("id")
         .single();
 
-      if (trackError) {
-        console.error(
-          `[crawl] karaoke_tracks Upsert 실패: ${song.title}`,
-          trackError,
-        );
-        continue;
+      let trackId: number | undefined = track?.id;
+
+      if (trackError || !trackId) {
+        const { data: existingTrack, error: existingTrackError } =
+          await supabase
+            .from("karaoke_tracks")
+            .select("id")
+            .eq("provider", "TJ")
+            .eq("karaoke_no", song.karaoke_no)
+            .single();
+
+        if (existingTrackError || !existingTrack) {
+          console.error(`[crawl] karaoke_tracks id 조회 실패: ${song.title}`);
+          continue;
+        }
+
+        trackId = existingTrack.id;
       }
 
       // STEP 4. rank_history 테이블 처리
       const { error: rankError } = await supabase.from("rank_history").upsert(
         {
-          karaoke_track_id: track.id,
+          karaoke_track_id: trackId,
           chart_date: today,
           rank: song.rank,
           delta_status: "UNKNOWN",
         },
         {
           onConflict: "karaoke_track_id,chart_date",
-          ignoreDuplicates: true,
         },
       );
-
       if (rankError) {
         console.error(
           `[crawl] rank_history Upsert 실패: ${song.title}`,
