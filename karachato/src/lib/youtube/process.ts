@@ -64,10 +64,16 @@ export async function processPendingYoutube(): Promise<void> {
     if (!track) {
       console.warn(`[youtube] TJ 트랙 없음, 스킵: song_id=${song.id}`);
       // TJ 트랙이 없는 경우 failed 처리 (무한 pending 방지)
-      await supabase
+      const { error: updateError } = await supabase
         .from("songs")
         .update({ youtube_status: "failed" })
         .eq("id", song.id);
+      if (updateError) {
+        console.error(
+          `[youtube] 상태 업데이트 실패: song_id=${song.id}`,
+          updateError,
+        );
+      }
       failCount++;
       continue;
     }
@@ -79,13 +85,19 @@ export async function processPendingYoutube(): Promise<void> {
 
       if (!result) {
         console.warn(`[youtube] 검색 결과 없음: ${query}`);
-        await supabase
+        const { error: updateError } = await supabase
           .from("songs")
           .update({ youtube_status: "failed" })
           .eq("id", song.id);
+        if (updateError) {
+          console.error(
+            `[youtube] 상태 업데이트 실패: song_id=${song.id}`,
+            updateError,
+          );
+        }
         failCount++;
       } else {
-        await supabase
+        const { error: updateError } = await supabase
           .from("songs")
           .update({
             youtube_video_id: result.videoId,
@@ -96,11 +108,17 @@ export async function processPendingYoutube(): Promise<void> {
             thumbnail_source: "YOUTUBE",
           })
           .eq("id", song.id);
-
-        successCount++;
-        console.log(
-          `[youtube] 완료: ${track.title_in_provider} → ${result.videoId}`,
-        );
+        if (updateError) {
+          console.error(
+            `[youtube] 썸네일 업데이트 실패: song_id=${song.id}`,
+            updateError,
+          );
+        } else {
+          successCount++;
+          console.log(
+            `[youtube] 완료: ${track.title_in_provider} → ${result.videoId}`,
+          );
+        }
       }
     } catch (err) {
       // 할당량 초과 시 pending 유지 후 루프 중단 (내일 크론 때 자동 재시도)
@@ -111,10 +129,16 @@ export async function processPendingYoutube(): Promise<void> {
 
       // 그 외 에러는 failed 처리
       console.error(`[youtube] 처리 실패: ${query}`, err);
-      await supabase
+      const { error: updateError } = await supabase
         .from("songs")
         .update({ youtube_status: "failed" })
         .eq("id", song.id);
+      if (updateError) {
+        console.error(
+          `[youtube] 상태 업데이트 실패: song_id=${song.id}`,
+          updateError,
+        );
+      }
       failCount++;
     }
 
