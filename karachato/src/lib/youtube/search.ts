@@ -1,5 +1,7 @@
 import { YOUTUBE_API_BASE } from "@/constants/api";
 
+const FETCH_TIMEOUT_MS = 10000; // 10초
+
 export interface YoutubeSearchResult {
   videoId: string; // 영상 ID
   thumbnailUrl: string; // 썸네일 이미지 URL
@@ -22,26 +24,41 @@ export async function searchYoutubeVideo(
     key: apiKey,
   });
 
-  const res = await fetch(`${YOUTUBE_API_BASE}/search?${params.toString()}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  if (!res.ok) {
-    const errorBody = await res.text();
-    throw new Error(`[youtube] API 요청 실패: ${res.status} ${errorBody}`);
+  try {
+    const res = await fetch(`${YOUTUBE_API_BASE}/search?${params.toString()}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`[youtube] API 요청 실패: ${res.status} ${errorBody}`);
+    }
+
+    const data = await res.json();
+    const item = data.items?.[0];
+
+    if (!item) return null;
+
+    const videoId = item.id?.videoId;
+    // maxres → high → medium → default 순으로 fallback
+    const thumbnailUrl =
+      item.snippet?.thumbnails?.maxres?.url ??
+      item.snippet?.thumbnails?.high?.url ??
+      item.snippet?.thumbnails?.medium?.url ??
+      item.snippet?.thumbnails?.default?.url;
+
+    if (!videoId || !thumbnailUrl) return null;
+
+    return { videoId, thumbnailUrl };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("[youtube] API 요청 타임아웃");
+    }
+    throw err;
   }
-
-  const data = await res.json();
-  const item = data.items?.[0];
-
-  if (!item) return null;
-
-  const videoId = item.id?.videoId;
-  const thumbnailUrl =
-    item.snippet?.thumbnails?.maxres?.url ??
-    item.snippet?.thumbnails?.high?.url ??
-    item.snippet?.thumbnails?.medium?.url ??
-    item.snippet?.thumbnails?.default?.url;
-
-  if (!videoId || !thumbnailUrl) return null;
-
-  return { videoId, thumbnailUrl };
 }

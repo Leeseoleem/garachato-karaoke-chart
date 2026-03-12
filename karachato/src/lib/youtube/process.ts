@@ -121,9 +121,12 @@ export async function processPendingYoutube(): Promise<void> {
         }
       }
     } catch (err) {
-      // 할당량 초과 시 pending 유지 후 루프 중단 (내일 크론 때 자동 재시도)
-      if (String(err).includes("quotaExceeded")) {
-        console.warn("[youtube] 할당량 초과, 남은 곡은 내일 재시도");
+      // 할당량 초과 or 타임아웃 → pending 유지 후 루프 중단 (내일 크론 때 자동 재시도)
+      if (
+        String(err).includes("quotaExceeded") ||
+        String(err).includes("타임아웃")
+      ) {
+        console.warn("[youtube] 일시적 오류, 남은 곡은 내일 재시도:", err);
         break;
       }
 
