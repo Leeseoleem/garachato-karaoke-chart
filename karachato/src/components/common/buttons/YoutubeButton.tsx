@@ -4,7 +4,8 @@ import clsx from "clsx";
 import { Play } from "lucide-react";
 
 export default function YoutubeButton({ url }: { url?: string }) {
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     window.open(url, "_blank", "noopener,noreferrer");
   };
   const baseClass =
