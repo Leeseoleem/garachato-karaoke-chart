@@ -68,5 +68,4 @@ export interface RankHistory {
   rank: number;
   delta_status: DeltaStatus;
   delta_value: number | null;
-  collected_at: string; // TIMESTAMPTZ (ISO string)
 }
