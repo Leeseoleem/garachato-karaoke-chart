@@ -2,7 +2,7 @@ import YoutubeButton from "@/components/common/buttons/YoutubeButton";
 
 export interface KaraokeActionProps {
   karaokeNo: number;
-  url: string;
+  url?: string;
 }
 
 export default function KaraokeAction({ karaokeNo, url }: KaraokeActionProps) {
