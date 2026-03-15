@@ -15,6 +15,6 @@ const DELTA_MAP: Record<DeltaStatus, { symbol: string; className: string }> = {
 
 export default function RankBadge({ status }: RankBadgeProps) {
   const { symbol, className } = DELTA_MAP[status];
-  const baseClass = "w-8 h-8 flex justify-center items-center bg-brand-main";
+  const baseClass = "w-8 h-8 flex justify-center items-center";
   return <p className={clsx(baseClass, className)}>{symbol}</p>;
 }
