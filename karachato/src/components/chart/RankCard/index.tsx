@@ -27,12 +27,14 @@ export default function RankCard({
   song,
   action,
 }: RankCardProps) {
-  const { displayMode } = useChartStore();
+  const { displayMode, translationScope } = useChartStore();
 
   const mainTitle =
-    displayMode === "translated"
-      ? (song.titleKoJp ?? song.titleInProvider)
-      : song.titleInProvider;
+    displayMode === "original"
+      ? song.titleInProvider // 원문인 경우
+      : translationScope === "jp_only"
+        ? (song.titleKoJp ?? song.titleInProvider) // 번역이면서 범위가 일본어인 경우
+        : (song.titleKoFull ?? song.titleInProvider); // 번역이면서 범위가 영어까지인 경우
 
   const subTitle = displayMode === "translated" ? song.titleInProvider : null;
 

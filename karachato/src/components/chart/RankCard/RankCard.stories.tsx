@@ -8,7 +8,10 @@ const meta: Meta<typeof RankCard> = {
   tags: ["autodocs"],
   decorators: [
     (Story) => {
-      useChartStore.setState({ displayMode: "translated" });
+      useChartStore.setState({
+        displayMode: "translated",
+        translationScope: "jp_only",
+      });
       return <Story />;
     },
   ],
@@ -18,11 +21,12 @@ export default meta;
 type Story = StoryObj<typeof RankCard>;
 
 const baseArgs = {
+  songId: "a3f9c2d1-0001-4a5b-8c9d-000000000001",
   rank: { rank: 1, status: "UP" as const },
   song: {
-    titleKoJp: "아이돌",
-    titleInProvider: "アイドル",
-    artistKo: null,
+    titleInProvider: "アイドル/IDOL",
+    titleKoJp: "아이돌/IDOL",
+    titleKoFull: "아이돌/아이돌",
     artistInProvider: "YOASOBI",
   },
   action: {
@@ -31,12 +35,29 @@ const baseArgs = {
   },
 };
 
-// 번역 모드
-export const Translated: Story = {
+// 번역 모드 - 일본어만
+export const TranslatedJpOnly: Story = {
   args: baseArgs,
   decorators: [
     (Story) => {
-      useChartStore.setState({ displayMode: "translated" });
+      useChartStore.setState({
+        displayMode: "translated",
+        translationScope: "jp_only",
+      });
+      return <Story />;
+    },
+  ],
+};
+
+// 번역 모드 - 영어까지
+export const TranslatedFull: Story = {
+  args: baseArgs,
+  decorators: [
+    (Story) => {
+      useChartStore.setState({
+        displayMode: "translated",
+        translationScope: "full",
+      });
       return <Story />;
     },
   ],
@@ -53,13 +74,14 @@ export const Original: Story = {
   ],
 };
 
-// 번역 없는 곡 (pending)
+// 번역 없는 곡 (ai_status: pending)
 export const NoTranslation: Story = {
   args: {
     ...baseArgs,
     song: {
       ...baseArgs.song,
       titleKoJp: null,
+      titleKoFull: null,
     },
   },
 };
@@ -77,5 +99,21 @@ export const RankDown: Story = {
   args: {
     ...baseArgs,
     rank: { rank: 5, status: "DOWN" as const },
+  },
+};
+
+// SAME
+export const RankSame: Story = {
+  args: {
+    ...baseArgs,
+    rank: { rank: 3, status: "SAME" as const },
+  },
+};
+
+// UNKNOWN (첫 크롤링)
+export const RankUnknown: Story = {
+  args: {
+    ...baseArgs,
+    rank: { rank: 10, status: "UNKNOWN" as const },
   },
 };
