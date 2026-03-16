@@ -13,10 +13,10 @@ export interface RankCardProps {
   songId: string;
   rank: RankColumnProps;
   song: {
-    titleKoJp: string | null;
-    titleInProvider: string;
-    artistKo: string | null;
-    artistInProvider: string;
+    titleInProvider: string; // 원문
+    titleKoJp: string | null; // 일본어만 번역
+    titleKoFull: string | null; // 영어까지 번역
+    artistInProvider: string; // 아티스트 원문
   };
   action: KaraokeActionProps;
 }
