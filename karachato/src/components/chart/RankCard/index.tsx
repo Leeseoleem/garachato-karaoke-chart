@@ -51,7 +51,9 @@ export default function RankCard({
           <div className={clsx(colClass, "gap-1")}>
             <p className="typo-subtitle text-gray-white">{mainTitle}</p>
             {subTitle && (
-              <p className="typo-body text-content-primary">{subTitle}</p>
+              <p className="typo-body font-light text-content-primary">
+                {subTitle}
+              </p>
             )}
           </div>
           <p className="typo-caption text-content-secondary">
