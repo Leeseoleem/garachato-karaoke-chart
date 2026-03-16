@@ -10,7 +10,7 @@ export default function ChartHeader() {
         )}
       >
         <div className="flex flex-row gap-5 items-center justify-center">
-          <p className={textClass}>순위</p>
+          <p className={clsx(textClass, "w-10 text-center")}>순위</p>
           <p className={textClass}>제목</p>
         </div>
         <p className={textClass}>노래방 번호</p>
