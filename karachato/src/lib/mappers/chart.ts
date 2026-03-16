@@ -24,3 +24,7 @@ export const toRankCardProps = (item: RankHistoryWithJoin): RankCardProps => ({
       : `https://www.youtube.com/results?search_query=${encodeURIComponent(item.karaoke_tracks.title_in_provider + " " + item.karaoke_tracks.artist_in_provider)}`,
   },
 });
+
+export const toRankCardPropsList = (
+  items: RankHistoryWithJoin[],
+): RankCardProps[] => items.map(toRankCardProps);
