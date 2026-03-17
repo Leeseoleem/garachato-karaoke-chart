@@ -26,13 +26,12 @@ export default function TabItem({
     <motion.button
       type="button"
       className={clsx(
-        "flex flex-1 h-full justify-center items-end pb-3",
+        "flex flex-1 h-full justify-center items-center",
         isActive && clsx("bg-brand-dark", radiusMap[position]),
       )}
       onClick={onClick}
       animate={{
-        y: isActive ? -2 : 0,
-        scale: isActive ? 1.05 : 1,
+        y: isActive ? 0.5 : 6,
       }}
       transition={{
         type: "spring",
