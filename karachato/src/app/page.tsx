@@ -1,9 +1,22 @@
-export default function Home() {
+// === component ===
+import ChartContainer from "@/components/chart/ChartContainer";
+// === function ===
+import { isKaraokeProvider } from "@/utils/type";
+// === type ===
+import type { KaraokeProvider } from "@/types/domain";
+
+export default function Home({
+  searchParams,
+}: {
+  searchParams: { provider?: string };
+}) {
+  const provider: KaraokeProvider =
+    searchParams.provider && isKaraokeProvider(searchParams.provider)
+      ? searchParams.provider
+      : "TJ";
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <main className="flex w-full flex-col items-center justify-between">
-        <p className="typo-title-02">메인 페이지</p>
-      </main>
-    </div>
+    <main className="flex h-screen flex-col">
+      <ChartContainer provider={provider} />
+    </main>
   );
 }
