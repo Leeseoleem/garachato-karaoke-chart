@@ -27,7 +27,7 @@ export default function ChartClientWrapper({
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col">
       <div className="flex flex-row justify-between px-5 py-3">
         <span className="typo-caption text-content-secondary">TOP 100</span>
         <span className="typo-caption text-content-secondary">
