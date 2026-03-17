@@ -48,3 +48,19 @@
   border: 1px solid transparent;
   border-radius: 30px;
 }
+
+.glass-static {
+  backdrop-filter: blur(12px);
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--gray-20), var(--gray-20)),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.02) 40%,
+      rgba(255, 255, 255, 0.02) 60%,
+      rgba(255, 255, 255, 0.5) 100%
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
