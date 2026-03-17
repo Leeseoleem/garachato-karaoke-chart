@@ -14,7 +14,7 @@ export default function DisplayModeToggle() {
   return (
     <div
       onClick={toggle}
-      className="relative flex w-fit h-13 cursor-pointer items-center rounded-full p-0.5 glass select-none"
+      className="relative flex w-fit h-13 cursor-pointer items-center rounded-full p-0.5 glass-static select-none"
     >
       {/* 왼쪽 슬롯 */}
       <div className="relative flex x-fit h-full flex-row items-center justify-center gap-2 px-5">
