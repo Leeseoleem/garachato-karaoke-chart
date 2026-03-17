@@ -1,0 +1,45 @@
+"use client";
+
+// === component ===
+import KaraokeTabs from "../KaraokeTabs";
+import ChartHeader from "./ChartHeader";
+import ChartScrollContainer from "./ChartScrollContainer";
+import FloatingBar from "../FloatingBar";
+
+// === hook ===
+import { useScrollTop } from "@/hooks/useScrollTop";
+
+// === type ===
+import type { RankHistoryWithJoin } from "@/types/database";
+
+interface ChartClientWrapperProps {
+  items: RankHistoryWithJoin[];
+  latestDate: string;
+}
+
+export default function ChartClientWrapper({
+  items,
+  latestDate,
+}: ChartClientWrapperProps) {
+  const { scrollRef, isScrolled } = useScrollTop();
+
+  const handleScrollToTop = () => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-row justify-between px-5 py-3">
+        <span className="typo-caption text-content-secondary">TOP 100</span>
+        <span className="typo-caption text-content-secondary">
+          {latestDate} 기준
+        </span>
+      </div>
+      <KaraokeTabs />
+      <div className="flex h-full flex-1 flex-col bg-linear-to-b from-brand-dark to-gray-30 overflow-hidden">
+        <ChartHeader />
+        <ChartScrollContainer ref={scrollRef} items={items} />
+      </div>
+      <FloatingBar isScrolled={isScrolled} onScrollToTop={handleScrollToTop} />
+    </div>
+  );
+}
