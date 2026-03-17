@@ -1,7 +1,5 @@
 // === component ===
-import KaraokeTabs from "../KaraokeTabs";
-import ChartHeader from "./ChartHeader";
-import ChartScrollContainer from "./ChartScrollContainer";
+import ChartClientWrapper from "./ChartClientWrapper";
 
 // === type ===
 import type { KaraokeProvider } from "@/types/domain";
@@ -14,12 +12,13 @@ interface ChartContainerProps {
 }
 
 export default function ChartContainer({ provider }: ChartContainerProps) {
-  // TODO: provider 기반으로 Supabase 쿼리
+  // TODO: provider 기반으로 Supabase 쿼리 처리
+  // TODO: latestDate도 DB에서 가져올 예정
+  const latestDate = "2026.03.18"; // 임시 하드코딩
+
   return (
-    <div className="flex h-full flex-1 flex-col bg-linear-to-b from-brand-dark to-gray-30 overflow-hidden">
-      <KaraokeTabs />
-      <ChartHeader />
-      <ChartScrollContainer items={MOCK_CHART_ITEMS} />
+    <div className="flex h-full flex-1">
+      <ChartClientWrapper latestDate={latestDate} items={MOCK_CHART_ITEMS} />
     </div>
   );
 }
