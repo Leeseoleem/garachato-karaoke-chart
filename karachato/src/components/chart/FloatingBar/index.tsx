@@ -20,7 +20,7 @@ export default function FloatingBar({
 }: FloatingBarProps) {
   const { setIsSettingsOpen } = useChartStore();
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 ">
       <motion.div
         layout
         transition={{ type: "spring", stiffness: 400, damping: 30 }}

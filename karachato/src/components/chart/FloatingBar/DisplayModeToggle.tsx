@@ -14,10 +14,10 @@ export default function DisplayModeToggle() {
   return (
     <div
       onClick={toggle}
-      className="relative flex w-fit h-13 cursor-pointer items-center rounded-full p-0.5 glass-static select-none"
+      className="relative flex h-[52px] cursor-pointer items-center rounded-full p-0.5 glass-static select-none"
     >
       {/* 왼쪽 슬롯 */}
-      <div className="relative flex x-fit h-full flex-row items-center justify-center gap-2 px-5">
+      <div className="relative flex h-full flex-row items-center justify-center gap-2 px-5">
         {displayMode === "translated" && (
           <motion.div
             layoutId="pill"
@@ -26,11 +26,12 @@ export default function DisplayModeToggle() {
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
           >
             <Languages size={20} color="#ffffff" />
-            <p className="typo-caption text-gray-white">번역</p>
+            <div>
+              <p className="typo-caption text-gray-white">번역</p>
+            </div>
           </motion.div>
         )}
-        <Languages size={20} color="transparent" />
-        <span className="text-transparent">원문</span>
+        <div className="w-14" />
       </div>
 
       {/* 오른쪽 슬롯 */}
@@ -46,8 +47,7 @@ export default function DisplayModeToggle() {
             <p className="typo-caption text-gray-white">번역</p>
           </motion.div>
         )}
-        <Languages size={20} color="transparent" />
-        <span className="text-transparent">원문</span>
+        <div className="w-14" />
       </div>
     </div>
   );
