@@ -60,6 +60,11 @@
   --width-page: var(--max-width-page);
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   background: var(--gray-50);
   color: var(--content-primary);
