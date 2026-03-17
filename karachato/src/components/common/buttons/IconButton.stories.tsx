@@ -4,7 +4,7 @@ import { Settings } from "lucide-react";
 
 const meta: Meta<typeof IconButton> = {
   component: IconButton,
-  title: "Components/common/buttons/Settings",
+  title: "Components/common/buttons/IconButton",
   tags: ["autodocs"],
 };
 
