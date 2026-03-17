@@ -5,6 +5,7 @@ import DisplayModeToggle from "./DisplayModeToggle";
 const meta: Meta<typeof DisplayModeToggle> = {
   title: "chart/FloatingBar/DisplayModeToggle",
   component: DisplayModeToggle,
+  tags: ["autodocs"],
 };
 
 export default meta;
