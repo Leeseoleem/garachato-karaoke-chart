@@ -1,0 +1,50 @@
+.glass {
+  backdrop-filter: blur(12px);
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--gray-20), var(--gray-20)),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.02) 40%,
+      rgba(255, 255, 255, 0.02) 60%,
+      rgba(255, 255, 255, 0.5) 100%
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  transition: filter 150ms ease;
+}
+
+.glass:hover {
+  filter: brightness(1.2);
+}
+
+.glass:active {
+  filter: brightness(1.5);
+}
+
+.glass-active {
+  background-image:
+    /* 레이어 1: 버튼 내부 그라데이션 배경 */
+    linear-gradient(
+      92.24deg,
+      var(--brand-accent) 0.05%,
+      var(--brand-main) 100.05%
+    ),
+    /* 레이어 2: 테두리 첫 번째 겹 - 흰색 → 핑크 (opacity 0.8) */
+    linear-gradient(
+        92.24deg,
+        rgba(255, 255, 255, 0.8) 0%,
+        rgba(255, 153, 229, 0.8) 60%
+      ),
+    /* 레이어 3: 테두리 두 번째 겹 - 보라 → 투명 (opacity 0.2) */
+    linear-gradient(
+        92.24deg,
+        rgba(191, 131, 252, 0.2) 0%,
+        rgba(0, 0, 0, 0) 100%
+      );
+  background-origin: padding-box, border-box, border-box;
+  background-clip: padding-box, border-box, border-box;
+  border: 1px solid transparent;
+  border-radius: 30px;
+}

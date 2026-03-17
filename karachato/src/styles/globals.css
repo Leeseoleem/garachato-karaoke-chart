@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./typography.css";
+@import "./glassmorphism.css";
 
 :root {
   /* Gray Scale */
