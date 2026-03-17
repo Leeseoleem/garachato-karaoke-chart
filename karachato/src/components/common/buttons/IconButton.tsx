@@ -1,10 +1,12 @@
 "use client";
 import clsx from "clsx";
 
+export type Size = "default" | "large";
+
 interface IconButtonProps {
   icon: React.ReactNode;
   onClick: () => void;
-  size?: "default" | "large";
+  size?: Size;
   ariaLabel: string;
   disabled?: boolean;
 }
