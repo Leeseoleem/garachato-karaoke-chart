@@ -23,6 +23,7 @@ export default function BackButton({
 
   return (
     <button
+      type="button"
       className="p-1 rounded-full hover:bg-brand-main/20 active:bg-brand-main/40 transform duration-150 ease-in-out"
       onClick={handleBack}
       aria-label="뒤로가기"
