@@ -3,7 +3,7 @@ import YoutubeButton from "./YoutubeButton";
 
 const meta: Meta<typeof YoutubeButton> = {
   component: YoutubeButton,
-  title: "Components/common/buttons/YoutubeButton",
+  title: "common/buttons/YoutubeButton",
   tags: ["autodocs"],
 };
 

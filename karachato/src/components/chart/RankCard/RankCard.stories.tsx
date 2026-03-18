@@ -4,7 +4,7 @@ import { useChartStore } from "@/store/chartStore";
 
 const meta: Meta<typeof RankCard> = {
   component: RankCard,
-  title: "components/chart/RankCard",
+  title: "chart/RankCard",
   tags: ["autodocs"],
   decorators: [
     (Story) => {

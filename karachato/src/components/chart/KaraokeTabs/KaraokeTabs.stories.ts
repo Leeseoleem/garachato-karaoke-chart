@@ -3,7 +3,7 @@ import KaraokeTabs from "./index";
 
 const meta: Meta<typeof KaraokeTabs> = {
   component: KaraokeTabs,
-  title: "components/chart/KaraokeTabs",
+  title: "chart/KaraokeTabs",
   tags: ["autodocs"],
   parameters: {
     nextjs: {

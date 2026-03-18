@@ -3,7 +3,7 @@ import ChartHeader from "./ChartHeader";
 
 const meta: Meta<typeof ChartHeader> = {
   component: ChartHeader,
-  title: "components/chart/ChartHeader",
+  title: "chart/ChartHeader",
   tags: ["autodocs"],
 };
 

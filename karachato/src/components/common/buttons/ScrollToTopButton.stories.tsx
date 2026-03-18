@@ -3,7 +3,7 @@ import ScrollToTopButton from "./ScrollToTopButton";
 
 const meta: Meta<typeof ScrollToTopButton> = {
   component: ScrollToTopButton,
-  title: "Components/common/buttons/ScrollToTopButton",
+  title: "common/buttons/ScrollToTopButton",
   tags: ["autodocs"],
   args: {
     onClick: () => {},

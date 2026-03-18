@@ -3,7 +3,7 @@ import RankBadge from "./RankBadge";
 
 const meta: Meta<typeof RankBadge> = {
   component: RankBadge,
-  title: "Components/common/badges/RankBadge",
+  title: "common/badges/RankBadge",
   tags: ["autodocs"],
 };
 
