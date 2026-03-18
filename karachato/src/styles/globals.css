@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./typography.css";
+@import "./glassmorphism.css";
 
 :root {
   /* Gray Scale */
@@ -60,7 +61,12 @@
   --width-page: var(--max-width-page);
 }
 
+html {
+  height: 100%;
+}
+
 body {
+  height: 100%;
   background: var(--gray-50);
   color: var(--content-primary);
   font-family: "Pretendard", sans-serif;

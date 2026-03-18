@@ -8,13 +8,7 @@ export type KaraokeProvider = "TJ" | "KY";
 export type ThumbnailSource = "TJ" | "YOUTUBE" | "NONE";
 
 // 순위 변동 상태 (delta_status)
-export type DeltaStatus =
-  | "UP"
-  | "DOWN"
-  | "SAME"
-  | "NEW"
-  | "REENTRY"
-  | "UNKNOWN";
+export type DeltaStatus = "UP" | "DOWN" | "SAME" | "NEW" | "UNKNOWN";
 
 // AI 카테고리 (ai_category)
 export type AiCategory =

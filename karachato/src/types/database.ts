@@ -68,5 +68,13 @@ export interface RankHistory {
   rank: number;
   delta_status: DeltaStatus;
   delta_value: number | null;
-  collected_at: string; // TIMESTAMPTZ (ISO string)
+}
+
+// ─────────────────────────────────────────
+// Supabase 조인 결과 타입
+// ─────────────────────────────────────────
+export interface RankHistoryWithJoin extends RankHistory {
+  karaoke_tracks: KaraokeTrack & {
+    songs: Song;
+  };
 }
