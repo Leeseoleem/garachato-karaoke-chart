@@ -12,6 +12,8 @@ export function useScrollTop() {
       setIsScrolled(el.scrollTop > 100);
     };
 
+    handleScroll();
+
     el.addEventListener("scroll", handleScroll);
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
