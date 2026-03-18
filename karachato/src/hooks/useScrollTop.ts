@@ -14,7 +14,7 @@ export function useScrollTop() {
 
     handleScroll();
 
-    el.addEventListener("scroll", handleScroll);
+    el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
 
