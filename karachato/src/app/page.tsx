@@ -5,18 +5,18 @@ import { isKaraokeProvider } from "@/utils/type";
 // === type ===
 import type { KaraokeProvider } from "@/types/domain";
 
-export default function Home({
+export default async function Home({
   searchParams,
 }: {
-  searchParams: { provider?: string };
+  searchParams: Promise<{ provider?: string }>;
 }) {
-  const provider: KaraokeProvider =
-    searchParams.provider && isKaraokeProvider(searchParams.provider)
-      ? searchParams.provider
-      : "TJ";
+  const { provider } = await searchParams;
+  const karaokeProvider: KaraokeProvider =
+    provider && isKaraokeProvider(provider) ? provider : "TJ";
+
   return (
     <main className="flex h-screen flex-col">
-      <ChartContainer provider={provider} />
+      <ChartContainer provider={karaokeProvider} />
     </main>
   );
 }
