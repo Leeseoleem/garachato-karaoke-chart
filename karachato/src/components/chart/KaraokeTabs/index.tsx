@@ -1,9 +1,12 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // === component ===
 import TabItem from "./TabItem";
+
+// === function ===
+import { isKaraokeProvider } from "@/utils/type";
 
 // === type ===
 import type { KaraokeProvider } from "@/types/domain";
@@ -16,7 +19,11 @@ const tabs: { label: string; value: KaraokeProvider; position: Position }[] = [
 
 export default function KaraokeTabs() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<KaraokeProvider>("TJ");
+  const searchParams = useSearchParams();
+  const providerParam = searchParams.get("provider");
+  const initialProvider: KaraokeProvider =
+    providerParam && isKaraokeProvider(providerParam) ? providerParam : "TJ";
+  const [activeTab, setActiveTab] = useState<KaraokeProvider>(initialProvider);
 
   const handleTabClick = (value: KaraokeProvider) => {
     setActiveTab(value);
