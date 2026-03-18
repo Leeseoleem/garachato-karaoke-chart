@@ -2,7 +2,7 @@
 import clsx from "clsx";
 import { X, Search } from "lucide-react";
 
-interface SearchInputProps {
+export interface SearchInputProps {
   value: string;
   onChange: (v: string) => void;
   maxLength?: number;
