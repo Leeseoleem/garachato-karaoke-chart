@@ -4,6 +4,7 @@ import ChartContainer from ".";
 const meta: Meta<typeof ChartContainer> = {
   title: "chart/ChartContainer",
   component: ChartContainer,
+  tags: ["autodocs"],
 };
 
 export default meta;
