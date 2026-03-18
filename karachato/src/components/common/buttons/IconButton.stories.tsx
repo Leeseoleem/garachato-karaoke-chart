@@ -14,5 +14,7 @@ type Story = StoryObj<typeof IconButton>;
 export const Setting: Story = {
   args: {
     icon: <Settings />,
+    onClick: () => {},
+    ariaLabel: "설정",
   },
 };
