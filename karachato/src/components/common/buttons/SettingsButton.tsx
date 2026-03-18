@@ -1,4 +1,3 @@
-// SettingsButton.tsx
 import { Settings } from "lucide-react";
 import IconButton from "./IconButton";
 import type { Size } from "./IconButton";
