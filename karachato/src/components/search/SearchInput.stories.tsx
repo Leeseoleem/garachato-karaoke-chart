@@ -4,7 +4,7 @@ import SearchInput from "./SearchInput";
 
 const meta: Meta<typeof SearchInput> = {
   component: SearchInput,
-  title: "search/SearchInput",
+  title: "header/SearchInput",
   tags: ["autodocs"],
 };
 
