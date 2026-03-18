@@ -7,13 +7,13 @@ interface HeaderProps {
 
 export default function Header({ children, className }: HeaderProps) {
   return (
-    <div
+    <header
       className={clsx(
         "flex flex-row w-full min-h-16 px-4 items-center",
         className,
       )}
     >
       {children}
-    </div>
+    </header>
   );
 }
