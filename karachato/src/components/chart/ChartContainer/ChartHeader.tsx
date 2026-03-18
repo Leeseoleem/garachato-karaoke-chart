@@ -4,11 +4,7 @@ export default function ChartHeader() {
   const textClass = "typo-caption text-content-secondary";
   return (
     <div>
-      <div
-        className={clsx(
-          "flex flex-row justify-between items-center w-full px-5 py-3",
-        )}
-      >
+      <div className="flex flex-row justify-between items-center w-full px-5 py-3">
         <div className="flex flex-row gap-5 items-center justify-center">
           <p className={clsx(textClass, "w-10 text-center")}>순위</p>
           <p className={textClass}>제목</p>
