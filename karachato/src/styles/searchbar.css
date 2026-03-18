@@ -1,0 +1,31 @@
+@property --search-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 135deg;
+}
+
+.search-border {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--gray-50), var(--gray-50)),
+    conic-gradient(from var(--search-angle), #bf83fc, #ff99e5, #bf83fc);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.search-border:focus-within {
+  animation-play-state: running;
+  background-image:
+    linear-gradient(var(--gray-40), var(--gray-40)),
+    conic-gradient(from var(--search-angle), #bf83fc, #ff99e5, #bf83fc);
+}
+
+.search-border:focus-within {
+  animation: search-rotate 2s linear infinite;
+}
+
+@keyframes search-rotate {
+  to {
+    --search-angle: 495deg;
+  }
+}
