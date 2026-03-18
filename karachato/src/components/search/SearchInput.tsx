@@ -29,6 +29,8 @@ export default function SearchInput({
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
         {value ? (
           <button
+            type="button"
+            aria-label="검색어 초기화"
             className="flex items-center p-1 rounded-full hover:bg-brand-main/20 active:bg-brand-main/40 transform duration-150 ease-in-out"
             onClick={() => onChange("")}
           >
