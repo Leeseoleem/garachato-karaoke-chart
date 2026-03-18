@@ -21,14 +21,17 @@ export default function KaraokeTabs() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const providerParam = searchParams.get("provider");
-  const initialProvider: KaraokeProvider =
+
+  // URL을 단일 source of truth로 사용
+  const activeTab: KaraokeProvider =
     providerParam && isKaraokeProvider(providerParam) ? providerParam : "TJ";
-  const [activeTab, setActiveTab] = useState<KaraokeProvider>(initialProvider);
 
   const handleTabClick = (value: KaraokeProvider) => {
-    setActiveTab(value);
-    router.push(`?provider=${value}`);
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("provider", value);
+    router.push(`?${nextParams.toString()}`);
   };
+
   return (
     <div className="flex flex-row h-13 bg-gray-40">
       {tabs.map((tab) => (
