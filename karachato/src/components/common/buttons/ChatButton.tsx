@@ -6,7 +6,7 @@ import IconButton from "./IconButton";
 import { useChatStore } from "@/store/chatStore";
 
 export default function ChatButton() {
-  const { setIsChatOpen } = useChatStore();
+  const setIsChatOpen = useChatStore((state) => state.setIsChatOpen);
   return (
     <IconButton
       onClick={() => setIsChatOpen(true)}
