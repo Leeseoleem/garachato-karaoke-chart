@@ -6,6 +6,8 @@ import { Play } from "lucide-react";
 export default function YoutubeButton({ url }: { url?: string }) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (!url) return;
     window.open(url, "_blank", "noopener,noreferrer");
   };
   const baseClass =
