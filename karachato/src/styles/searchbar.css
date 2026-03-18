@@ -14,18 +14,20 @@
 }
 
 .search-border:focus-within {
-  animation-play-state: running;
+  animation: search-rotate 2s linear infinite;
   background-image:
     linear-gradient(var(--gray-40), var(--gray-40)),
     conic-gradient(from var(--search-angle), #bf83fc, #ff99e5, #bf83fc);
 }
 
-.search-border:focus-within {
-  animation: search-rotate 2s linear infinite;
-}
-
 @keyframes search-rotate {
   to {
     --search-angle: 495deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-border:focus-within {
+    animation: none;
   }
 }
