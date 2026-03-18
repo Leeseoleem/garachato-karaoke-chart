@@ -14,7 +14,16 @@ export default function DisplayModeToggle() {
   return (
     <div
       onClick={toggle}
-      className="relative flex h-[52px] cursor-pointer items-center rounded-full p-0.5 glass-static select-none"
+      role="switch"
+      aria-checked={displayMode === "translated"}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      }}
+      className="relative flex h-[52px] cursor-pointer items-center rounded-full p-0.5 glass-static select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
     >
       {/* 왼쪽 슬롯 */}
       <div className="relative flex flex-row items-center justify-center w-13 h-13">
