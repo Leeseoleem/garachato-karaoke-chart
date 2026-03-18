@@ -8,11 +8,16 @@ import type { KaraokeProvider } from "@/types/domain";
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ provider?: string }>;
+  searchParams: Promise<{ provider?: string | string[] }>;
 }) {
-  const { provider } = await searchParams;
+  const { provider: providerParam } = await searchParams;
+  const normalizedProvider =
+    typeof providerParam === "string" ? providerParam : undefined;
+
   const karaokeProvider: KaraokeProvider =
-    provider && isKaraokeProvider(provider) ? provider : "TJ";
+    normalizedProvider && isKaraokeProvider(normalizedProvider)
+      ? normalizedProvider
+      : "TJ";
 
   return (
     <main className="flex h-screen flex-col">
