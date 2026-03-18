@@ -31,7 +31,7 @@ const baseArgs = {
   },
   action: {
     karaokeNo: "82548",
-    youtubeUrl: "https://youtube.com/watch?v=dQw4w9WgXcQ",
+    url: "https://youtube.com/watch?v=dQw4w9WgXcQ",
   },
 };
 
