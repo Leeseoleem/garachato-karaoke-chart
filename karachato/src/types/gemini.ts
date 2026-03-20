@@ -7,7 +7,6 @@ export interface TranslateResult {
   title_ko_full: string;
   description: string;
   ai_category: AiCategory;
-  ai_category_detail: string | null;
   ai_traits: AiTrait[];
   ai_genres: string[];
   ai_vibes: string[];

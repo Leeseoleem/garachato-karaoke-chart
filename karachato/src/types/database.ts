@@ -20,7 +20,6 @@ export interface Song {
 
   // AI 분석
   ai_category: AiCategory | null;
-  ai_category_detail: string | null;
   ai_traits: AiTrait[] | null;
   ai_genres: string[] | null;
   ai_vibes: string[] | null;

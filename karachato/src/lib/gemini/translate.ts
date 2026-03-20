@@ -49,8 +49,6 @@ const isValidTranslateResult = (value: unknown): value is TranslateResult => {
     typeof item.description === "string" &&
     typeof item.ai_category === "string" &&
     VALID_CATEGORIES.has(item.ai_category as AiCategory) &&
-    (item.ai_category_detail === null ||
-      typeof item.ai_category_detail === "string") &&
     Array.isArray(item.ai_traits) &&
     item.ai_traits.every(
       (trait) =>
@@ -90,7 +88,6 @@ export const buildTranslatePrompt = (
   "title_ko_full": "일본어와 영어 모두 한글로 번역. 예: アイドル/IDOL → 아이돌/아이돌",
   "description": "이 곡의 분위기, 장르, 특징을 한국어로 2~3문장으로 설명",
   "ai_category": "아래 5개 중 하나만 선택: 애니메이션 OST | 극장판 OST | 게임 OST | 보컬로이드 | J-POP",
-  "ai_category_detail": "곡의 배경을 1~2문장으로. 예: 애니메이션 제목, 원작 정보 등. 불명확하면 null",
   "ai_traits": ["아래 허용값 중 해당하는 것만 포함. 없으면 빈 배열"],
   "ai_genres": ["장르 태그를 배열로. 예: 록, 시티팝, 일렉트로니카, 발라드, 팝"],
   "ai_vibes": ["분위기 키워드를 배열로. 예: 신나는, 몽환적인, 감성적인, 중독적인, 잔잔한"],
@@ -115,7 +112,6 @@ export const buildTranslatePrompt = (
 - ai_genres: 3개 이내
 - ai_vibes: 3개 이내
 - ai_vocal_score / ai_pronunciation_score: 1(매우 쉬움) ~ 5(매우 어려움)
-- ai_category_detail: 확실하지 않으면 반드시 null
 `.trim();
 
 export const buildBatchPrompt = (songs: BatchInput[]): string => {
@@ -143,7 +139,6 @@ ${songList}
     "title_ko_full": "일본어와 영어 모두 한글로 번역. 예: アイドル/IDOL → 아이돌/아이돌",
     "description": "이 곡의 분위기, 장르, 특징을 한국어로 2~3문장으로 설명",
     "ai_category": "아래 5개 중 하나만 선택: 애니메이션 OST | 극장판 OST | 게임 OST | 보컬로이드 | J-POP",
-    "ai_category_detail": "곡의 배경을 1~2문장으로. 불명확하면 null",
     "ai_traits": ["허용값 중 해당하는 것만. 없으면 빈 배열"],
     "ai_genres": ["장르 태그 배열. 3개 이내"],
     "ai_vibes": ["분위기 키워드 배열. 3개 이내"],
@@ -171,7 +166,6 @@ ${songList}
 - ai_genres: 3개 이내
 - ai_vibes: 3개 이내
 - ai_vocal_score / ai_pronunciation_score: 1(매우 쉬움) ~ 5(매우 어려움)
-- ai_category_detail: 확실하지 않으면 반드시 null
 `.trim();
 };
 
