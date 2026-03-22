@@ -5,7 +5,7 @@ import type { DeltaStatus } from "@/types/domain";
 interface SongInfoRowProps {
   label: string;
   status?: DeltaStatus;
-  rank: number;
+  rank: number | null;
 }
 
 export default function SongInfoRow({ label, status, rank }: SongInfoRowProps) {
@@ -24,7 +24,7 @@ export default function SongInfoRow({ label, status, rank }: SongInfoRowProps) {
             status ? className : "text-content-secondary",
           )}
         >
-          {rank}위
+          {rank !== null ? `${rank}위` : "-"}
         </p>
       </div>
     </div>
