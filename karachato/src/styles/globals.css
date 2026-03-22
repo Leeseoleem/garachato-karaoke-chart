@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "./typography.css";
 @import "./glassmorphism.css";
-@import "./searchbar.css";
+@import "./gradients.css";
 
 :root {
   /* Gray Scale */
