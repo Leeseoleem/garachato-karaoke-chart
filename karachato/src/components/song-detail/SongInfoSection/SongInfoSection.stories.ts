@@ -8,6 +8,7 @@ const meta: Meta<typeof SongInfoSection> = {
   args: {
     description:
       "노래에 대한 설명이 들어가는 공간입니다.\n설명은 여러 줄이 들어옵니다.",
+    tags: ["J-POP", "최신곡"],
   },
 };
 
