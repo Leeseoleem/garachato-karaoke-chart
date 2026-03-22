@@ -1,6 +1,5 @@
 import clsx from "clsx";
-
-interface DifficultyItemProps {
+export interface DifficultyItemProps {
   label: string;
   score: number;
   reason: string;
