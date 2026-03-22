@@ -13,7 +13,7 @@ export default function DifficultyItem({
   reason,
 }: DifficultyItemProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 w-full">
       <div className="flex flex-row justify-between items-center">
         <p className="typo-label text-brand-light">{label}</p>
         <div className="flex flex-row gap-1 items-center">
