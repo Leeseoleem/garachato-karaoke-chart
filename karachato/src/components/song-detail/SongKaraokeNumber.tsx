@@ -3,7 +3,7 @@ import { Copy } from "lucide-react";
 import type { KaraokeProvider } from "@/types/domain";
 
 interface SongKaraokeNumberProps {
-  provider?: KaraokeProvider;
+  provider: KaraokeProvider;
   karaokeNo?: number;
   onCopy?: (karaokeNo: number) => void;
 }
