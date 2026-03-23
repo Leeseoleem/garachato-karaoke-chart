@@ -24,3 +24,8 @@ export const STATIC_QUICK_QUESTIONS = [
   "요즘 가장 인기 있는 노래는?",
   "최근 SNS에서 유행 중인 노래 찾아줘",
 ] as const;
+
+// constants/chat.ts
+
+export const CHAT_WELCOME_MESSAGE =
+  "안녕하세요! 찾고 싶은 일본 노래가 있으신가요? 곡명이나 가수명을 알려주시면 노래방 번호를 찾아드릴게요 🎤";
