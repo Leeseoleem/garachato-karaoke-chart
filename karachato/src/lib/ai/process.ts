@@ -106,7 +106,6 @@ export const processPendingSongs = async (): Promise<void> => {
           title_ko_norm: normalize(result.title_ko),
           description: result.description,
           ai_category: result.ai_category,
-          ai_category_detail: result.ai_category_detail,
           ai_traits: result.ai_traits,
           ai_genres: result.ai_genres,
           ai_vibes: result.ai_vibes,
