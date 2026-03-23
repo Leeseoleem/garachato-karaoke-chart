@@ -48,7 +48,6 @@
     linear-gradient(to right, #865dad, #ff99e5);
   background-origin: padding-box, border-box;
   background-clip: padding-box, border-box;
-  transition: background-image 150ms ease;
 }
 
 .gradient-border-transparent:hover {
