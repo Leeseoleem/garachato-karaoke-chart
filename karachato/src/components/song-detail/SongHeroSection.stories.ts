@@ -4,6 +4,7 @@ import SongHeroSection from "./SongHeroSection";
 const meta: Meta<typeof SongHeroSection> = {
   title: "song-detail/SongHeroSection",
   component: SongHeroSection,
+  tags: ["autodocs"],
 };
 
 export default meta;
