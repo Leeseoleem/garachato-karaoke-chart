@@ -39,7 +39,7 @@ export default function UserInput({
   const textClass =
     "typo-body text-gray-white placeholder:text-content-secondary";
 
-  const isButtonActive = !!value && !disabled;
+  const isButtonActive = value.trim().length > 0 && !disabled;
 
   return (
     <div className="flex flex-col gap-2 p-4">
@@ -70,8 +70,8 @@ export default function UserInput({
         <button
           type="submit"
           aria-label="채팅 전송"
-          onClick={isButtonActive ? onSubmit : undefined}
-          disabled={disabled}
+          onClick={onSubmit}
+          disabled={!isButtonActive}
           className={clsx(
             "shrink-0 p-2 rounded-full transition-colors duration-150",
             disabled
