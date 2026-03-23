@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 
-type ChatActionButtonVariant = "primary" | "secondary" | "retry";
+type ChatActionButtonVariant = "primary" | "secondary" | "retry" | "new";
 
 interface ChatActionButtonProps {
   onClick: () => void;
@@ -27,6 +27,11 @@ const variantConfig: Record<
     label: "다시 시도",
     style: "border border-status-up hover:bg-gray-40 active:bg-gray-50",
     text: "text-status-up",
+  },
+  new: {
+    label: "새 채팅 시작하기",
+    style: "bg-brand-main hover:brightness-110 active:brightness-75",
+    text: "text-gray-white",
   },
 };
 
