@@ -4,7 +4,12 @@ import { motion } from "framer-motion";
 
 export default function TypingIndicator() {
   return (
-    <div className="flex items-center gap-1.5 px-6 py-3 rounded-xl rounded-bl-sm bg-gray-20 w-fit">
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex items-center gap-1.5 px-6 py-3 rounded-xl rounded-bl-sm bg-gray-20 w-fit"
+    >
+      <span className="sr-only">챗봇이 답변을 작성 중입니다.</span>
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
