@@ -24,7 +24,7 @@ const variantConfig: Record<
     text: "text-gray-white",
   },
   retry: {
-    label: "다시 시도",
+    label: "처음부터",
     style: "border border-status-up hover:bg-gray-40 active:bg-gray-50",
     text: "text-status-up",
   },
