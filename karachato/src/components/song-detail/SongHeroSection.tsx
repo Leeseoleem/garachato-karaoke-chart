@@ -40,9 +40,11 @@ export default function SongHeroSection({
         </div>
       </div>
       {/* 썸네일 */}
-      <button
+      <a
         type="button"
         aria-label={`${titleKo} 유튜브에서 보기`}
+        target="_blank"
+        rel="noopener noreferrer"
         onClick={() => window.open(youtubeUrl)}
         className="relative w-full aspect-video rounded-xl overflow-hidden bg-surface-secondary"
       >
@@ -60,7 +62,7 @@ export default function SongHeroSection({
             </p>
           </div>
         )}
-      </button>
+      </a>
     </div>
   );
 }
