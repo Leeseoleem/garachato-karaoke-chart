@@ -50,7 +50,7 @@ export default function UserInput({
             "flex-1 rounded-4xl bg-gray-30 resize-none overflow-y-auto",
             "min-h-[52px] max-h-[150px]",
             "px-5 py-[14px]",
-            "focus:outline-none",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-main focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50",
             "leading-normal scrollbar-hide",
             "[&::-webkit-scrollbar]:hidden", // 크롬/사파리 스크롤바 숨김
             "[-ms-overflow-style:none]", // IE 스크롤바 숨김
@@ -73,7 +73,7 @@ export default function UserInput({
           onClick={onSubmit}
           disabled={!isButtonActive}
           className={clsx(
-            "shrink-0 p-2 rounded-full transition-colors duration-150",
+            "shrink-0 p-2 rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-main focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50",
             disabled
               ? "cursor-not-allowed opacity-50"
               : isButtonActive
