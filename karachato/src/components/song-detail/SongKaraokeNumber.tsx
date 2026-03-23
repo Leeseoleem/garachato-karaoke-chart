@@ -42,7 +42,7 @@ export default function SongKaraokeNumber({
         onClick={() => karaokeNo && onCopy?.(karaokeNo)}
         className="disabled:cursor-not-allowed hover:opacity-70 active:opacity-50 transition-opacity"
       >
-        <Copy color="#F0EEFF" />
+        <Copy color="text-content-primary" />
       </button>
     </div>
   );
