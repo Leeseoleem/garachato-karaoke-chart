@@ -43,6 +43,11 @@ export default function ChatModal({
     setInputValue("");
   };
 
+  const handleClose = () => {
+    handleReset();
+    setIsChatOpen(false);
+  };
+
   const handleSend = async (input: string) => {
     if (!input.trim() || isLoading || isEnded) return;
 
@@ -59,7 +64,7 @@ export default function ChatModal({
   return (
     <ModalSheet
       isOpen={isChatOpen}
-      onClose={() => setIsChatOpen(false)}
+      onClose={handleClose}
       headerLabel="찾고 싶은 곡이 있으신가요?"
     >
       <div className="flex flex-col h-full" style={{ maxHeight: "70dvh" }}>
