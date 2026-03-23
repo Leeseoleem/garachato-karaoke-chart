@@ -1,3 +1,5 @@
+import type { KaraokeProvider } from "./domain";
+
 export type MessageRole = "user" | "model";
 
 // ────────────────────────────────────────
@@ -20,6 +22,14 @@ export interface SongCandidateMessage {
   // 유저가 "맞아요" → ConfirmedMessage / "아니에요" → TextMessage로 재질문 유도
   song_id: string;
   message: string;
+  song: {
+    songId: string;
+    titleKo: string | null;
+    titleInProvider: string;
+    artistInProvider: string;
+    karaokeTracks: { provider: KaraokeProvider; karaokeNo: string }[];
+    isInTop100: boolean;
+  };
 }
 
 export interface ConfirmedMessage {
