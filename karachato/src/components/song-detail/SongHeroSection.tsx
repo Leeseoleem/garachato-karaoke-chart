@@ -45,7 +45,7 @@ export default function SongHeroSection({
         aria-label={`${titleKo} 유튜브에서 보기`}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => window.open(youtubeUrl)}
+        href={youtubeUrl}
         className="relative w-full aspect-video rounded-xl overflow-hidden bg-surface-secondary"
       >
         {thumbnailUrl ? (
