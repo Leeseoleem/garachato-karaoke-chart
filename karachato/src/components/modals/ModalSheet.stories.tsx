@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ModalSheet } from "./ModalSheet";
 
 const meta: Meta<typeof ModalSheet> = {
-  title: "UI/Modals/ModalSheet",
+  title: "Modals/ModalSheet",
   component: ModalSheet,
   tags: ["autodocs"],
   parameters: {
