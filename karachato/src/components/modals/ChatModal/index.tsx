@@ -82,6 +82,7 @@ export default function ChatModal({
                     <ChatActionButton
                       variant="primary"
                       onClick={() => {
+                        if (isEnded || isLoading) return;
                         setMessages((prev) => [
                           ...prev,
                           {
@@ -97,6 +98,7 @@ export default function ChatModal({
                     <ChatActionButton
                       variant="secondary"
                       onClick={() => {
+                        if (isEnded || isLoading) return;
                         setMessages((prev) => [
                           ...prev,
                           {
