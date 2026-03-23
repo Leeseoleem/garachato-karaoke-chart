@@ -12,6 +12,8 @@ export default function DifficultyItem({
   score,
   reason,
 }: DifficultyItemProps) {
+  const normalizedScore = Math.max(0, Math.min(TOTAL, Math.floor(score ?? 0)));
+
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex flex-row justify-between items-center">
@@ -22,7 +24,7 @@ export default function DifficultyItem({
               key={i}
               className={clsx(
                 "w-2 h-2 rounded-full",
-                i < (score ?? 0) ? "bg-brand-main" : "bg-brand-dark",
+                i < (normalizedScore ?? 0) ? "bg-brand-main" : "bg-brand-dark",
               )}
             />
           ))}
