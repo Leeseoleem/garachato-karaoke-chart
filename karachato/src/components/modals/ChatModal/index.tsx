@@ -37,7 +37,7 @@ export default function ChatModal({
   const [inputValue, setInputValue] = useState("");
 
   const handleReset = () => {
-    setMessages(INITIAL_MESSAGES);
+    setMessages(initialMessages);
     setIsEnded(false);
     setIsLoading(false);
     setInputValue("");
