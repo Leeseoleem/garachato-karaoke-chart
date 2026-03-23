@@ -16,6 +16,8 @@ export default function SelectOptionItem({
 }: SelectOptionItemProps) {
   return (
     <button
+      type="button"
+      aria-pressed={isSelected}
       onClick={onClick}
       className={clsx(
         "flex flex-row items-start gap-4 w-full rounded-xl border-2 px-4 pt-3.5 pb-3",
