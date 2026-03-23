@@ -39,8 +39,8 @@ export default function SongInfoSection({
           {description}
         </p>
         <div className="flex flex-row items-center gap-2">
-          {tags.map((tag, idx) => (
-            <Tag key={idx} label={tag} />
+          {tags.map((tag) => (
+            <Tag key={tag} label={tag} />
           ))}
         </div>
       </div>

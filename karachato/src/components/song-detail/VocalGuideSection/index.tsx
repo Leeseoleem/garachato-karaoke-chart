@@ -29,8 +29,8 @@ export default function VocalGuideSection({
           <DifficultyItem label="발음 난이도" {...PronunciationDifficult} />
         </div>
         <div className="flex flex-row items-center gap-1">
-          {tags.map((tag, idx) => (
-            <Tag key={idx} label={tag} />
+          {tags.map((tag) => (
+            <Tag key={tag} label={tag} />
           ))}
         </div>
       </div>
