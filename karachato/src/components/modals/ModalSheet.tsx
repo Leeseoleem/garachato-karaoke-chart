@@ -23,6 +23,8 @@ export function ModalSheet({
         <div className="shrink-0 flex flex-row h-12 w-full px-5 items-center justify-between border-b border-gray-40">
           <h5 className="typo-subtitle text-content-primary">{headerLabel}</h5>
           <button
+            type="button"
+            aria-label="모달 닫기"
             className="flex justify-center items-center p-1 hover:bg-gray-10/20 active:bg-gray-10/40 transition-colors duration-150 rounded-full"
             onClick={onClose}
           >
