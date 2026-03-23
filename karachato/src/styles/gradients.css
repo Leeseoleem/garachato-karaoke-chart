@@ -40,3 +40,24 @@
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
+
+.gradient-border-transparent {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--gray-50), var(--gray-50)),
+    linear-gradient(to right, #865dad, #ff99e5);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+}
+
+.gradient-border-transparent:hover {
+  background-image:
+    linear-gradient(var(--gray-40), var(--gray-40)),
+    linear-gradient(to right, #865dad, #ff99e5);
+}
+
+.gradient-border-transparent:active {
+  background-image:
+    linear-gradient(var(--gray-30), var(--gray-30)),
+    linear-gradient(to right, #865dad, #ff99e5);
+}
