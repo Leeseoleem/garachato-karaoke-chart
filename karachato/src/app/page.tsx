@@ -1,5 +1,6 @@
 // === component ===
 import ChartContainer from "@/components/chart/ChartContainer";
+import SettingModal from "@/components/modals/SettingModal";
 // === function ===
 import { isKaraokeProvider } from "@/utils/type";
 // === type ===
@@ -22,6 +23,7 @@ export default async function Home({
   return (
     <main className="flex h-screen flex-col">
       <ChartContainer provider={karaokeProvider} />
+      <SettingModal />
     </main>
   );
 }
