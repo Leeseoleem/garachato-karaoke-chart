@@ -10,7 +10,7 @@ export interface TextMessage {
   // 유저 입력 또는 AI 일반 응답 말풍선
   // role: "user" → 유저가 입력한 메시지
   // role: "model" → intent: "chat" 응답 (추가 질문, 안내 등)
-  content: string;
+  message: string;
 }
 
 export interface SongCandidateMessage {
