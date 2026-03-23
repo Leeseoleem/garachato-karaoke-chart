@@ -1,3 +1,5 @@
+"use client";
+
 import clsx from "clsx";
 import { Copy } from "lucide-react";
 import type { KaraokeProvider } from "@/types/domain";
