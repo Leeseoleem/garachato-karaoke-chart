@@ -37,6 +37,7 @@ export default function QuickQuestions({ onSelect }: QuickQuestionsProps) {
     <div className="flex flex-col gap-2 items-end">
       {questions.map((question) => (
         <button
+          type="button"
           key={question}
           onClick={() => onSelect(question)}
           className="typo-caption text-gray-white px-3 py-2 rounded-full border gradient-border-transparent hover:bg-gray-30 active:bg-gray-20 transition-colors duration-150"
