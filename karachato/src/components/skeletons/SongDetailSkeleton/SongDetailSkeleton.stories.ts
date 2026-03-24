@@ -3,7 +3,7 @@ import { SongDetailSkeleton } from ".";
 
 const meta: Meta<typeof SongDetailSkeleton> = {
   component: SongDetailSkeleton,
-  title: "Skeleton/SongDetailSkeleton",
+  title: "Skeleton/Page/SongDetailSkeleton",
   tags: ["autodocs"],
 };
 
