@@ -6,16 +6,22 @@ export interface SearchInputProps {
   value: string;
   onChange: (v: string) => void;
   maxLength?: number;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 export default function SearchInput({
   value,
   onChange,
   maxLength,
+  onFocus,
+  onBlur,
 }: SearchInputProps) {
   const textClass = "typo-body text-gray-white placeholder:text-brand-main/60";
   return (
     <div className="relative">
       <input
+        onFocus={onFocus}
+        onBlur={onBlur}
         className={clsx(
           "w-full px-5 pr-12 h-13 rounded-full search-border outline-none bg-transparent",
           textClass,
