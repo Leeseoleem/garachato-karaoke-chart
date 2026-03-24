@@ -8,7 +8,6 @@ export function SongDetailSkeleton() {
       <HeroSkeleton />
       <InfoSkeleton />
       <VocalGuideSkeleton />
-      {/* 팁 섹션도 필요하면 동일하게 추가 */}
     </div>
   );
 }
