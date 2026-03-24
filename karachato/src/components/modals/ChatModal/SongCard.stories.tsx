@@ -13,6 +13,7 @@ type Story = StoryObj<typeof SongCard>;
 const base: SongCardProps = {
   songId: "a3f9c2d1-0000-0000-0000-000000000000",
   titleKo: "아이돌 / IDOL",
+  artistKo: "요아소비",
   titleInProvider: "アイドル / IDOL",
   artistInProvider: "YOASOBI",
   karaokeTracks: [

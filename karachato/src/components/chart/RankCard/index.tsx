@@ -17,6 +17,7 @@ export interface RankCardProps {
     titleKoJp: string | null; // 일본어만 번역
     titleKoFull: string | null; // 영어까지 번역
     artistInProvider: string; // 아티스트 원문
+    artistKo: string | null; // 아티스트 번역
   };
   action: KaraokeActionProps;
 }
@@ -38,6 +39,13 @@ export default function RankCard({
 
   const subTitle = displayMode === "translated" ? song.titleInProvider : null;
 
+  const artistMain =
+    displayMode === "original"
+      ? song.artistInProvider
+      : (song.artistKo ?? song.artistInProvider);
+
+  const artistSub = displayMode === "translated" ? song.artistInProvider : null;
+
   const colClass = "flex flex-col items-start";
 
   return (
@@ -47,7 +55,12 @@ export default function RankCard({
     >
       <div className="flex flex-row gap-5 items-center justify-center">
         <RankColumn {...rank} />
-        <div className={clsx(colClass, "gap-3")}>
+        <div
+          className={clsx(
+            colClass,
+            displayMode === "original" ? "gap-2" : "gap-3",
+          )}
+        >
           <div className={clsx(colClass, "gap-1")}>
             <p className="typo-subtitle text-gray-white">{mainTitle}</p>
             {subTitle && (
@@ -56,9 +69,14 @@ export default function RankCard({
               </p>
             )}
           </div>
-          <p className="typo-caption text-content-secondary">
-            {song.artistInProvider}
-          </p>
+          <div className={clsx(colClass, "gap-1")}>
+            {song.artistKo && (
+              <p className="typo-caption text-content-primary">{artistMain}</p>
+            )}
+            {artistSub && (
+              <p className="typo-caption text-content-secondary">{artistSub}</p>
+            )}
+          </div>
         </div>
       </div>
       <KaraokeAction {...action} />

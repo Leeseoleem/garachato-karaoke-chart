@@ -5,6 +5,7 @@ export interface TranslateResult {
   title_ko: string;
   title_ko_jp: string;
   title_ko_full: string;
+  artist_ko: string;
   description: string;
   ai_category: AiCategory;
   ai_traits: AiTrait[];

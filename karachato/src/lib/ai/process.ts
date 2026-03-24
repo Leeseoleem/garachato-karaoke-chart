@@ -5,7 +5,6 @@ import { normalize } from "@/utils/string";
 export const processPendingSongs = async (): Promise<void> => {
   const supabase = createServerClient();
 
-  // limit 없이 전부 가져오기
   const { data: pendingSongs, error } = await supabase
     .from("songs")
     .select("id")
@@ -23,11 +22,9 @@ export const processPendingSongs = async (): Promise<void> => {
 
   console.log(`[processPendingSongs] 처리 시작 - 총 ${pendingSongs.length}곡`);
 
-  // 10개씩 청크로 나누기
   for (let i = 0; i < pendingSongs.length; i += 10) {
     const chunk = pendingSongs.slice(i, i + 10);
 
-    // 각 song의 karaoke_track 조회
     const batchInputs: {
       index: number;
       songId: string;
@@ -56,7 +53,6 @@ export const processPendingSongs = async (): Promise<void> => {
 
     for (let j = 0; j < chunk.length; j++) {
       const song = chunk[j];
-
       const tracks = allTracks?.filter((t) => t.song_id === song.id);
 
       if (!tracks || tracks.length === 0) {
@@ -64,21 +60,22 @@ export const processPendingSongs = async (): Promise<void> => {
         continue;
       }
 
-      const firstTrack = tracks[0];
+      // TJ 우선, 없으면 KY fallback
+      const primaryTrack = tracks.find((t) => t.provider === "TJ") ?? tracks[0];
+
       batchInputs.push({
         index: j,
         songId: song.id,
-        trackId: firstTrack.id,
-        title: firstTrack.title_in_provider,
-        artist: firstTrack.artist_in_provider,
-        provider: firstTrack.provider as "TJ" | "KY",
+        trackId: primaryTrack.id,
+        title: primaryTrack.title_in_provider,
+        artist: primaryTrack.artist_in_provider,
+        provider: primaryTrack.provider as "TJ" | "KY",
         allTracks: tracks,
       });
     }
 
     if (batchInputs.length === 0) continue;
 
-    // 10곡 한 번에 Gemini 호출
     const results = await translateSongBatch(
       batchInputs.map((b) => ({
         index: b.index,
@@ -88,7 +85,6 @@ export const processPendingSongs = async (): Promise<void> => {
       })),
     );
 
-    // 결과 저장
     for (const input of batchInputs) {
       const result = results[input.index];
 
@@ -99,11 +95,79 @@ export const processPendingSongs = async (): Promise<void> => {
         continue;
       }
 
+      // 불일치 트랙 수집 후 배치 번역
+      const unmatchedTracks = input.allTracks.filter(
+        (t) =>
+          t.title_in_provider !== input.title ||
+          t.artist_in_provider !== input.artist,
+      );
+
+      const unmatchedResults =
+        unmatchedTracks.length > 0
+          ? await translateSongBatch(
+              unmatchedTracks.map((t, idx) => ({
+                index: idx,
+                title: t.title_in_provider,
+                artist: t.artist_in_provider,
+                provider: t.provider as "TJ" | "KY",
+              })),
+            )
+          : [];
+
+      // track 업데이트 먼저, 성공 후 song 확정
+      let allTracksUpdated = true;
+
+      for (const track of input.allTracks) {
+        const isMatched =
+          track.title_in_provider === input.title &&
+          track.artist_in_provider === input.artist;
+
+        const trackResult = isMatched
+          ? result
+          : unmatchedResults[
+              unmatchedTracks.findIndex((t) => t.id === track.id)
+            ];
+
+        if (!trackResult) {
+          console.error(
+            `[processPendingSongs] 트랙 번역 실패 - track_id: ${track.id}`,
+          );
+          allTracksUpdated = false;
+          continue;
+        }
+
+        const { error: trackUpdateError } = await supabase
+          .from("karaoke_tracks")
+          .update({
+            title_ko_jp: trackResult.title_ko_jp,
+            title_ko_full: trackResult.title_ko_full,
+            artist_ko: trackResult.artist_ko,
+          })
+          .eq("id", track.id);
+
+        if (trackUpdateError) {
+          console.error(
+            `[processPendingSongs] karaoke_tracks 업데이트 실패 - track_id: ${track.id}`,
+            trackUpdateError,
+          );
+          allTracksUpdated = false;
+        }
+      }
+
+      if (!allTracksUpdated) {
+        console.error(
+          `[processPendingSongs] 일부 트랙 업데이트 실패로 song 확정 스킵 - song_id: ${input.songId}`,
+        );
+        continue;
+      }
+
       const { error: songUpdateError } = await supabase
         .from("songs")
         .update({
           title_ko: result.title_ko,
           title_ko_norm: normalize(result.title_ko),
+          artist_ko: result.artist_ko,
+          artist_ko_norm: normalize(result.artist_ko),
           description: result.description,
           ai_category: result.ai_category,
           ai_traits: result.ai_traits,
@@ -125,49 +189,9 @@ export const processPendingSongs = async (): Promise<void> => {
         continue;
       }
 
-      // karaoke_tracks 업데이트
-      for (const track of input.allTracks) {
-        // title_in_provider가 첫 번째 트랙과 같으면 결과 재사용
-        // 다르면 (예: KY 원제가 다른 경우) 별도 배치 호출
-        const trackResult =
-          track.title_in_provider === input.title
-            ? result
-            : await translateSongBatch([
-                {
-                  index: 0,
-                  title: track.title_in_provider,
-                  artist: track.artist_in_provider,
-                  provider: track.provider as "TJ" | "KY",
-                },
-              ]).then((r) => r[0]);
-
-        if (!trackResult) {
-          console.error(
-            `[processPendingSongs] 트랙 번역 실패 - track_id: ${track.id}`,
-          );
-          continue;
-        }
-
-        const { error: trackUpdateError } = await supabase
-          .from("karaoke_tracks")
-          .update({
-            title_ko_jp: trackResult.title_ko_jp,
-            title_ko_full: trackResult.title_ko_full,
-          })
-          .eq("id", track.id);
-
-        if (trackUpdateError) {
-          console.error(
-            `[processPendingSongs] karaoke_tracks 업데이트 실패 - track_id: ${track.id}`,
-            trackUpdateError,
-          );
-        }
-      }
-
       console.log(`[processPendingSongs] 완료 - song_id: ${input.songId}`);
     }
 
-    // 다음 배치 전 10초 대기 (RPM 초과 방지)
     if (i + 10 < pendingSongs.length) {
       console.log(
         `[processPendingSongs] 다음 배치 대기 중... (${i + 10}/${pendingSongs.length})`,
@@ -177,4 +201,187 @@ export const processPendingSongs = async (): Promise<void> => {
   }
 
   console.log("[processPendingSongs] 전체 처리 완료");
+};
+
+// artist_ko가 없는 기존 곡 재처리 (ai_status 변경 없이 artist_ko만 채움)
+export const processArtistKo = async (): Promise<void> => {
+  const supabase = createServerClient();
+
+  const { data: songs, error } = await supabase
+    .from("songs")
+    .select("id")
+    .eq("ai_status", "done")
+    .is("artist_ko", null);
+
+  if (error) {
+    console.error("[processArtistKo] 곡 조회 실패", error);
+    return;
+  }
+
+  if (!songs || songs.length === 0) {
+    console.log("[processArtistKo] 처리할 곡 없음");
+    return;
+  }
+
+  console.log(`[processArtistKo] 처리 시작 - 총 ${songs.length}곡`);
+
+  for (let i = 0; i < songs.length; i += 10) {
+    const chunk = songs.slice(i, i + 10);
+    const songIds = chunk.map((s) => s.id);
+
+    const { data: allTracks, error: trackError } = await supabase
+      .from("karaoke_tracks")
+      .select("id, song_id, provider, title_in_provider, artist_in_provider")
+      .in("song_id", songIds);
+
+    if (trackError) {
+      console.error(`[processArtistKo] 트랙 일괄 조회 실패`, trackError);
+      continue;
+    }
+
+    const batchInputs: {
+      index: number;
+      songId: string;
+      title: string;
+      artist: string;
+      provider: "TJ" | "KY";
+      allTracks: {
+        id: number;
+        title_in_provider: string;
+        artist_in_provider: string;
+        provider: string;
+      }[];
+    }[] = [];
+
+    for (let j = 0; j < chunk.length; j++) {
+      const song = chunk[j];
+      const tracks = allTracks?.filter((t) => t.song_id === song.id);
+
+      if (!tracks || tracks.length === 0) {
+        console.error(`[processArtistKo] 트랙 없음 - song_id: ${song.id}`);
+        continue;
+      }
+
+      // TJ 우선, 없으면 KY
+      const primaryTrack = tracks.find((t) => t.provider === "TJ") ?? tracks[0];
+
+      batchInputs.push({
+        index: j,
+        songId: song.id,
+        title: primaryTrack.title_in_provider,
+        artist: primaryTrack.artist_in_provider,
+        provider: primaryTrack.provider as "TJ" | "KY",
+        allTracks: tracks,
+      });
+    }
+
+    if (batchInputs.length === 0) continue;
+
+    const results = await translateSongBatch(
+      batchInputs.map((b) => ({
+        index: b.index,
+        title: b.title,
+        artist: b.artist,
+        provider: b.provider,
+      })),
+    );
+
+    for (const input of batchInputs) {
+      const result = results[input.index];
+
+      if (!result) {
+        console.error(`[processArtistKo] 번역 실패 - song_id: ${input.songId}`);
+        continue;
+      }
+
+      // 불일치 트랙 수집 후 배치 번역
+      const unmatchedTracks = input.allTracks.filter(
+        (t) =>
+          t.title_in_provider !== input.title ||
+          t.artist_in_provider !== input.artist,
+      );
+
+      const unmatchedResults =
+        unmatchedTracks.length > 0
+          ? await translateSongBatch(
+              unmatchedTracks.map((t, idx) => ({
+                index: idx,
+                title: t.title_in_provider,
+                artist: t.artist_in_provider,
+                provider: t.provider as "TJ" | "KY",
+              })),
+            )
+          : [];
+
+      // track 업데이트 먼저, 성공 후 song 확정
+      let allTracksUpdated = true;
+
+      for (const track of input.allTracks) {
+        const isMatched =
+          track.title_in_provider === input.title &&
+          track.artist_in_provider === input.artist;
+
+        const trackResult = isMatched
+          ? result
+          : unmatchedResults[
+              unmatchedTracks.findIndex((t) => t.id === track.id)
+            ];
+
+        if (!trackResult) {
+          console.error(
+            `[processArtistKo] 트랙 번역 실패 - track_id: ${track.id}`,
+          );
+          allTracksUpdated = false;
+          continue;
+        }
+
+        const { error: trackUpdateError } = await supabase
+          .from("karaoke_tracks")
+          .update({ artist_ko: trackResult.artist_ko })
+          .eq("id", track.id);
+
+        if (trackUpdateError) {
+          console.error(
+            `[processArtistKo] karaoke_tracks 업데이트 실패 - track_id: ${track.id}`,
+            trackUpdateError,
+          );
+          allTracksUpdated = false;
+        }
+      }
+
+      if (!allTracksUpdated) {
+        console.error(
+          `[processArtistKo] 일부 트랙 업데이트 실패로 song 확정 스킵 - song_id: ${input.songId}`,
+        );
+        continue;
+      }
+
+      const { error: songUpdateError } = await supabase
+        .from("songs")
+        .update({
+          artist_ko: result.artist_ko,
+          artist_ko_norm: normalize(result.artist_ko),
+        })
+        .eq("id", input.songId);
+
+      if (songUpdateError) {
+        console.error(
+          `[processArtistKo] songs 업데이트 실패 - song_id: ${input.songId}`,
+          songUpdateError,
+        );
+        continue;
+      }
+
+      console.log(`[processArtistKo] 완료 - song_id: ${input.songId}`);
+    }
+
+    if (i + 10 < songs.length) {
+      console.log(
+        `[processArtistKo] 다음 배치 대기 중... (${i + 10}/${songs.length})`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+    }
+  }
+
+  console.log("[processArtistKo] 전체 처리 완료");
 };

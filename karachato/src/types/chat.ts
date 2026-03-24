@@ -25,6 +25,7 @@ export interface SongCandidateMessage {
   song: {
     songId: string;
     titleKo: string | null;
+    artistKo: string | null;
     titleInProvider: string;
     artistInProvider: string;
     karaokeTracks: { provider: KaraokeProvider; karaokeNo: string }[];

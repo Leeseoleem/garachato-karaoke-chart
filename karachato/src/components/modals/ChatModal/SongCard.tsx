@@ -13,6 +13,7 @@ interface KaraokeTrack {
 export interface SongCardProps {
   songId: string; // songs.id
   titleKo: string | null; // songs.title_ko
+  artistKo: string | null; // songs.artist_ko
   titleInProvider: string; // karaoke_tracks.title_in_provider
   artistInProvider: string; // karaoke_tracks.artist_in_provider
   karaokeTracks: KaraokeTrack[]; // karaoke_tracks[]
@@ -22,6 +23,7 @@ export interface SongCardProps {
 export default function SongCard({
   songId,
   titleKo,
+  artistKo,
   titleInProvider,
   artistInProvider,
   karaokeTracks,
@@ -44,7 +46,7 @@ export default function SongCard({
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-2 min-w-0 flex-1">
+        <div className="flex flex-col gap-3 min-w-0 flex-1">
           <div className="flex flex-col gap-1">
             <p className="typo-subtitle text-gray-white truncate">
               {titleKo ?? titleInProvider}
@@ -55,6 +57,7 @@ export default function SongCard({
           </div>
           <p className="typo-caption text-content-secondary truncate">
             {artistInProvider}
+            {artistKo && ` / ${artistKo}`}
           </p>
         </div>
 

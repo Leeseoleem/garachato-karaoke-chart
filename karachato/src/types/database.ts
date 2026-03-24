@@ -14,8 +14,11 @@ export interface Song {
   id: string;
   title_norm: string;
   artist_norm: string;
+  /** 한글 번역 관련 */
   title_ko: string | null;
   title_ko_norm: string | null;
+  artist_ko: string | null;
+  artist_ko_norm: string | null;
   description: string | null;
 
   // AI 분석
@@ -53,6 +56,7 @@ export interface KaraokeTrack {
   artist_in_provider: string;
   title_ko_jp: string | null;
   title_ko_full: string | null;
+  artist_ko: string | null;
   created_at: string; // TIMESTAMPTZ (ISO string)
   updated_at: string; // TIMESTAMPTZ (ISO string)
 }

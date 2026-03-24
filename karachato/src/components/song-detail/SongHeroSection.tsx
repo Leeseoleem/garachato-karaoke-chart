@@ -4,6 +4,7 @@ import { Music2 } from "lucide-react";
 interface SongHeroSectionProps {
   titleKo: string;
   titleInProvider: string; // 원문 제목 (일본어)
+  artistKo: string | null;
   artistInProvider: string; // 원문 가수명
   thumbnailUrl: string | null;
   youtubeVideoId: string | null;
@@ -12,6 +13,7 @@ interface SongHeroSectionProps {
 export default function SongHeroSection({
   titleKo,
   titleInProvider,
+  artistKo,
   artistInProvider,
   thumbnailUrl,
   youtubeVideoId,
@@ -34,9 +36,14 @@ export default function SongHeroSection({
           <div className="flex justify-center items-center w-8 h-8 glass-active">
             <Music2 size={16} color="#ffffff" />
           </div>
-          <h3 className="typo-title-02 text-content-primary">
-            {artistInProvider}
-          </h3>
+          <div>
+            <h3 className="typo-title-02 text-content-primary">
+              {artistInProvider}
+            </h3>
+            {artistKo && (
+              <h5 className="typo-body text-content-secondary">{artistKo}</h5>
+            )}
+          </div>
         </div>
       </div>
       {/* 썸네일 */}

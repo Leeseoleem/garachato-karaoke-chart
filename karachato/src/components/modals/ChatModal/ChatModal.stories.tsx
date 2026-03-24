@@ -42,6 +42,7 @@ export const SongCandidate: Story = {
           songId: "a3f9c2d1",
           titleKo: "아이돌/IDOL",
           titleInProvider: "アイドル/IDOL",
+          artistKo: "요아소비",
           artistInProvider: "YOASOBI",
           karaokeTracks: [{ provider: "TJ", karaokeNo: "82548" }],
           isInTop100: true,
