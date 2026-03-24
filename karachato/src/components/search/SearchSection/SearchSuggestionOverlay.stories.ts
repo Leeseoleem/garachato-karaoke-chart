@@ -3,7 +3,7 @@ import SearchSuggestionOverlay from "./SearchSuggestionOverlay";
 
 const meta: Meta<typeof SearchSuggestionOverlay> = {
   component: SearchSuggestionOverlay,
-  title: "search/SearchSuggestionOverlay",
+  title: "Search/SearchSuggestionOverlay",
   tags: ["autodocs"],
 };
 

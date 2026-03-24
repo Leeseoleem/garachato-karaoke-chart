@@ -21,7 +21,7 @@ export default async function Home({
       : "TJ";
 
   return (
-    <main className="flex h-screen flex-col">
+    <main className="flex h-dvh flex-col">
       <ChartContainer provider={karaokeProvider} />
       <SettingModal />
     </main>

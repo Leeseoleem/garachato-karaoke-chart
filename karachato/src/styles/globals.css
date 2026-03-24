@@ -33,6 +33,15 @@
   --kara-ky-text: #7f77dd;
   --kara-ky-bg: #26215c;
 
+  /* 스켈레톤 전용 색상 */
+  /* gray-50 배경 위에 올라가는 스켈레톤 - 주 배경보다 약간 밝게 */
+  --skeleton-base: #1e1e24;
+  --skeleton-highlight: #28282f; /* animate-pulse 시 밝아지는 최대값 */
+
+  /* gray-30 배경(카드) 위에 올라가는 스켈레톤 - 카드 배경보다 약간 밝게 */
+  --skeleton-base-elevated: #2c2c34;
+  --skeleton-highlight-elevated: #36363f;
+
   /** Page Width */
   --max-width-page: 480px;
 }
@@ -69,6 +78,13 @@
   --color-kara-tj-bg: var(--kara-tj-bg);
   --color-kara-ky-text: var(--kara-ky-text);
   --color-kara-ky-bg: var(--kara-ky-bg);
+
+  /* Skeleton Colors */
+  --color-skeleton-base: var(--skeleton-base);
+  --color-skeleton-highlight: var(--skeleton-highlight);
+
+  --color-skeleton-base-elevated: var(--skeleton-base-elevated);
+  --color-skeleton-highlight-elevated: var(--skeleton-highlight-elevated);
 
   /** Page Width */
   --width-page: var(--max-width-page);
