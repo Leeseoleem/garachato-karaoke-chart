@@ -10,6 +10,8 @@ import type { Song } from "@/types/database";
 import { getToday } from "@/utils/date";
 import { normalize } from "@/utils/string";
 
+export const maxDuration = 600;
+
 // - CRON_SECRET: 랜덤 문자열 (터미널에서 `openssl rand -base64 32` 로 생성)
 export async function GET(request: Request) {
   // 배포 환경에서만 인증 검증
