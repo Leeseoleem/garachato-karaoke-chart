@@ -9,7 +9,7 @@ export function ChartListSkeleton() {
           0000-00-00 기준
         </span>
       </div>
-      <div className="flex flex-col bg-linear-to-b from-brand-dark to-gray-30 rounded-t-2xl">
+      <div className="flex flex-col bg-linear-to-b from-brand-dark to-gray-30 rounded-t-2xl overflow-y-hidden">
         <div className="flex flex-row h-13" />
         <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
           {Array.from({ length: 10 }).map((_, i) => (
