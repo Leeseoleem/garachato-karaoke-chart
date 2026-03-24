@@ -18,7 +18,7 @@ export default function SearchHeader({
   search,
 }: SearchHeaderProps) {
   return (
-    <Header className="gap-3 py-6">
+    <Header className="gap-3 py-6 h-16">
       {mode === "search" && (
         <div className="shrink-0">
           <BackButton />
