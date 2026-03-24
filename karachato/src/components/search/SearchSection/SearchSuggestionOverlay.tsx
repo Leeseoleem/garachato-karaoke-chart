@@ -10,7 +10,7 @@ export default function SearchSuggestionOverlay({
   if (!keywords) return null;
 
   return (
-    <div className="absolute top-16 inset-x-0 bottom-0 z-10">
+    <div className="absolute top-25 inset-x-0 bottom-0 z-10">
       {/* 오버레이 영역 */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
