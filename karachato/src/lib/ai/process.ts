@@ -60,7 +60,7 @@ export const processPendingSongs = async (): Promise<void> => {
         continue;
       }
 
-      // [수정 2] TJ 우선, 없으면 KY fallback
+      // TJ 우선, 없으면 KY fallback
       const primaryTrack = tracks.find((t) => t.provider === "TJ") ?? tracks[0];
 
       batchInputs.push({
@@ -95,23 +95,38 @@ export const processPendingSongs = async (): Promise<void> => {
         continue;
       }
 
-      // [수정 3] track 업데이트 먼저, 성공 후 song 확정
+      // 불일치 트랙 수집 후 배치 번역
+      const unmatchedTracks = input.allTracks.filter(
+        (t) =>
+          t.title_in_provider !== input.title ||
+          t.artist_in_provider !== input.artist,
+      );
+
+      const unmatchedResults =
+        unmatchedTracks.length > 0
+          ? await translateSongBatch(
+              unmatchedTracks.map((t, idx) => ({
+                index: idx,
+                title: t.title_in_provider,
+                artist: t.artist_in_provider,
+                provider: t.provider as "TJ" | "KY",
+              })),
+            )
+          : [];
+
+      // track 업데이트 먼저, 성공 후 song 확정
       let allTracksUpdated = true;
 
       for (const track of input.allTracks) {
-        // [수정 1] title + artist 둘 다 같을 때만 결과 재사용
-        const trackResult =
+        const isMatched =
           track.title_in_provider === input.title &&
-          track.artist_in_provider === input.artist
-            ? result
-            : await translateSongBatch([
-                {
-                  index: 0,
-                  title: track.title_in_provider,
-                  artist: track.artist_in_provider,
-                  provider: track.provider as "TJ" | "KY",
-                },
-              ]).then((r) => r[0]);
+          track.artist_in_provider === input.artist;
+
+        const trackResult = isMatched
+          ? result
+          : unmatchedResults[
+              unmatchedTracks.findIndex((t) => t.id === track.id)
+            ];
 
         if (!trackResult) {
           console.error(
@@ -139,7 +154,6 @@ export const processPendingSongs = async (): Promise<void> => {
         }
       }
 
-      // track 업데이트가 모두 완료된 경우에만 song 확정
       if (!allTracksUpdated) {
         console.error(
           `[processPendingSongs] 일부 트랙 업데이트 실패로 song 확정 스킵 - song_id: ${input.songId}`,
@@ -280,23 +294,38 @@ export const processArtistKo = async (): Promise<void> => {
         continue;
       }
 
-      // [수정 3] track 업데이트 먼저, 성공 후 song 확정
+      // 불일치 트랙 수집 후 배치 번역
+      const unmatchedTracks = input.allTracks.filter(
+        (t) =>
+          t.title_in_provider !== input.title ||
+          t.artist_in_provider !== input.artist,
+      );
+
+      const unmatchedResults =
+        unmatchedTracks.length > 0
+          ? await translateSongBatch(
+              unmatchedTracks.map((t, idx) => ({
+                index: idx,
+                title: t.title_in_provider,
+                artist: t.artist_in_provider,
+                provider: t.provider as "TJ" | "KY",
+              })),
+            )
+          : [];
+
+      // track 업데이트 먼저, 성공 후 song 확정
       let allTracksUpdated = true;
 
       for (const track of input.allTracks) {
-        // [수정 1] title + artist 둘 다 같을 때만 결과 재사용
-        const trackResult =
+        const isMatched =
           track.title_in_provider === input.title &&
-          track.artist_in_provider === input.artist
-            ? result
-            : await translateSongBatch([
-                {
-                  index: 0,
-                  title: track.title_in_provider,
-                  artist: track.artist_in_provider,
-                  provider: track.provider as "TJ" | "KY",
-                },
-              ]).then((r) => r[0]);
+          track.artist_in_provider === input.artist;
+
+        const trackResult = isMatched
+          ? result
+          : unmatchedResults[
+              unmatchedTracks.findIndex((t) => t.id === track.id)
+            ];
 
         if (!trackResult) {
           console.error(
@@ -320,7 +349,6 @@ export const processArtistKo = async (): Promise<void> => {
         }
       }
 
-      // track 업데이트가 모두 완료된 경우에만 song 확정
       if (!allTracksUpdated) {
         console.error(
           `[processArtistKo] 일부 트랙 업데이트 실패로 song 확정 스킵 - song_id: ${input.songId}`,
