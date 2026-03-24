@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { fetchTJJpopChart } from "@/lib/crawlers/tj";
-import { processPendingSongs } from "@/lib/ai/process";
+import { processPendingSongs, processArtistKo } from "@/lib/ai/process";
 import { processPendingYoutube } from "@/lib/youtube/process";
 
 // == types ===
@@ -195,7 +195,10 @@ export async function GET(request: Request) {
     // STEP 5. AI 번역 처리
     await processPendingSongs();
 
-    // STEP 6. 유튜브 썸네일 처리
+    // STEP 6. 가수명 번역 재처리 (artist_ko 누락 곡)
+    await processArtistKo();
+
+    // STEP 7. 유튜브 썸네일 처리
     await processPendingYoutube();
 
     return Response.json({
