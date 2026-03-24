@@ -46,6 +46,7 @@ const isValidTranslateResult = (value: unknown): value is TranslateResult => {
     typeof item.title_ko === "string" &&
     typeof item.title_ko_jp === "string" &&
     typeof item.title_ko_full === "string" &&
+    typeof item.artist_ko === "string" &&
     typeof item.description === "string" &&
     typeof item.ai_category === "string" &&
     VALID_CATEGORIES.has(item.ai_category as AiCategory) &&
@@ -86,6 +87,7 @@ export const buildTranslatePrompt = (
   "title_ko": "한글로 번역한 제목. 영어가 포함된 경우 영어는 그대로 유지",
   "title_ko_jp": "일본어 부분만 한글로 번역, 영어는 원문 유지. 예: アイドル/IDOL → 아이돌/IDOL",
   "title_ko_full": "일본어와 영어 모두 한글로 번역. 예: アイドル/IDOL → 아이돌/아이돌",
+  "artist_ko": "가수명을 한글로 번역. 일본어만 번역, 영어는 원문 유지. 예: 米津玄師 → 요네즈 켄시, YOASOBI → YOASOBI",
   "description": "이 곡의 분위기, 장르, 특징을 한국어로 2~3문장으로 설명",
   "ai_category": "아래 5개 중 하나만 선택: 애니메이션 OST | 극장판 OST | 게임 OST | 보컬로이드 | J-POP",
   "ai_traits": ["아래 허용값 중 해당하는 것만 포함. 없으면 빈 배열"],
@@ -107,6 +109,8 @@ export const buildTranslatePrompt = (
 - 영어 번역 규칙: 영어는 직역하지 않고 한국어 발음 표기를 우선으로 하세요
   예: Stay With Me → 스테이 위드 미, Jane Doe → 제인 도
   단, OST / OP / ED / TV / ver / feat 등 음악·방송 관련 약어는 번역하지 않고 원문 그대로 유지하세요
+- artist_ko: 일본어 가수명만 한글 발음으로 표기, 영어 이름은 원문 유지
+  예: 米津玄師 → 요네즈 켄시, 宇多田ヒカル → 우타다 히카루, YOASOBI → YOASOBI
 - ai_category: 반드시 5개 중 하나. 보컬로이드 곡은 J-POP이 아닌 보컬로이드로 분류
 - ai_traits 허용값: 역주행 | 바이럴 | 최신곡 | 예전곡 | 커버곡 (이 외의 값은 절대 사용 금지)
 - ai_genres: 3개 이내
@@ -137,6 +141,7 @@ ${songList}
     "title_ko": "한글로 번역한 제목. 영어가 포함된 경우 영어는 그대로 유지",
     "title_ko_jp": "일본어 부분만 한글로 번역, 영어는 원문 유지. 예: アイドル/IDOL → 아이돌/IDOL",
     "title_ko_full": "일본어와 영어 모두 한글로 번역. 예: アイドル/IDOL → 아이돌/아이돌",
+    "artist_ko": "가수명을 한글로 번역. 일본어만 번역, 영어는 원문 유지. 예: 米津玄師 → 요네즈 켄시, YOASOBI → YOASOBI",
     "description": "이 곡의 분위기, 장르, 특징을 한국어로 2~3문장으로 설명",
     "ai_category": "아래 5개 중 하나만 선택: 애니메이션 OST | 극장판 OST | 게임 OST | 보컬로이드 | J-POP",
     "ai_traits": ["허용값 중 해당하는 것만. 없으면 빈 배열"],
@@ -161,6 +166,8 @@ ${songList}
 - 영어 번역 규칙: 영어는 직역하지 않고 한국어 발음 표기를 우선으로 하세요
   예: Stay With Me → 스테이 위드 미, Jane Doe → 제인 도
   단, OST / OP / ED / TV / ver / feat 등 음악·방송 관련 약어는 번역하지 않고 원문 그대로 유지하세요
+- artist_ko: 일본어 가수명만 한글 발음으로 표기, 영어 이름은 원문 유지
+  예: 米津玄師 → 요네즈 켄시, 宇多田ヒカル → 우타다 히카루, YOASOBI → YOASOBI
 - ai_category: 반드시 5개 중 하나. 보컬로이드 곡은 J-POP이 아닌 보컬로이드로 분류
 - ai_traits 허용값: 역주행 | 바이럴 | 최신곡 | 예전곡 | 커버곡 (이 외의 값은 절대 사용 금지)
 - ai_genres: 3개 이내
