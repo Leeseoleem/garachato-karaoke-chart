@@ -56,7 +56,8 @@ export default function SongCard({
             </p>
           </div>
           <p className="typo-caption text-content-secondary truncate">
-            {artistInProvider} {artistKo && ` / ${artistKo}`}
+            {artistInProvider}
+            {artistKo && ` / ${artistKo}`}
           </p>
         </div>
 
