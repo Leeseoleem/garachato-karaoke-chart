@@ -28,6 +28,7 @@ const baseArgs = {
     titleKoJp: "아이돌/IDOL",
     titleKoFull: "아이돌/아이돌",
     artistInProvider: "YOASOBI",
+    artistKo: "요아소비",
   },
   action: {
     karaokeNo: "82548",
