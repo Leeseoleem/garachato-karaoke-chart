@@ -73,7 +73,9 @@ export default function RankCard({
             {song.artistKo && (
               <p className="typo-caption text-content-primary">{artistMain}</p>
             )}
-            <p className="typo-caption text-content-secondary">{artistSub}</p>
+            {artistSub && (
+              <p className="typo-caption text-content-secondary">{artistSub}</p>
+            )}
           </div>
         </div>
       </div>
