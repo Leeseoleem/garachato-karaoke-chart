@@ -15,21 +15,29 @@ const MOCK_KEYWORDS = [
 export default function SearchSection() {
   const [searchText, setSearchText] = useState<string>("");
   const [isFocused, setIsFocused] = useState(false);
-  const [fetchedKeywords, setFetchedKeywords] = useState<string[] | undefined>(
-    undefined,
-  );
+  const [fetchResult, setFetchResult] = useState<
+    | {
+        query: string;
+        keywords: string[];
+      }
+    | undefined
+  >(undefined);
 
-  const keywords = searchText ? fetchedKeywords : undefined;
+  // 현재 searchText와 결과를 가져온 쿼리가 일치할 때만 표시
+  const keywords =
+    searchText && fetchResult?.query === searchText
+      ? fetchResult.keywords
+      : undefined;
 
   useEffect(() => {
     if (!searchText) return;
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       // TODO: feat/search-api — Server Action 또는 route handler로 Supabase 검색 연동
-      // const res = await fetch(`/api/search?q=${encodeURIComponent(searchText)}`);
-      // const data = await res.json();
-      // setFetchedKeywords(data.keywords);
-      setFetchedKeywords(MOCK_KEYWORDS.filter((k) => k.includes(searchText)));
+      setFetchResult({
+        query: searchText,
+        keywords: MOCK_KEYWORDS.filter((k) => k.includes(searchText)),
+      });
     }, 300);
 
     return () => clearTimeout(timer);
