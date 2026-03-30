@@ -6,25 +6,23 @@ import type { KaraokeProvider } from "@/types/domain";
 
 interface SongKaraokeNumberProps {
   provider: KaraokeProvider;
-  karaokeNo?: number;
-  onCopy?: (karaokeNo: number) => void;
+  karaokeNo?: string;
 }
 
 export default function SongKaraokeNumber({
   provider,
   karaokeNo,
-  onCopy,
 }: SongKaraokeNumberProps) {
   const isDisabled = !karaokeNo;
 
   return (
     <div
       className={clsx(
-        "flex flex-row justify-between items-center px-4 py-3 rounded-lg border border-gray-20 bg-gray-30",
+        "flex flex-row w-full justify-between items-center px-2 py-1.5 md:px-3 md:py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-20 bg-gray-30",
         isDisabled && "opacity-40",
       )}
     >
-      <div className="flex flex-row items-center gap-1">
+      <div className="flex flex-row items-center gap-3">
         <p
           className={clsx(
             "typo-body px-2 py-1 rounded-sm",
@@ -35,16 +33,16 @@ export default function SongKaraokeNumber({
         >
           {provider}
         </p>
-        <p className="typo-title-02 text-gray-white">{karaokeNo ?? "-"}</p>
+        <p className="typo-subtitle text-gray-white">{karaokeNo ?? "-"}</p>
       </div>
       <button
         type="button"
         aria-label={`${provider} 번호 복사`}
         disabled={isDisabled}
-        onClick={() => karaokeNo && onCopy?.(karaokeNo)}
+        onClick={() => karaokeNo && navigator.clipboard.writeText(karaokeNo)}
         className="disabled:cursor-not-allowed hover:opacity-70 active:opacity-50 transition-opacity"
       >
-        <Copy color="text-content-primary" />
+        <Copy color="#ffffff" size={16} />
       </button>
     </div>
   );
