@@ -20,7 +20,7 @@ import {
   TJ_CHART_API_URL,
   USER_AGENT,
 } from "@/constants/api";
-import { getToday, getFirstDayOfMonth } from "@/utils/date";
+import { getToday, getTJStartDate } from "@/utils/date";
 
 // fetch 요청 timeout 시간 (10초)
 // TJ 서버가 응답하지 않을 때 무한 대기를 방지
@@ -132,7 +132,7 @@ export async function fetchTJJpopChart(): Promise<TJSong[]> {
     },
     body: new URLSearchParams({
       chartType: "TOP",
-      searchStartDate: getFirstDayOfMonth(),
+      searchStartDate: getTJStartDate(),
       searchEndDate: today,
       strType: "3", // 장르 코드. 3 = JPOP
     }),
