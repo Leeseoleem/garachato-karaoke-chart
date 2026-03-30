@@ -4,10 +4,7 @@ import clsx from "clsx";
 import { Play } from "lucide-react";
 
 export default function YoutubeButton({ url }: { url?: string }) {
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 부모 Link로 이벤트 전파 차단
-    e.preventDefault(); // Link 내부에 있을 경우 추가
-
+  const handleClick = () => {
     if (!url) return;
     window.open(url, "_blank", "noopener,noreferrer");
   };
