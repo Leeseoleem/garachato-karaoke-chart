@@ -55,12 +55,12 @@ export const MOCK_SEARCH_RESULTS: SearchResult[] = [
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q: string }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
   return (
     <div className="flex flex-col h-dvh min-h-0">
-      <SearchView initialQuery={q} />
+      <SearchView initialQuery={q ?? ""} />
       <SearchResultSection results={MOCK_SEARCH_RESULTS} />
     </div>
   );
