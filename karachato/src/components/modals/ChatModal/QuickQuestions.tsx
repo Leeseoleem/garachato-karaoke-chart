@@ -34,7 +34,7 @@ export default function QuickQuestions({ onSelect }: QuickQuestionsProps) {
   ];
 
   return (
-    <div className="flex flex-col gap-2 items-end">
+    <div className="flex flex-col gap-2 items-end p-5">
       {questions.map((question) => (
         <button
           type="button"
