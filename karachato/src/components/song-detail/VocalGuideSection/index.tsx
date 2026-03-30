@@ -21,7 +21,7 @@ export default function VocalGuideSection({
   return (
     <div className="flex flex-col items-start px-4 py-5 gap-3 border gradient-border rounded-xl">
       <div className="flex flex-col items-start gap-2 w-full">
-        <div className="flex items-center justify-center px-[14px] py-[6px] bg-brand-dark border border-brand-light rounded-3xl">
+        <div className="flex items-center justify-center px-3.5 py-1.5 bg-brand-dark border border-brand-light rounded-3xl">
           <p className="typo-description text-brand-light">✦ AI 분석</p>
         </div>
         <div className="flex flex-col items-start gap-3 w-full">
@@ -35,7 +35,7 @@ export default function VocalGuideSection({
         </div>
       </div>
       {tip && (
-        <div className="flex flex-col items-start gap-3 w-full flex-wrap">
+        <div className="flex flex-col items-start gap-3 w-full">
           <Divider className="bg-brand-main" />
           <KaraokeTipItem tip={tip} />
         </div>
