@@ -98,6 +98,11 @@ export async function GET(request: Request) {
               .eq("title_norm", titleNorm)
               .eq("artist_norm", artistNorm)
               .single();
+
+            if (!conflicted) {
+              console.error(`[crawl] 23505 후 songs 조회 실패: ${song.title}`);
+              return;
+            }
             songId = conflicted!.id;
           } else if (insertError) {
             console.error(
