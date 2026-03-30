@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { Copy } from "lucide-react";
+import toast from "react-hot-toast";
 import type { KaraokeProvider } from "@/types/domain";
 
 interface SongKaraokeNumberProps {
@@ -39,7 +40,21 @@ export default function SongKaraokeNumber({
         type="button"
         aria-label={`${provider} 번호 복사`}
         disabled={isDisabled}
-        onClick={() => karaokeNo && navigator.clipboard.writeText(karaokeNo)}
+        onClick={() => {
+          if (!karaokeNo) return;
+          navigator.clipboard.writeText(karaokeNo);
+          toast("노래방 번호가 복사되었습니다.", {
+            position: "bottom-center",
+            style: {
+              fontFamily:
+                "Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif",
+              borderRadius: "20px",
+              background: "#333",
+              color: "#fff",
+              fontSize: "14px",
+            },
+          });
+        }}
         className="disabled:cursor-not-allowed disabled:pointer-events-none hover:opacity-70 active:opacity-50 transition-opacity"
       >
         <Copy color="#ffffff" size={16} />
