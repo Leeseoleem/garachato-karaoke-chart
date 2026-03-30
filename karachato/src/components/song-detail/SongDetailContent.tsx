@@ -7,12 +7,9 @@ import SongKaraokeNumber from "./SongKaraokeNumber";
 import SongInfoSection from "./SongInfoSection";
 import VocalGuideSection from "./VocalGuideSection";
 
-export default function SongDetailContent({
-  track,
-}: {
-  track: SongDetailRow;
-}) {
-  const { songs, ...trackInfo } = track.karaoke_tracks;
+export default function SongDetailContent({ track }: { track: SongDetailRow }) {
+  const { songs, rank_history, ...trackInfo } = track;
+  const latestRank = rank_history?.[0];
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -31,14 +28,16 @@ export default function SongDetailContent({
         </div>
         <SongInfoSection
           rankInfo={{
-            currentRank: track.rank,
-            currentStatus: track.delta_status as DeltaStatus,
+            currentRank: latestRank?.rank ?? null,
+            currentStatus: (latestRank?.delta_status ??
+              "UNKNOWN") as DeltaStatus,
             previousRank:
-              track.delta_value !== null
-                ? track.rank +
-                  (track.delta_status === "UP"
-                    ? track.delta_value
-                    : -track.delta_value)
+              latestRank?.delta_value !== null &&
+              latestRank?.delta_value !== undefined
+                ? (latestRank.rank ?? 0) +
+                  (latestRank.delta_status === "UP"
+                    ? latestRank.delta_value
+                    : -latestRank.delta_value)
                 : null,
           }}
           description={songs.description ?? "곡에 대한 설명이 없습니다."}
