@@ -29,9 +29,15 @@ export default function SongDetailContent({
       </div>
       <SongInfoSection
         rankInfo={{
-          currentRank: 1,
-          currentStatus: "UP",
-          previousRank: 3,
+          currentRank: track.rank,
+          currentStatus: track.delta_status,
+          previousRank:
+            track.delta_value !== null
+              ? track.rank +
+                (track.delta_status === "UP"
+                  ? track.delta_value
+                  : -track.delta_value)
+              : null,
         }}
         description={songs.description ?? "곡에 대한 설명이 없습니다."}
         tags={[
