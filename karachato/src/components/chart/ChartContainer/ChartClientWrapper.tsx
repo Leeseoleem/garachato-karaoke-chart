@@ -1,5 +1,5 @@
 "use client";
-
+import { AnimatePresence, motion } from "framer-motion";
 // === component ===
 import KaraokeTabs from "../KaraokeTabs";
 import ChartHeader from "./ChartHeader";
@@ -21,7 +21,7 @@ export default function ChartClientWrapper({
   items,
   latestDate,
 }: ChartClientWrapperProps) {
-  const { scrollRef, isScrolled } = useScrollTop();
+  const { scrollRef, isScrolled, isBottom } = useScrollTop();
 
   const handleScrollToTop = () => {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -39,7 +39,20 @@ export default function ChartClientWrapper({
         <ChartHeader />
         <ChartScrollContainer ref={scrollRef} items={items} />
       </div>
-      <FloatingBar isScrolled={isScrolled} onScrollToTop={handleScrollToTop} />
+      <AnimatePresence>
+        {!isBottom && (
+          <motion.div
+            initial={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.1, ease: "easeInOut" }}
+          >
+            <FloatingBar
+              isScrolled={isScrolled}
+              onScrollToTop={handleScrollToTop}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
