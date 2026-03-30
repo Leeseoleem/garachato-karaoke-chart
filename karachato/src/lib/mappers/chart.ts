@@ -7,7 +7,7 @@ import type { DeltaStatus } from "@/types/domain";
  */
 
 export const toRankCardProps = (item: RankHistoryWithJoin): RankCardProps => ({
-  songId: String(item.karaoke_track_id),
+  songId: item.karaoke_tracks.songs.id,
   rank: {
     rank: item.rank,
     status: item.delta_status as DeltaStatus,
