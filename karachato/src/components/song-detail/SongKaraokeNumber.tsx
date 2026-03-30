@@ -40,7 +40,7 @@ export default function SongKaraokeNumber({
         aria-label={`${provider} 번호 복사`}
         disabled={isDisabled}
         onClick={() => karaokeNo && navigator.clipboard.writeText(karaokeNo)}
-        className="disabled:cursor-not-allowed hover:opacity-70 active:opacity-50 transition-opacity"
+        className="disabled:cursor-not-allowed disabled:pointer-events-none hover:opacity-70 active:opacity-50 transition-opacity"
       >
         <Copy color="#ffffff" size={16} />
       </button>
