@@ -35,7 +35,7 @@ export default function ChartClientWrapper({
         </span>
       </div>
       <KaraokeTabs />
-      <div className="flex h-full flex-1 flex-col bg-linear-to-b from-brand-dark to-gray-30 overflow-hidden">
+      <div className="flex flex-1 flex-col min-h-0 bg-linear-to-b from-brand-dark to-gray-30 overflow-hidden">
         <ChartHeader />
         <ChartScrollContainer ref={scrollRef} items={items} />
       </div>

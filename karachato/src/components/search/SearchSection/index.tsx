@@ -44,7 +44,7 @@ export default function SearchSection() {
   }, [searchText]);
 
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <SearchHeader
         mode="default"
         search={{

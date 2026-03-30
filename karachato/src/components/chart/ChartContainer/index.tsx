@@ -17,7 +17,7 @@ export default function ChartContainer({ provider }: ChartContainerProps) {
   const latestDate = "2026.03.18"; // 임시 하드코딩
 
   return (
-    <div className="flex h-full flex-1">
+    <div className="flex flex-1 min-h-0">
       <ChartClientWrapper latestDate={latestDate} items={MOCK_CHART_ITEMS} />
     </div>
   );
