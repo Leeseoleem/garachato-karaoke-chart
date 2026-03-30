@@ -54,5 +54,5 @@ export async function getSongByTrackId(
     throw new Error("Failed to fetch song detail");
   }
 
-  return data as SongDetailRow;
+  return data as unknown as SongDetailRow;
 }

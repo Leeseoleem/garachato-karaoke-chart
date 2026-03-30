@@ -12,9 +12,7 @@ export default function SongDetailContent({
 }: {
   track: SongDetailRow;
 }) {
-  const karaoke_track = track.karaoke_tracks[0];
-  const { songs: songsArr, ...trackInfo } = karaoke_track;
-  const songs = songsArr[0];
+  const { songs, ...trackInfo } = track.karaoke_tracks;
 
   return (
     <div className="flex-1 overflow-y-auto">

@@ -22,6 +22,7 @@ export async function getChartByProvider(provider: KaraokeProvider) {
     .from("rank_history")
     .select(
       `
+      karaoke_track_id,
       rank,
       delta_status,
       delta_value,
@@ -56,9 +57,5 @@ export async function getChartByProvider(provider: KaraokeProvider) {
     throw new Error("Failed to fetch chart data");
   }
 
-  const rows = ((data as ChartRow[]) ?? []).filter(
-    (item) => item.karaoke_tracks.length > 0,
-  );
-
-  return { items: rows, latestDate };
+  return { items: (data as unknown as ChartRow[]) ?? [], latestDate };
 }

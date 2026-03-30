@@ -13,15 +13,15 @@ export const toRankCardProps = (item: RankHistoryWithJoin): RankCardProps => ({
     status: item.delta_status as DeltaStatus,
   },
   song: {
-    titleInProvider: item.karaoke_tracks[0].title_in_provider,
-    titleKoJp: item.karaoke_tracks[0].title_ko_jp,
-    titleKoFull: item.karaoke_tracks[0].title_ko_full,
-    artistInProvider: item.karaoke_tracks[0].artist_in_provider,
-    artistKo: item.karaoke_tracks[0].artist_ko,
+    titleInProvider: item.karaoke_tracks.title_in_provider,
+    titleKoJp: item.karaoke_tracks.title_ko_jp,
+    titleKoFull: item.karaoke_tracks.title_ko_full,
+    artistInProvider: item.karaoke_tracks.artist_in_provider,
+    artistKo: item.karaoke_tracks.artist_ko,
   },
   action: {
-    karaokeNo: item.karaoke_tracks[0].karaoke_no,
-    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.karaoke_tracks[0].title_in_provider + " " + item.karaoke_tracks[0].artist_in_provider)}`,
+    karaokeNo: item.karaoke_tracks.karaoke_no,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.karaoke_tracks.title_in_provider + " " + item.karaoke_tracks.artist_in_provider)}`,
   },
 });
 

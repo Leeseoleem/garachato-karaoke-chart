@@ -77,7 +77,6 @@ export interface RankHistory {
 // Supabase 조인 결과 타입
 // ─────────────────────────────────────────
 export interface ChartRow {
-  id: number;
   karaoke_track_id: number;
   rank: number;
   delta_status: string;
@@ -99,8 +98,8 @@ export interface ChartRow {
       ai_category: string | null;
       ai_genres: string[] | null;
       ai_vibes: string[] | null;
-    }[];
-  }[];
+    };
+  };
 }
 
 export type RankHistoryWithJoin = ChartRow;
@@ -138,8 +137,8 @@ export interface SongDetailRow {
       ai_pronunciation_score: number | null;
       ai_pronunciation_reason: string | null;
       ai_karaoke_tip: string | null;
-    }[];
-  }[];
+    };
+  };
 }
 
 // ─────────────────────────────────────────
