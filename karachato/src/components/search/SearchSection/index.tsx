@@ -4,14 +4,6 @@ import { useState, useEffect } from "react";
 import SearchHeader from "@/components/common/headers/SearchHeader";
 import SearchSuggestionOverlay from "./SearchSuggestionOverlay";
 
-const MOCK_KEYWORDS = [
-  "체인소맨",
-  "米津玄師",
-  "YOASOBI",
-  "베텔기우스",
-  "시부야가와",
-];
-
 export default function SearchSection() {
   const [searchText, setSearchText] = useState<string>("");
   const [isFocused, setIsFocused] = useState(false);
@@ -32,11 +24,20 @@ export default function SearchSection() {
   useEffect(() => {
     if (!searchText) return;
 
-    const timer = setTimeout(() => {
-      // TODO: feat/search-api — Server Action 또는 route handler로 Supabase 검색 연동
+    const timer = setTimeout(async () => {
+      const res = await fetch(
+        `/api/search?q=${encodeURIComponent(searchText)}`,
+      );
+      const data = await res.json();
+
+      const keywords: string[] = (data.results ?? []).map(
+        (item: { title_ko_jp: string | null; title_in_provider: string }) =>
+          item.title_ko_jp ?? item.title_in_provider,
+      );
+
       setFetchResult({
         query: searchText,
-        keywords: MOCK_KEYWORDS.filter((k) => k.includes(searchText)),
+        keywords: [...new Set(keywords)], // 중복 제거
       });
     }, 300);
 
