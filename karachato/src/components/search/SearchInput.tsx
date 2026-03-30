@@ -35,6 +35,7 @@ export default function SearchInput({
         spellCheck={false}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
+            if (e.nativeEvent.isComposing) return;
             e.preventDefault();
             onSubmit?.();
           } else if (e.key === "Escape") {
