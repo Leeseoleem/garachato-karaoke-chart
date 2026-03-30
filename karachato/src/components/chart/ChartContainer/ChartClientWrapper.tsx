@@ -1,5 +1,5 @@
 "use client";
-
+import { AnimatePresence, motion } from "framer-motion";
 // === component ===
 import KaraokeTabs from "../KaraokeTabs";
 import ChartHeader from "./ChartHeader";
@@ -21,7 +21,7 @@ export default function ChartClientWrapper({
   items,
   latestDate,
 }: ChartClientWrapperProps) {
-  const { scrollRef, isScrolled } = useScrollTop();
+  const { scrollRef, isScrolled, isBottom } = useScrollTop();
 
   const handleScrollToTop = () => {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -34,12 +34,26 @@ export default function ChartClientWrapper({
           {latestDate} 기준
         </span>
       </div>
-      <KaraokeTabs />
-      <div className="flex h-full flex-1 flex-col bg-linear-to-b from-brand-dark to-gray-30 overflow-hidden">
+      <KaraokeTabs onScrollToTop={handleScrollToTop} />
+      <div className="flex flex-1 flex-col min-h-0 bg-linear-to-b from-brand-dark to-gray-30 overflow-hidden">
         <ChartHeader />
         <ChartScrollContainer ref={scrollRef} items={items} />
       </div>
-      <FloatingBar isScrolled={isScrolled} onScrollToTop={handleScrollToTop} />
+      <AnimatePresence>
+        {!isBottom && (
+          <motion.div
+            initial={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.1, ease: "easeInOut" }}
+          >
+            <FloatingBar
+              isScrolled={isScrolled}
+              onScrollToTop={handleScrollToTop}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

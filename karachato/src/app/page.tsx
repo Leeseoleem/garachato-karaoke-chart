@@ -1,6 +1,8 @@
 // === component ===
+import SearchSection from "@/components/search/SearchSection";
 import ChartContainer from "@/components/chart/ChartContainer";
 import SettingModal from "@/components/modals/SettingModal";
+import ChatModal from "@/components/modals/ChatModal";
 // === function ===
 import { isKaraokeProvider } from "@/utils/type";
 // === type ===
@@ -21,9 +23,11 @@ export default async function Home({
       : "TJ";
 
   return (
-    <main className="flex h-dvh flex-col">
+    <main className="flex h-dvh flex-col relative overflow-hidden">
+      <SearchSection />
       <ChartContainer provider={karaokeProvider} />
       <SettingModal />
+      <ChatModal />
     </main>
   );
 }

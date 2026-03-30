@@ -8,6 +8,7 @@ export interface SearchInputProps {
   maxLength?: number;
   onFocus?: () => void;
   onBlur?: () => void;
+  onSubmit?: () => void;
 }
 export default function SearchInput({
   value,
@@ -15,6 +16,7 @@ export default function SearchInput({
   maxLength,
   onFocus,
   onBlur,
+  onSubmit,
 }: SearchInputProps) {
   const textClass = "typo-body text-gray-white placeholder:text-brand-main/60";
   return (
@@ -31,6 +33,18 @@ export default function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            if (e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            onSubmit?.();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            onChange("");
+          } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+          }
+        }}
       />
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
         {value ? (

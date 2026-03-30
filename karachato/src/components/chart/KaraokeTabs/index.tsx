@@ -1,12 +1,10 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-
+import toast from "react-hot-toast";
 // === component ===
 import TabItem from "./TabItem";
-
 // === function ===
 import { isKaraokeProvider } from "@/utils/type";
-
 // === type ===
 import type { KaraokeProvider } from "@/types/domain";
 import type { Position } from "./TabItem";
@@ -16,7 +14,11 @@ const tabs: { label: string; value: KaraokeProvider; position: Position }[] = [
   { label: "금영", value: "KY", position: "right" },
 ];
 
-export default function KaraokeTabs() {
+export default function KaraokeTabs({
+  onScrollToTop,
+}: {
+  onScrollToTop: () => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const providerParam = searchParams.get("provider");
@@ -26,6 +28,12 @@ export default function KaraokeTabs() {
     providerParam && isKaraokeProvider(providerParam) ? providerParam : "TJ";
 
   const handleTabClick = (value: KaraokeProvider) => {
+    onScrollToTop();
+
+    if (value === "KY") {
+      toast("금영 노래방은 아직 준비중이에요!", { icon: "🚧" });
+      return;
+    }
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("provider", value);
     router.push(`?${nextParams.toString()}`);

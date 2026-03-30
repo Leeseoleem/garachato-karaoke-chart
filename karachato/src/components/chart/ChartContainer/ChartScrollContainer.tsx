@@ -3,10 +3,8 @@ import { forwardRef } from "react";
 
 // === component ===
 import RankCard from "../RankCard";
-
 // === function ===
 import { toRankCardPropsList } from "@/lib/mappers/chart";
-
 // === type ===
 import type { RankHistoryWithJoin } from "@/types/database";
 
@@ -16,7 +14,7 @@ const ChartScrollContainer = forwardRef<
 >(({ items }, ref) => {
   const mapperItems = toRankCardPropsList(items);
   return (
-    <div ref={ref} className="flex-1 overflow-y-auto">
+    <div ref={ref} className="flex-1 min-h-0 overflow-y-auto">
       {mapperItems.map((item) => (
         <RankCard key={item.songId} {...item} />
       ))}

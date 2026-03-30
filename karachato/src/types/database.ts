@@ -81,3 +81,18 @@ export interface RankHistoryWithJoin extends RankHistory {
     songs: Song;
   };
 }
+
+// ─────────────────────────────────────────
+// Supabase 검색 결과 타입
+// ─────────────────────────────────────────
+export type SearchResult = {
+  id: string;
+  title_ko: string | null;
+  artist_ko: string | null;
+  karaoke_tracks: {
+    karaoke_no: string;
+    provider: KaraokeProvider;
+    title_in_provider: string;
+    artist_in_provider: string;
+  }[];
+};

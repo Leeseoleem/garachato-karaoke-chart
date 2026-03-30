@@ -61,6 +61,7 @@ export default function SongHeroSection({
             alt={titleKo}
             fill
             className="object-cover"
+            priority
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full bg-gray-20">

@@ -49,11 +49,9 @@ export default function RankCard({
   const colClass = "flex flex-col items-start";
 
   return (
-    <Link
-      href={`/song/${songId}`}
-      className="flex flex-row justify-between items-center w-full px-5 pt-4 pb-3 border-b border-gray-30 hover:bg-gray-50/20 active:bg-gray-50/40 transition-colors duration-300"
-    >
-      <div className="flex flex-row gap-5 items-center justify-center">
+    <div className="relative flex flex-row justify-between items-center w-full px-5 pt-4 pb-3 border-b border-gray-30 hover:bg-gray-50/20 active:bg-gray-50/40 transition-colors duration-300">
+      <Link href={`/song/${songId}`} className="absolute inset-0 z-0" />
+      <div className="pointer-events-none flex flex-row gap-5 items-center justify-center">
         <RankColumn {...rank} />
         <div
           className={clsx(
@@ -79,7 +77,9 @@ export default function RankCard({
           </div>
         </div>
       </div>
-      <KaraokeAction {...action} />
-    </Link>
+      <div className="relative z-10">
+        <KaraokeAction {...action} />
+      </div>
+    </div>
   );
 }
