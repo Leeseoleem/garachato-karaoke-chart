@@ -1,5 +1,6 @@
 import type { RankHistoryWithJoin } from "@/types/database";
 import type { RankCardProps } from "@/components/chart/RankCard";
+import type { DeltaStatus } from "@/types/domain";
 
 /**
  * DB 조인 결과를 RankCard 컴포넌트 props 형태로 변환하는 매퍼 함수
@@ -9,7 +10,7 @@ export const toRankCardProps = (item: RankHistoryWithJoin): RankCardProps => ({
   songId: String(item.karaoke_track_id),
   rank: {
     rank: item.rank,
-    status: item.delta_status,
+    status: item.delta_status as DeltaStatus,
   },
   song: {
     titleInProvider: item.karaoke_tracks[0].title_in_provider,
