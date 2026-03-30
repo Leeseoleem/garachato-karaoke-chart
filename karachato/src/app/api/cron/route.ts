@@ -66,9 +66,7 @@ export async function GET(request: Request) {
       }
     }
 
-    let processedCount = 0;
-
-    await Promise.all(
+    const results = await Promise.all(
       songs.map(async (song) => {
         const titleNorm = normalize(song.title);
         const artistNorm = normalize(song.artist);
@@ -101,15 +99,15 @@ export async function GET(request: Request) {
 
             if (!conflicted) {
               console.error(`[crawl] 23505 후 songs 조회 실패: ${song.title}`);
-              return;
+              return false;
             }
-            songId = conflicted!.id;
+            songId = conflicted.id;
           } else if (insertError) {
             console.error(
               `[crawl] songs INSERT 실패: ${song.title}`,
               insertError,
             );
-            return;
+            return false;
           } else {
             songId = inserted.id;
           }
@@ -146,7 +144,7 @@ export async function GET(request: Request) {
               console.error(
                 `[crawl] karaoke_tracks id 조회 실패: ${song.title}`,
               );
-              return;
+              return false;
             }
             trackId = existingTrack.id;
           } else {
@@ -192,18 +190,27 @@ export async function GET(request: Request) {
             `[crawl] rank_history Upsert 실패: ${song.title}`,
             rankError,
           );
-        } else {
-          processedCount += 1;
+          return false;
         }
+
+        return true;
       }),
     );
 
-    return Response.json({
-      ok: true,
-      fetched: songs.length,
-      processed: processedCount,
-      date: today,
-    });
+    const processedCount = results.filter(Boolean).length;
+    const failedCount = results.filter((r) => !r).length;
+    const hasFailures = failedCount > 0;
+
+    return Response.json(
+      {
+        ok: !hasFailures,
+        fetched: songs.length,
+        processed: processedCount,
+        failed: failedCount,
+        date: today,
+      },
+      { status: hasFailures ? 500 : 200 },
+    );
   } catch (error) {
     return Response.json({ ok: false, error: String(error) }, { status: 500 });
   }
