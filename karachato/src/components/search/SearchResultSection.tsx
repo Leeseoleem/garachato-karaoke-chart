@@ -2,7 +2,6 @@
 import { useState } from "react";
 
 import type { SearchResult } from "@/types/database";
-import { KaraokeProvider } from "@/types/domain";
 
 import SearchResultItem from "./SearchResultItem";
 
@@ -29,23 +28,25 @@ export default function SearchResultSection({
         </label>
       </div>
       {results.map((result) => {
+        const firstTrack = result.karaoke_tracks[0];
+        if (!firstTrack) return null;
         return (
           <SearchResultItem
             key={result.id}
             title={
               isTranslated
                 ? (result.title_ko ??
-                  result.karaoke_tracks[0].title_in_provider)
-                : result.karaoke_tracks[0].title_in_provider
+                  firstTrack.title_in_provider)
+                : firstTrack.title_in_provider
             }
             artist={
               isTranslated
                 ? (result.artist_ko ??
-                  result.karaoke_tracks[0].artist_in_provider)
-                : result.karaoke_tracks[0].artist_in_provider
+                  firstTrack.artist_in_provider)
+                : firstTrack.artist_in_provider
             }
             tracks={result.karaoke_tracks.map((track) => ({
-              provider: track.provider as KaraokeProvider,
+              provider: track.provider,
               karaokeNo: track.karaoke_no,
             }))}
             songId={result.id}
