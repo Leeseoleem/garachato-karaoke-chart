@@ -41,142 +41,157 @@ export async function GET(request: Request) {
       }
     }
 
-    let processedCount = 0;
+    // STEP 2. songs 전체 조회 → Map으로 만들어두기
+    const { data: existingSongs } = await supabase
+      .from("songs")
+      .select("id, title_norm, artist_norm");
 
-    for (const song of songs) {
-      const titleNorm = normalize(song.title);
-      const artistNorm = normalize(song.artist);
-
-      // STEP 2. songs upsert
-      const { data: existing, error: existingError } = await supabase
-        .from("songs")
-        .select("id")
-        .eq("title_norm", titleNorm)
-        .eq("artist_norm", artistNorm)
-        .maybeSingle();
-
-      if (existingError) {
-        console.error(
-          `[crawl] songs SELECT 실패: ${song.title}`,
-          existingError,
-        );
-        continue;
-      }
-
-      let songId: Song["id"];
-
-      if (existing) {
-        songId = existing.id;
-      } else {
-        const { data: inserted, error: insertError } = await supabase
-          .from("songs")
-          .insert({
-            title_norm: titleNorm,
-            artist_norm: artistNorm,
-            ai_status: "pending",
-            youtube_status: "pending",
-            thumbnail_url: song.imgthumb_path,
-            thumbnail_source: "TJ",
-          })
-          .select("id")
-          .single();
-
-        if (insertError?.code === "23505") {
-          const { data: conflicted } = await supabase
-            .from("songs")
-            .select("id")
-            .eq("title_norm", titleNorm)
-            .eq("artist_norm", artistNorm)
-            .single();
-          songId = conflicted!.id;
-        } else if (insertError) {
-          console.error(
-            `[crawl] songs INSERT 실패: ${song.title}`,
-            insertError,
-          );
-          continue;
-        } else {
-          songId = inserted.id;
-        }
-      }
-
-      // STEP 3. karaoke_tracks upsert
-      const { data: track, error: trackError } = await supabase
-        .from("karaoke_tracks")
-        .upsert(
-          {
-            song_id: songId,
-            provider: "TJ",
-            karaoke_no: song.karaoke_no,
-            title_in_provider: song.title,
-            artist_in_provider: song.artist,
-          },
-          { onConflict: "provider,karaoke_no" },
-        )
-        .select("id")
-        .single();
-
-      let trackId: number | undefined = track?.id;
-
-      if (trackError || !trackId) {
-        const { data: existingTrack, error: existingTrackError } =
-          await supabase
-            .from("karaoke_tracks")
-            .select("id")
-            .eq("provider", "TJ")
-            .eq("karaoke_no", song.karaoke_no)
-            .single();
-
-        if (existingTrackError || !existingTrack) {
-          console.error(`[crawl] karaoke_tracks id 조회 실패: ${song.title}`);
-          continue;
-        }
-
-        trackId = existingTrack.id;
-      }
-
-      // STEP 4. delta 계산
-      const prevRank = prevRankMap.get(trackId!);
-      let deltaStatus: "NEW" | "UP" | "DOWN" | "SAME" | "UNKNOWN";
-      let deltaValue: number | null = null;
-
-      if (prevRank === undefined) {
-        deltaStatus = prevRankMap.size === 0 ? "UNKNOWN" : "NEW";
-      } else if (prevRank === song.rank) {
-        deltaStatus = "SAME";
-        deltaValue = 0;
-      } else if (prevRank > song.rank) {
-        deltaStatus = "UP";
-        deltaValue = prevRank - song.rank;
-      } else {
-        deltaStatus = "DOWN";
-        deltaValue = prevRank - song.rank;
-      }
-
-      // STEP 5. rank_history upsert
-      const { error: rankError } = await supabase.from("rank_history").upsert(
-        {
-          karaoke_track_id: trackId,
-          chart_date: today,
-          rank: song.rank,
-          delta_status: deltaStatus,
-          delta_value: deltaValue,
-        },
-        {
-          onConflict: "karaoke_track_id,chart_date",
-          ignoreDuplicates: true,
-        },
-      );
-
-      if (rankError) {
-        console.error(
-          `[crawl] rank_history Upsert 실패: ${song.title}`,
-          rankError,
-        );
-      } else {
-        processedCount += 1;
+    const songMap = new Map<string, Song["id"]>();
+    if (existingSongs) {
+      for (const s of existingSongs) {
+        songMap.set(`${s.title_norm}__${s.artist_norm}`, s.id);
       }
     }
+
+    // STEP 3. karaoke_tracks 전체 조회 → Map으로 만들어두기
+    const { data: existingTracks } = await supabase
+      .from("karaoke_tracks")
+      .select("id, karaoke_no")
+      .eq("provider", "TJ");
+
+    const trackMap = new Map<string, number>();
+    if (existingTracks) {
+      for (const t of existingTracks) {
+        trackMap.set(t.karaoke_no, t.id);
+      }
+    }
+
+    let processedCount = 0;
+
+    await Promise.all(
+      songs.map(async (song) => {
+        const titleNorm = normalize(song.title);
+        const artistNorm = normalize(song.artist);
+        const songKey = `${titleNorm}__${artistNorm}`;
+
+        // songs upsert
+        let songId = songMap.get(songKey);
+
+        if (!songId) {
+          const { data: inserted, error: insertError } = await supabase
+            .from("songs")
+            .insert({
+              title_norm: titleNorm,
+              artist_norm: artistNorm,
+              ai_status: "pending",
+              youtube_status: "pending",
+              thumbnail_url: song.imgthumb_path,
+              thumbnail_source: "TJ",
+            })
+            .select("id")
+            .single();
+
+          if (insertError?.code === "23505") {
+            const { data: conflicted } = await supabase
+              .from("songs")
+              .select("id")
+              .eq("title_norm", titleNorm)
+              .eq("artist_norm", artistNorm)
+              .single();
+            songId = conflicted!.id;
+          } else if (insertError) {
+            console.error(
+              `[crawl] songs INSERT 실패: ${song.title}`,
+              insertError,
+            );
+            return;
+          } else {
+            songId = inserted.id;
+          }
+        }
+
+        // karaoke_tracks upsert
+        let trackId = trackMap.get(song.karaoke_no);
+
+        if (!trackId) {
+          const { data: track, error: trackError } = await supabase
+            .from("karaoke_tracks")
+            .upsert(
+              {
+                song_id: songId,
+                provider: "TJ",
+                karaoke_no: song.karaoke_no,
+                title_in_provider: song.title,
+                artist_in_provider: song.artist,
+              },
+              { onConflict: "provider,karaoke_no" },
+            )
+            .select("id")
+            .single();
+
+          if (trackError || !track) {
+            const { data: existingTrack } = await supabase
+              .from("karaoke_tracks")
+              .select("id")
+              .eq("provider", "TJ")
+              .eq("karaoke_no", song.karaoke_no)
+              .single();
+
+            if (!existingTrack) {
+              console.error(
+                `[crawl] karaoke_tracks id 조회 실패: ${song.title}`,
+              );
+              return;
+            }
+            trackId = existingTrack.id;
+          } else {
+            trackId = track.id;
+          }
+        }
+
+        // delta 계산
+        const prevRank = prevRankMap.get(trackId!);
+        let deltaStatus: "NEW" | "UP" | "DOWN" | "SAME" | "UNKNOWN";
+        let deltaValue: number | null = null;
+
+        if (prevRank === undefined) {
+          deltaStatus = prevRankMap.size === 0 ? "UNKNOWN" : "NEW";
+        } else if (prevRank === song.rank) {
+          deltaStatus = "SAME";
+          deltaValue = 0;
+        } else if (prevRank > song.rank) {
+          deltaStatus = "UP";
+          deltaValue = prevRank - song.rank;
+        } else {
+          deltaStatus = "DOWN";
+          deltaValue = prevRank - song.rank;
+        }
+
+        // rank_history upsert
+        const { error: rankError } = await supabase.from("rank_history").upsert(
+          {
+            karaoke_track_id: trackId,
+            chart_date: today,
+            rank: song.rank,
+            delta_status: deltaStatus,
+            delta_value: deltaValue,
+          },
+          {
+            onConflict: "karaoke_track_id,chart_date",
+            ignoreDuplicates: true,
+          },
+        );
+
+        if (rankError) {
+          console.error(
+            `[crawl] rank_history Upsert 실패: ${song.title}`,
+            rankError,
+          );
+        } else {
+          processedCount += 1;
+        }
+      }),
+    );
 
     return Response.json({
       ok: true,
