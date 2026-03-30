@@ -6,7 +6,7 @@ import type { RankCardProps } from "@/components/chart/RankCard";
  */
 
 export const toRankCardProps = (item: RankHistoryWithJoin): RankCardProps => ({
-  songId: item.karaoke_tracks.songs.id,
+  songId: String(item.karaoke_track_id),
   rank: {
     rank: item.rank,
     status: item.delta_status,
