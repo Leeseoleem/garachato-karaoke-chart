@@ -7,45 +7,45 @@ export async function getSongByTrackId(
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from("rank_history")
+    .from("karaoke_tracks")
     .select(
       `
-      rank,
-      delta_status,
-      delta_value,
-      chart_date,
-      karaoke_tracks!inner (
+      id,
+      karaoke_no,
+      title_in_provider,
+      artist_in_provider,
+      title_ko_jp,
+      title_ko_full,
+      artist_ko,
+      provider,
+      songs!inner (
         id,
-        karaoke_no,
-        title_in_provider,
-        artist_in_provider,
-        title_ko_jp,
-        title_ko_full,
+        title_ko,
         artist_ko,
-        provider,
-        songs!inner (
-          id,
-          title_ko,
-          artist_ko,
-          thumbnail_url,
-          youtube_video_id,
-          description,
-          ai_category,
-          ai_traits,
-          ai_genres,
-          ai_vibes,
-          ai_vocal_score,
-          ai_vocal_reason,
-          ai_pronunciation_score,
-          ai_pronunciation_reason,
-          ai_karaoke_tip
-        )
+        thumbnail_url,
+        youtube_video_id,
+        description,
+        ai_category,
+        ai_traits,
+        ai_genres,
+        ai_vibes,
+        ai_vocal_score,
+        ai_vocal_reason,
+        ai_pronunciation_score,
+        ai_pronunciation_reason,
+        ai_karaoke_tip
+      ),
+      rank_history (
+        rank,
+        delta_status,
+        delta_value,
+        chart_date
       )
     `,
     )
-    .eq("karaoke_track_id", karaokeTrackId)
-    .order("chart_date", { ascending: false })
-    .limit(1)
+    .eq("id", karaokeTrackId)
+    .order("chart_date", { ascending: false, referencedTable: "rank_history" })
+    .limit(1, { referencedTable: "rank_history" })
     .single();
 
   if (error) {
