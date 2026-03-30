@@ -24,8 +24,18 @@ export function getToday(timeZone: string = CHART_TIME_ZONE): string {
   return formatDateInTimeZone(new Date(), timeZone);
 }
 
-// 이번 달 1일 반환. 예: "2026-03-01"
-export function getFirstDayOfMonth(timeZone: string = CHART_TIME_ZONE): string {
+// TJ 크롤링 시작 날짜 반환
+// 오늘이 1일이면 전달 마지막 날, 아니면 이번 달 1일
+export function getTJStartDate(timeZone: string = CHART_TIME_ZONE): string {
   const today = formatDateInTimeZone(new Date(), timeZone);
+  const day = today.slice(8, 10); // DD
+
+  if (day === "01") {
+    // 전달 마지막 날
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+    return formatDateInTimeZone(lastDay, timeZone);
+  }
+
   return `${today.slice(0, 7)}-01`;
 }

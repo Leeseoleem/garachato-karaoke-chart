@@ -1,13 +1,12 @@
 {
   "crons": [
-    {
-      "path": "/api/cron",
-      "schedule": "0 18 * * *"
-    }
+    { "path": "/api/cron", "schedule": "0 18 * * *" },
+    { "path": "/api/cron-ai", "schedule": "10 18 * * *" },
+    { "path": "/api/cron-youtube", "schedule": "20 18 * * *" }
   ],
   "functions": {
-    "app/api/cron/route.ts": {
-      "maxDuration": 60
-    }
+    "src/app/api/cron/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron-ai/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron-youtube/route.ts": { "maxDuration": 60 }
   }
 }
