@@ -1,30 +1,16 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { fetchTJJpopChart } from "@/lib/crawlers/tj";
-import { processPendingSongs, processArtistKo } from "@/lib/ai/process";
-import { processPendingYoutube } from "@/lib/youtube/process";
-
-// == types ===
 import type { Song } from "@/types/database";
 
-// === utils ===
+import { checkAuth } from "@/utils/auth";
 import { getToday } from "@/utils/date";
 import { normalize } from "@/utils/string";
 
 export const maxDuration = 60;
 
-// - CRON_SECRET: 랜덤 문자열 (터미널에서 `openssl rand -base64 32` 로 생성)
 export async function GET(request: Request) {
-  // 배포 환경에서만 인증 검증
-  // CRON_SECRET이 설정된 환경(Vercel)에서만 체크
-  // 로컬은 CRON_SECRET이 없으니까 자동으로 통과
-  if (process.env.CRON_SECRET) {
-    const authorization = request.headers.get("authorization");
-    if (authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-      return Response.json(
-        { ok: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+  if (!checkAuth(request)) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -33,7 +19,6 @@ export async function GET(request: Request) {
     const songs = await fetchTJJpopChart();
 
     // STEP 1. 직전 크롤링 날짜 조회 후 해당 날짜 rank_history 전체를 Map으로 만들어두기
-    // (karaoke_track_id → rank)
     const { data: latestDateRow } = await supabase
       .from("rank_history")
       .select("chart_date")
@@ -62,12 +47,13 @@ export async function GET(request: Request) {
       const titleNorm = normalize(song.title);
       const artistNorm = normalize(song.artist);
 
+      // STEP 2. songs upsert
       const { data: existing, error: existingError } = await supabase
-        .from("songs") // songs 테이블에서
-        .select("id") // id 컬럼만 가져와
-        .eq("title_norm", titleNorm) // title_norm 이 titleNorm 과 같고
-        .eq("artist_norm", artistNorm) // artist_norm 이 artistNorm 과 같은 행
-        .maybeSingle(); // 결과가 1개면 객체로, 0개면 null로 반환
+        .from("songs")
+        .select("id")
+        .eq("title_norm", titleNorm)
+        .eq("artist_norm", artistNorm)
+        .maybeSingle();
 
       if (existingError) {
         console.error(
@@ -114,7 +100,7 @@ export async function GET(request: Request) {
         }
       }
 
-      // STEP 2. karaoke_tracks upsert
+      // STEP 3. karaoke_tracks upsert
       const { data: track, error: trackError } = await supabase
         .from("karaoke_tracks")
         .upsert(
@@ -149,27 +135,25 @@ export async function GET(request: Request) {
         trackId = existingTrack.id;
       }
 
-      // STEP 3. delta 계산
+      // STEP 4. delta 계산
       const prevRank = prevRankMap.get(trackId!);
       let deltaStatus: "NEW" | "UP" | "DOWN" | "SAME" | "UNKNOWN";
       let deltaValue: number | null = null;
 
       if (prevRank === undefined) {
-        // 이전 차트 데이터 자체가 없는 경우 (첫 크롤링)
-        // vs 차트에 새로 진입한 경우 구분 불가 → prevRankMap이 비어있으면 UNKNOWN
         deltaStatus = prevRankMap.size === 0 ? "UNKNOWN" : "NEW";
       } else if (prevRank === song.rank) {
         deltaStatus = "SAME";
         deltaValue = 0;
       } else if (prevRank > song.rank) {
         deltaStatus = "UP";
-        deltaValue = prevRank - song.rank; // 양수
+        deltaValue = prevRank - song.rank;
       } else {
         deltaStatus = "DOWN";
-        deltaValue = prevRank - song.rank; // 음수
+        deltaValue = prevRank - song.rank;
       }
 
-      // STEP 4. rank_history upsert
+      // STEP 5. rank_history upsert
       const { error: rankError } = await supabase.from("rank_history").upsert(
         {
           karaoke_track_id: trackId,
@@ -193,15 +177,6 @@ export async function GET(request: Request) {
         processedCount += 1;
       }
     }
-
-    // STEP 5. AI 번역 처리
-    await processPendingSongs();
-
-    // STEP 6. 가수명 번역 재처리 (artist_ko 누락 곡)
-    await processArtistKo();
-
-    // STEP 7. 유튜브 썸네일 처리
-    await processPendingYoutube();
 
     return Response.json({
       ok: true,
