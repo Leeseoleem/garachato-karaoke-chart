@@ -9,6 +9,7 @@ import { normalize } from "@/utils/string";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
+  console.log("CRON_SECRET:", process.env.CRON_SECRET ? "존재함" : "없음");
   if (!checkAuth(request)) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
