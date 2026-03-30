@@ -56,5 +56,9 @@ export async function getChartByProvider(provider: KaraokeProvider) {
     throw new Error("Failed to fetch chart data");
   }
 
-  return { items: (data as ChartRow[]) ?? [], latestDate };
+  const rows = ((data as ChartRow[]) ?? []).filter(
+    (item) => item.karaoke_tracks.length > 0,
+  );
+
+  return { items: rows, latestDate };
 }
