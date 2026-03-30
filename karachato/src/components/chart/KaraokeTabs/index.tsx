@@ -14,7 +14,11 @@ const tabs: { label: string; value: KaraokeProvider; position: Position }[] = [
   { label: "금영", value: "KY", position: "right" },
 ];
 
-export default function KaraokeTabs() {
+export default function KaraokeTabs({
+  onScrollToTop,
+}: {
+  onScrollToTop: () => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const providerParam = searchParams.get("provider");
@@ -24,7 +28,8 @@ export default function KaraokeTabs() {
     providerParam && isKaraokeProvider(providerParam) ? providerParam : "TJ";
 
   const handleTabClick = (value: KaraokeProvider) => {
-    if (value === activeTab) return; // 이미 활성화된 탭 클릭 시 무시
+    onScrollToTop();
+
     if (value === "KY") {
       toast("금영 노래방은 아직 준비중이에요!", { icon: "🚧" });
       return;

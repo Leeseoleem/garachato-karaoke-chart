@@ -34,7 +34,7 @@ export default function ChartClientWrapper({
           {latestDate} 기준
         </span>
       </div>
-      <KaraokeTabs />
+      <KaraokeTabs onScrollToTop={handleScrollToTop} />
       <div className="flex flex-1 flex-col min-h-0 bg-linear-to-b from-brand-dark to-gray-30 overflow-hidden">
         <ChartHeader />
         <ChartScrollContainer ref={scrollRef} items={items} />
