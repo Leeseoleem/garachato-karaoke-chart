@@ -20,11 +20,11 @@ export default function VocalGuideSection({
 }: VocalGuideSectionProps) {
   return (
     <div className="flex flex-col items-start px-4 py-5 gap-3 border gradient-border rounded-xl">
-      <div className="flex flex-col items-start gap-2">
+      <div className="flex flex-col items-start gap-2 w-full">
         <div className="flex items-center justify-center px-[14px] py-[6px] bg-brand-dark border border-brand-light rounded-3xl">
           <p className="typo-description text-brand-light">✦ AI 분석</p>
         </div>
-        <div className="flex flex-col items-start gap-3">
+        <div className="flex flex-col items-start gap-3 w-full">
           <DifficultyItem label="보컬 난이도" {...vocalDifficult} />
           <DifficultyItem label="발음 난이도" {...PronunciationDifficult} />
         </div>
@@ -35,7 +35,7 @@ export default function VocalGuideSection({
         </div>
       </div>
       {tip && (
-        <div className="flex flex-col items-start gap-3">
+        <div className="flex flex-col items-start gap-3 w-full flex-wrap">
           <Divider className="bg-brand-main" />
           <KaraokeTipItem tip={tip} />
         </div>
