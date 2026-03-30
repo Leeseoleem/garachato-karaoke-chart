@@ -1,63 +1,129 @@
 @layer components {
-  /* Title-01 — 24px/30 */
+  /* ─────────────────────────────────────
+     Title-01
+     Mobile: 20px / Tablet: 22px / Desktop: 24px
+  ───────────────────────────────────── */
   .typo-title-01 {
-    font-size: 1.5rem;
+    font-size: 20px;
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.03em;
+
+    @media (min-width: 768px) {
+      font-size: 22px;
+    }
+    @media (min-width: 1024px) {
+      font-size: 24px;
+    }
   }
 
-  /* Title-02 — 20px/25 */
+  /* ─────────────────────────────────────
+     Title-02
+     Mobile: 17px / Tablet: 19px / Desktop: 20px
+  ───────────────────────────────────── */
   .typo-title-02 {
-    font-size: 1.25rem;
+    font-size: 17px;
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.02em;
+
+    @media (min-width: 768px) {
+      font-size: 19px;
+    }
+    @media (min-width: 1024px) {
+      font-size: 20px;
+    }
   }
 
-  /* Subtitle — 16px/21 */
+  /* ─────────────────────────────────────
+     Subtitle
+     Mobile: 14px / Tablet: 15px / Desktop: 16px
+  ───────────────────────────────────── */
   .typo-subtitle {
-    font-size: 1rem;
+    font-size: 14px;
     font-weight: 600;
     line-height: 1.3125;
     letter-spacing: -0.01em;
+
+    @media (min-width: 768px) {
+      font-size: 15px;
+    }
+    @media (min-width: 1024px) {
+      font-size: 16px;
+    }
   }
 
-  /* Body — 16px/21 */
+  /* ─────────────────────────────────────
+     Body
+     Mobile: 14px / Tablet: 15px / Desktop: 16px
+  ───────────────────────────────────── */
   .typo-body {
-    font-size: 1rem;
+    font-size: 14px;
     font-weight: 400;
     line-height: 1.3125;
     letter-spacing: -0.01em;
+
+    @media (min-width: 768px) {
+      font-size: 15px;
+    }
+    @media (min-width: 1024px) {
+      font-size: 16px;
+    }
   }
 
-  /* Caption — 14px/19 */
+  /* ─────────────────────────────────────
+     Caption
+     Mobile: 12px / Tablet: 13px / Desktop: 14px
+  ───────────────────────────────────── */
   .typo-caption {
-    font-size: 0.875rem;
+    font-size: 12px;
     font-weight: 400;
     line-height: 1.357;
     letter-spacing: 0em;
+
+    @media (min-width: 768px) {
+      font-size: 13px;
+    }
+    @media (min-width: 1024px) {
+      font-size: 14px;
+    }
   }
 
-  /* Description — 12px/16 */
+  /* ─────────────────────────────────────
+     Description
+     Mobile: 11px / Tablet: 11px / Desktop: 12px
+  ───────────────────────────────────── */
   .typo-description {
-    font-size: 0.75rem;
+    font-size: 11px;
     font-weight: 400;
     line-height: 1.333;
     letter-spacing: 0em;
+
+    @media (min-width: 1024px) {
+      font-size: 12px;
+    }
   }
 
-  /* Label — 12px/18 */
+  /* ─────────────────────────────────────
+     Label
+     Mobile: 11px / Tablet: 11px / Desktop: 12px
+  ───────────────────────────────────── */
   .typo-label {
-    font-size: 0.75rem;
+    font-size: 11px;
     font-weight: 600;
     line-height: 1.5;
     letter-spacing: 0.02em;
+
+    @media (min-width: 1024px) {
+      font-size: 12px;
+    }
   }
 
-  /* Tag — 10px/Auto */
+  /* ─────────────────────────────────────
+     Tag — 전 구간 10px 고정
+  ───────────────────────────────────── */
   .typo-tag {
-    font-size: 0.625rem;
+    font-size: 10px;
     font-weight: 500;
     line-height: 1;
     letter-spacing: 0.02em;
