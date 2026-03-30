@@ -16,7 +16,7 @@ export default function SearchSuggestionOverlay({
 
       {/* 검색 리스트 */}
       {keywords.length > 0 && (
-        <ul className="relative z-10">
+        <ul className="relative z-10" onMouseDown={(e) => e.preventDefault()}>
           {keywords.map((keyword) => (
             <SearchSuggestionItem key={keyword} keyword={keyword} />
           ))}
