@@ -13,16 +13,14 @@ type Story = StoryObj<typeof SongKaraokeNumber>;
 export const TJ: Story = {
   args: {
     provider: "TJ",
-    karaokeNo: 12113,
-    onCopy: (no) => alert(`복사: ${no}`),
+    karaokeNo: "12113",
   },
 };
 
 export const KY: Story = {
   args: {
     provider: "KY",
-    karaokeNo: 12113,
-    onCopy: (no) => alert(`복사: ${no}`),
+    karaokeNo: "12113",
   },
 };
 
