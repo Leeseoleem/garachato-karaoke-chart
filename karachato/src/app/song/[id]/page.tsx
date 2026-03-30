@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import BackHeader from "@/components/common/headers/BackHeader";
 import SongDetailContent from "@/components/song-detail/SongDetailContent";
 // === queries ===
-import { getSongByTrackId } from "@/lib/song/queries";
+import { getSongById } from "@/lib/song/queries";
 
 export default async function SongDetailPage({
   params,
@@ -12,7 +12,7 @@ export default async function SongDetailPage({
 }) {
   const { id } = await params;
 
-  const song = await getSongByTrackId(Number(id));
+  const song = await getSongById(id);
 
   if (!song) return notFound();
 

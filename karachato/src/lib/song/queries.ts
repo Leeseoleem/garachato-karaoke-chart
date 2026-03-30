@@ -1,8 +1,8 @@
 import { createServerClient } from "../supabase/server";
 import type { SongDetailRow } from "@/types/database";
 
-export async function getSongByTrackId(
-  karaokeTrackId: number,
+export async function getSongById(
+  songId: string,
 ): Promise<SongDetailRow | null> {
   const supabase = await createServerClient();
 
@@ -43,7 +43,7 @@ export async function getSongByTrackId(
       )
     `,
     )
-    .eq("id", karaokeTrackId)
+    .eq("song_id", songId)
     .order("chart_date", { ascending: false, referencedTable: "rank_history" })
     .limit(1, { referencedTable: "rank_history" })
     .single();
