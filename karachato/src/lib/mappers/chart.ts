@@ -12,17 +12,15 @@ export const toRankCardProps = (item: RankHistoryWithJoin): RankCardProps => ({
     status: item.delta_status,
   },
   song: {
-    titleInProvider: item.karaoke_tracks.title_in_provider,
-    titleKoJp: item.karaoke_tracks.title_ko_jp,
-    titleKoFull: item.karaoke_tracks.title_ko_full,
-    artistInProvider: item.karaoke_tracks.artist_in_provider,
-    artistKo: item.karaoke_tracks.artist_ko, // 추가
+    titleInProvider: item.karaoke_tracks[0].title_in_provider,
+    titleKoJp: item.karaoke_tracks[0].title_ko_jp,
+    titleKoFull: item.karaoke_tracks[0].title_ko_full,
+    artistInProvider: item.karaoke_tracks[0].artist_in_provider,
+    artistKo: item.karaoke_tracks[0].artist_ko,
   },
   action: {
-    karaokeNo: item.karaoke_tracks.karaoke_no,
-    url: item.karaoke_tracks.songs.youtube_video_id
-      ? `https://www.youtube.com/watch?v=${item.karaoke_tracks.songs.youtube_video_id}`
-      : `https://www.youtube.com/results?search_query=${encodeURIComponent(item.karaoke_tracks.title_in_provider + " " + item.karaoke_tracks.artist_in_provider)}`,
+    karaokeNo: item.karaoke_tracks[0].karaoke_no,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.karaoke_tracks[0].title_in_provider + " " + item.karaoke_tracks[0].artist_in_provider)}`,
   },
 });
 

@@ -1,4 +1,6 @@
-import type { RankHistoryWithJoin } from "@/types/database";
+import type { SongDetailRow } from "@/types/database";
+import type { DeltaStatus } from "@/types/domain";
+
 // === component ===
 import SongHeroSection from "./SongHeroSection";
 import SongKaraokeNumber from "./SongKaraokeNumber";
@@ -8,10 +10,11 @@ import VocalGuideSection from "./VocalGuideSection";
 export default function SongDetailContent({
   track,
 }: {
-  track: RankHistoryWithJoin;
+  track: SongDetailRow;
 }) {
-  const { karaoke_tracks } = track;
-  const { songs, ...trackInfo } = karaoke_tracks;
+  const karaoke_track = track.karaoke_tracks[0];
+  const { songs: songsArr, ...trackInfo } = karaoke_track;
+  const songs = songsArr[0];
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -31,7 +34,7 @@ export default function SongDetailContent({
         <SongInfoSection
           rankInfo={{
             currentRank: track.rank,
-            currentStatus: track.delta_status,
+            currentStatus: track.delta_status as DeltaStatus,
             previousRank:
               track.delta_value !== null
                 ? track.rank +
