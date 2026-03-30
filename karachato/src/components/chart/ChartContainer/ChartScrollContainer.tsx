@@ -3,10 +3,8 @@ import { forwardRef } from "react";
 
 // === component ===
 import RankCard from "../RankCard";
-
 // === function ===
 import { toRankCardPropsList } from "@/lib/mappers/chart";
-
 // === type ===
 import type { RankHistoryWithJoin } from "@/types/database";
 
