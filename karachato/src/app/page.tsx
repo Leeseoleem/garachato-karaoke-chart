@@ -2,6 +2,7 @@
 import SearchSection from "@/components/search/SearchSection";
 import ChartContainer from "@/components/chart/ChartContainer";
 import SettingModal from "@/components/modals/SettingModal";
+import ChatModal from "@/components/modals/ChatModal";
 // === function ===
 import { isKaraokeProvider } from "@/utils/type";
 // === type ===
@@ -26,6 +27,7 @@ export default async function Home({
       <SearchSection />
       <ChartContainer provider={karaokeProvider} />
       <SettingModal />
+      <ChatModal />
     </main>
   );
 }
