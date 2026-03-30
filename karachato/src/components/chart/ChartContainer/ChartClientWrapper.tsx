@@ -43,6 +43,7 @@ export default function ChartClientWrapper({
         {!isBottom && (
           <motion.div
             initial={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.1, ease: "easeInOut" }}
           >
