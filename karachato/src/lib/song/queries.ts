@@ -7,45 +7,43 @@ export async function getSongById(
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from("karaoke_tracks")
+    .from("songs")
     .select(
       `
       id,
-      karaoke_no,
-      title_in_provider,
-      artist_in_provider,
-      title_ko_jp,
-      title_ko_full,
+      title_ko,
       artist_ko,
-      provider,
-      songs!inner (
+      thumbnail_url,
+      youtube_video_id,
+      description,
+      ai_category,
+      ai_traits,
+      ai_genres,
+      ai_vibes,
+      ai_vocal_score,
+      ai_vocal_reason,
+      ai_pronunciation_score,
+      ai_pronunciation_reason,
+      ai_karaoke_tip,
+      karaoke_tracks (
         id,
-        title_ko,
+        karaoke_no,
+        provider,
+        title_in_provider,
+        artist_in_provider,
+        title_ko_jp,
+        title_ko_full,
         artist_ko,
-        thumbnail_url,
-        youtube_video_id,
-        description,
-        ai_category,
-        ai_traits,
-        ai_genres,
-        ai_vibes,
-        ai_vocal_score,
-        ai_vocal_reason,
-        ai_pronunciation_score,
-        ai_pronunciation_reason,
-        ai_karaoke_tip
-      ),
-      rank_history (
-        rank,
-        delta_status,
-        delta_value,
-        chart_date
+        rank_history (
+          rank,
+          delta_status,
+          delta_value,
+          chart_date
+        )
       )
     `,
     )
-    .eq("song_id", songId)
-    .order("chart_date", { ascending: false, referencedTable: "rank_history" })
-    .limit(1, { referencedTable: "rank_history" })
+    .eq("id", songId)
     .single();
 
   if (error) {
