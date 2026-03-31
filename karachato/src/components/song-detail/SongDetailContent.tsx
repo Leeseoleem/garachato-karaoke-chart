@@ -32,9 +32,10 @@ export default function SongDetailContent({ track }: { track: SongDetailRow }) {
             currentStatus: (latestRank?.delta_status ??
               "UNKNOWN") as DeltaStatus,
             previousRank:
-              latestRank?.delta_value !== null &&
-              latestRank?.delta_value !== undefined
-                ? (latestRank.rank ?? 0) +
+              latestRank?.delta_status !== "NEW" &&
+              latestRank?.delta_value != null &&
+              latestRank?.rank != null
+                ? latestRank.rank +
                   (latestRank.delta_status === "UP"
                     ? latestRank.delta_value
                     : -latestRank.delta_value)
