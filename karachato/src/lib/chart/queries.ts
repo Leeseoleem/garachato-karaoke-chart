@@ -6,12 +6,17 @@ export async function getChartByProvider(provider: KaraokeProvider) {
   const supabase = await createServerClient();
 
   // STEP 1. 최신 chart_date 조회
-  const { data: latest } = await supabase
+  const { data: latest, error: latestError } = await supabase
     .from("rank_history")
     .select("chart_date")
     .order("chart_date", { ascending: false })
     .limit(1)
     .single();
+
+  if (latestError && latestError.code !== "PGRST116") {
+    console.error("Error fetching latest chart date:", latestError);
+    throw new Error("Failed to fetch latest chart date");
+  }
 
   const latestDate = latest?.chart_date ?? null;
 
