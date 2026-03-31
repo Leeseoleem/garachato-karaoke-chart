@@ -45,6 +45,7 @@ export async function getChartByProvider(provider: KaraokeProvider) {
           title_ko,
           artist_ko,
           thumbnail_url,
+          youtube_video_id,
           ai_category,
           ai_genres,
           ai_vibes

@@ -95,6 +95,7 @@ export interface ChartRow {
       title_ko: string | null;
       artist_ko: string | null;
       thumbnail_url: string | null;
+      youtube_video_id: string | null;
       ai_category: string | null;
       ai_genres: string[] | null;
       ai_vibes: string[] | null;
