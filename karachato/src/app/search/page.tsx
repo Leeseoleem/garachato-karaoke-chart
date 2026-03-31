@@ -14,7 +14,11 @@ export default async function SearchPage({
 
   if (q?.trim()) {
     const supabase = createServerClient();
-    const { data } = await supabase.rpc("search_songs", { query: q.trim() });
+    const { data, error } = await supabase.rpc("search_songs", {
+      query: q.trim(),
+    });
+
+    if (error) console.error("[search page] RPC error:", error.message);
 
     // song_id 기준으로 그룹핑
     const grouped = new Map<string, SearchResult>();
