@@ -19,7 +19,7 @@ export default async function SongDetailPage({
   return (
     <div className="flex flex-col h-dvh min-h-0">
       <BackHeader title="곡 상세 정보" />
-      <SongDetailContent track={song} />
+      <SongDetailContent song={song} />
     </div>
   );
 }
