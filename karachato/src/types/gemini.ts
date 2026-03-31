@@ -17,3 +17,10 @@ export interface TranslateResult {
   ai_pronunciation_reason: string;
   ai_karaoke_tip: string;
 }
+
+// 챗봇 프롬프트 응답 타입
+export type ChatIntent =
+  | { intent: "search_song"; keyword: string }
+  | { intent: "search_artist"; keyword: string }
+  | { intent: "recommend"; vibe?: string; genre?: string; category?: string }
+  | { intent: "unknown" };
