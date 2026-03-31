@@ -21,7 +21,9 @@ export const toRankCardProps = (item: RankHistoryWithJoin): RankCardProps => ({
   },
   action: {
     karaokeNo: item.karaoke_tracks.karaoke_no,
-    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.karaoke_tracks.title_in_provider + " " + item.karaoke_tracks.artist_in_provider)}`,
+    url: item.karaoke_tracks.songs.youtube_video_id
+      ? `https://www.youtube.com/watch?v=${item.karaoke_tracks.songs.youtube_video_id}`
+      : `https://www.youtube.com/results?search_query=${encodeURIComponent(item.karaoke_tracks.title_in_provider + " " + item.karaoke_tracks.artist_in_provider)}`,
   },
 });
 
