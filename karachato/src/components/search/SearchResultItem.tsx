@@ -26,7 +26,7 @@ export default function SearchResultItem({
       className="flex justify-between items-center px-5 pt-3 pb-4 border-b border-gray-30 hover:bg-gray-40 active:bg-gray-30 transition-colors duration-150"
     >
       <div className="flex-1 flex flex-col gap-1 items-start justify-center">
-        <h3 className="typo-subtitle text-gray-white truncate">{title}</h3>
+        <h3 className="typo-subtitle text-gray-white break-words">{title}</h3>
         <p className="typo-caption text-content-secondary truncate">{artist}</p>
       </div>
       <div className="flex flex-col h-full items-start gap-1">

@@ -76,10 +76,70 @@ export interface RankHistory {
 // ─────────────────────────────────────────
 // Supabase 조인 결과 타입
 // ─────────────────────────────────────────
-export interface RankHistoryWithJoin extends RankHistory {
-  karaoke_tracks: KaraokeTrack & {
-    songs: Song;
+export interface ChartRow {
+  karaoke_track_id: number;
+  rank: number;
+  delta_status: string;
+  delta_value: number | null;
+  chart_date: string;
+  karaoke_tracks: {
+    karaoke_no: string;
+    title_in_provider: string;
+    artist_in_provider: string;
+    title_ko_jp: string | null;
+    title_ko_full: string | null;
+    artist_ko: string | null;
+    provider: string;
+    songs: {
+      id: string;
+      title_ko: string | null;
+      artist_ko: string | null;
+      thumbnail_url: string | null;
+      youtube_video_id: string | null;
+      ai_category: string | null;
+      ai_genres: string[] | null;
+      ai_vibes: string[] | null;
+    };
   };
+}
+
+export type RankHistoryWithJoin = ChartRow;
+
+// ─────────────────────────────────────────
+// 곡 상세 페이지 조인 결과 타입
+// ─────────────────────────────────────────
+export interface SongDetailRow {
+  id: string;
+  title_ko: string | null;
+  artist_ko: string | null;
+  thumbnail_url: string | null;
+  youtube_video_id: string | null;
+  description: string | null;
+  ai_category: string | null;
+  ai_traits: string[] | null;
+  ai_genres: string[] | null;
+  ai_vibes: string[] | null;
+  ai_vocal_score: number | null;
+  ai_vocal_reason: string | null;
+  ai_pronunciation_score: number | null;
+  ai_pronunciation_reason: string | null;
+  ai_karaoke_tip: string | null;
+  karaoke_tracks: {
+    id: number;
+    karaoke_no: string;
+    provider: string;
+    title_in_provider: string;
+    artist_in_provider: string;
+    title_ko_jp: string | null;
+    title_ko_full: string | null;
+    artist_ko: string | null;
+    rank_history: {
+      rank: number;
+      delta_status: string;
+      delta_value: number | null;
+      chart_date: string;
+    }[];
+  }[];
 }
 
 // ─────────────────────────────────────────

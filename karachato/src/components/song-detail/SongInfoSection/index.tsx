@@ -38,7 +38,7 @@ export default function SongInfoSection({
         <p className="typo-caption text-content-primary whitespace-pre-line wrap-break-word">
           {description}
         </p>
-        <div className="flex flex-row items-center gap-2">
+        <div className="shrink-0 flex flex-row items-center gap-x-2 flex-wrap">
           {tags.map((tag) => (
             <Tag key={tag} label={tag} />
           ))}

@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 // === components ===
 import BackHeader from "@/components/common/headers/BackHeader";
 import SongDetailContent from "@/components/song-detail/SongDetailContent";
-// === mock ===
-import { MOCK_CHART_ITEMS } from "@/lib/mock";
+// === queries ===
+import { getSongById } from "@/lib/song/queries";
 
 export default async function SongDetailPage({
   params,
@@ -12,16 +12,14 @@ export default async function SongDetailPage({
 }) {
   const { id } = await params;
 
-  const MOCK_SONG = MOCK_CHART_ITEMS.find(
-    (item) => String(item.karaoke_track_id) === id,
-  );
+  const song = await getSongById(id);
 
-  if (!MOCK_SONG) return notFound();
+  if (!song) return notFound();
 
   return (
     <div className="flex flex-col h-dvh min-h-0">
       <BackHeader title="곡 상세 정보" />
-      <SongDetailContent track={MOCK_SONG} />
+      <SongDetailContent song={song} />
     </div>
   );
 }

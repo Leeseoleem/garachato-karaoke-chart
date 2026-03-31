@@ -10,10 +10,10 @@ import FloatingBar from "../FloatingBar";
 import { useScrollTop } from "@/hooks/useScrollTop";
 
 // === type ===
-import type { RankHistoryWithJoin } from "@/types/database";
+import type { ChartRow } from "@/types/database";
 
 interface ChartClientWrapperProps {
-  items: RankHistoryWithJoin[];
+  items: ChartRow[];
   latestDate: string;
 }
 

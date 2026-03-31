@@ -1,56 +1,7 @@
+import { createServerClient } from "@/lib/supabase/server";
 import SearchView from "@/components/search/SearchView";
 import SearchResultSection from "@/components/search/SearchResultSection";
-
 import type { SearchResult } from "@/types/database";
-
-// ─── 목업 데이터 ───
-export const MOCK_SEARCH_RESULTS: SearchResult[] = [
-  {
-    id: "1",
-    title_ko: "아이돌 / IDOL",
-    artist_ko: "YOASOBI",
-    karaoke_tracks: [
-      {
-        karaoke_no: "82548",
-        provider: "TJ",
-        title_in_provider: "アイドル / IDOL",
-        artist_in_provider: "YOASOBI",
-      },
-    ],
-  },
-  {
-    id: "2",
-    title_ko: "밤을 달리다",
-    artist_ko: "YOASOBI",
-    karaoke_tracks: [
-      {
-        karaoke_no: "82123",
-        provider: "TJ",
-        title_in_provider: "夜に駆ける",
-        artist_in_provider: "YOASOBI",
-      },
-      {
-        karaoke_no: "60345",
-        provider: "KY",
-        title_in_provider: "夜に駆ける",
-        artist_in_provider: "YOASOBI",
-      },
-    ],
-  },
-  {
-    id: "3",
-    title_ko: "귀멸의 칼날",
-    artist_ko: "LiSA",
-    karaoke_tracks: [
-      {
-        karaoke_no: "75432",
-        provider: "TJ",
-        title_in_provider: "紅蓮華",
-        artist_in_provider: "LiSA",
-      },
-    ],
-  },
-];
 
 export default async function SearchPage({
   searchParams,
@@ -58,10 +9,42 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
+
+  let results: SearchResult[] = [];
+
+  if (q?.trim()) {
+    const supabase = createServerClient();
+    const { data, error } = await supabase.rpc("search_songs", {
+      query: q.trim(),
+    });
+
+    if (error) console.error("[search page] RPC error:", error.message);
+
+    // song_id 기준으로 그룹핑
+    const grouped = new Map<string, SearchResult>();
+    for (const row of data ?? []) {
+      if (!grouped.has(row.song_id)) {
+        grouped.set(row.song_id, {
+          id: row.song_id,
+          title_ko: row.title_ko_jp,
+          artist_ko: row.artist_ko,
+          karaoke_tracks: [],
+        });
+      }
+      grouped.get(row.song_id)!.karaoke_tracks.push({
+        karaoke_no: row.karaoke_no,
+        provider: row.provider,
+        title_in_provider: row.title_in_provider,
+        artist_in_provider: row.artist_in_provider,
+      });
+    }
+    results = [...grouped.values()];
+  }
+
   return (
     <div className="flex flex-col h-dvh min-h-0">
       <SearchView initialQuery={q ?? ""} />
-      <SearchResultSection results={MOCK_SEARCH_RESULTS} />
+      <SearchResultSection results={results} />
     </div>
   );
 }
