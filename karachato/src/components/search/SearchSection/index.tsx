@@ -23,25 +23,34 @@ export default function SearchSection() {
 
   useEffect(() => {
     if (!searchText) return;
+    let isCancelled = false;
 
     const timer = setTimeout(async () => {
-      const res = await fetch(
-        `/api/search?q=${encodeURIComponent(searchText)}`,
-      );
-      const data = await res.json();
-
-      const keywords: string[] = (data.results ?? []).map(
-        (item: { title_ko_jp: string | null; title_in_provider: string }) =>
-          item.title_ko_jp ?? item.title_in_provider,
-      );
-
-      setFetchResult({
-        query: searchText,
-        keywords: [...new Set(keywords)], // 중복 제거
-      });
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(searchText)}`,
+        );
+        if (!res.ok || isCancelled) return;
+        const data = await res.json();
+        const keywords: string[] = (data.results ?? []).map(
+          (item: { title_ko_jp: string | null; title_in_provider: string }) =>
+            item.title_ko_jp ?? item.title_in_provider,
+        );
+        if (!isCancelled) {
+          setFetchResult({
+            query: searchText,
+            keywords: [...new Set(keywords)],
+          });
+        }
+      } catch (error) {
+        console.error("[SearchSection] fetch error:", error);
+      }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
   }, [searchText]);
 
   return (
