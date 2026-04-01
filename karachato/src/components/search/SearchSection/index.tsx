@@ -1,10 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 // === component ===
 import SearchHeader from "@/components/common/headers/SearchHeader";
 import SearchSuggestionOverlay from "./SearchSuggestionOverlay";
 
 export default function SearchSection() {
+  const router = useRouter();
+
   const [searchText, setSearchText] = useState<string>("");
   const [isFocused, setIsFocused] = useState(false);
   const [fetchResult, setFetchResult] = useState<
@@ -20,6 +23,11 @@ export default function SearchSection() {
     searchText && fetchResult?.query === searchText
       ? fetchResult.keywords
       : undefined;
+
+  const handleSubmit = () => {
+    if (!searchText.trim()) return;
+    router.push(`/search?q=${encodeURIComponent(searchText.trim())}`);
+  };
 
   useEffect(() => {
     if (!searchText) return;
@@ -62,6 +70,7 @@ export default function SearchSection() {
           onChange: setSearchText,
           onFocus: () => setIsFocused(true),
           onBlur: () => setIsFocused(false),
+          onSubmit: handleSubmit,
         }}
       />
       {isFocused && <SearchSuggestionOverlay keywords={keywords} />}
