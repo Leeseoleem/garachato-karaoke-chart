@@ -56,9 +56,33 @@ export default function ChatModal({
       { type: "text", role: "user", message: input },
     ]);
     setInputValue("");
+    setIsLoading(true); // ← 주석 해제 + TODO 주석 제거
 
-    // TODO: fetch /api/chat 연결 전까지 isLoading 사용 안 함
-    // setIsLoading(true);
+    // ↓ 아래 전부 새로 추가
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input }),
+      });
+
+      const data = await res.json();
+
+      // search_artist / recommend는 배열, 나머지는 단일 객체로 옴
+      const incoming: ChatMessage[] = Array.isArray(data) ? data : [data];
+      setMessages((prev) => [...prev, ...incoming]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "error",
+          role: "model",
+          message: "서버 오류가 발생했어요. 다시 시도해주세요.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
