@@ -43,17 +43,21 @@ export default function SongKaraokeNumber({
         onClick={() => {
           if (!karaokeNo) return;
           navigator.clipboard.writeText(karaokeNo);
-          toast("노래방 번호가 복사되었습니다.", {
-            position: "bottom-center",
-            style: {
-              fontFamily:
-                "Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif",
-              borderRadius: "20px",
-              background: "#333",
-              color: "#fff",
-              fontSize: "14px",
-            },
-          });
+
+          // 마우스 환경(데스크탑)에서만 토스트 표시
+          const isDesktop = window.matchMedia("(pointer: fine)").matches;
+          if (isDesktop) {
+            toast("노래방 번호가 복사되었습니다.", {
+              position: "bottom-center",
+              style: {
+                fontFamily: "Pretendard, ...",
+                borderRadius: "20px",
+                background: "#333",
+                color: "#fff",
+                fontSize: "14px",
+              },
+            });
+          }
         }}
         className="disabled:cursor-not-allowed disabled:pointer-events-none hover:opacity-70 active:opacity-50 transition-opacity"
       >

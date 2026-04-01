@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { Toaster } from "react-hot-toast";
 import "../styles/globals.css";
-
 import {
   SITE_URL,
   SITE_NAME,
   SITE_TITLE,
   SITE_DESCRIPTION,
 } from "@/constants/site";
+
+const pretendard = localFont({
+  src: "../../public/fonts/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  display: "swap",
+  weight: "45 920",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -51,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={pretendard.variable}>
       <body className="antialiased">
         <main className="mx-auto w-full max-w-page">{children}</main>
         <Toaster />
