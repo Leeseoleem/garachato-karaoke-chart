@@ -69,7 +69,7 @@ export default function RankCard({
               )}
             </div>
             <div className={clsx(colClass, "gap-1")}>
-              {song.artistKo && (
+              {artistMain && (
                 <p className="typo-caption text-content-primary">
                   {artistMain}
                 </p>
