@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 // === component ===
 import { ModalSheet } from "../ModalSheet";
 import { TextBubble } from "./TextBubble";
@@ -36,6 +36,12 @@ export default function ChatModal({
   const [isEnded, setIsEnded] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
   const handleReset = () => {
     setMessages(initialMessages);
     setIsEnded(false);
@@ -56,9 +62,35 @@ export default function ChatModal({
       { type: "text", role: "user", message: input },
     ]);
     setInputValue("");
+    setIsLoading(true);
 
-    // TODO: fetch /api/chat 연결 전까지 isLoading 사용 안 함
-    // setIsLoading(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        setMessages((prev) => [...prev, errorData as ChatMessage]);
+        return;
+      }
+
+      const data = await res.json();
+      setMessages((prev) => [...prev, data as ChatMessage]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "error",
+          role: "model",
+          message: "서버 오류가 발생했어요. 다시 시도해주세요.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -129,10 +161,16 @@ export default function ChatModal({
               );
             }
             /** 맥락 이탈 / 에러 */
-            if (msg.type === "off_topic" || msg.type === "error") {
+            if (msg.type === "off_topic") {
+              return (
+                <TextBubble key={idx} role="model" content={msg.message} />
+              );
+            }
+
+            if (msg.type === "error") {
               return (
                 <div key={idx} className="flex flex-col gap-2">
-                  <TextBubble key={idx} role="model" content={msg.message} />
+                  <TextBubble role="model" content={msg.message} />
                   <ChatActionButton variant="retry" onClick={handleReset} />
                 </div>
               );
@@ -140,6 +178,7 @@ export default function ChatModal({
           })}
 
           {isLoading && <TypingIndicator />}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* 퀵 질문 — 웰컴 메시지만 있을 때 표시 */}

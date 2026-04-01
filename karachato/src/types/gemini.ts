@@ -17,3 +17,27 @@ export interface TranslateResult {
   ai_pronunciation_reason: string;
   ai_karaoke_tip: string;
 }
+
+// 챗봇 유형 정의
+export type ChatIntent =
+  | { intent: "search_song"; keyword: string }
+  | { intent: "search_artist"; keyword: string }
+  | {
+      intent: "recommend";
+      vibe?: string;
+      genre?: string;
+      category?: string;
+      trait?: string;
+    }
+  | { intent: "unknown" };
+
+// 챗봇 API 응답 타입
+export type ChatSongResult = {
+  karaoke_no: string;
+  provider: string;
+  title_ko_jp: string | null;
+  title_in_provider: string;
+  artist_ko: string | null;
+  artist_in_provider: string;
+  thumbnail_url: string | null;
+};
