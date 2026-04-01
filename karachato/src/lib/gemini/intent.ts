@@ -47,17 +47,24 @@ category 분류 기준:
 - JSON 외 텍스트 절대 출력 금지
 `.trim();
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.");
+let intentModel: ReturnType<GoogleGenerativeAI["getGenerativeModel"]> | null =
+  null;
 
-const intentModel = new GoogleGenerativeAI(apiKey).getGenerativeModel({
-  model: "gemini-2.5-flash-lite",
-  systemInstruction: SYSTEM_INSTRUCTION,
-  generationConfig: { responseMimeType: "application/json" },
-});
+function getIntentModel() {
+  if (!intentModel) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.");
+    intentModel = new GoogleGenerativeAI(apiKey).getGenerativeModel({
+      model: "gemini-2.5-flash-lite",
+      systemInstruction: SYSTEM_INSTRUCTION,
+      generationConfig: { responseMimeType: "application/json" },
+    });
+  }
+  return intentModel;
+}
 
 export async function extractIntent(userInput: string): Promise<ChatIntent> {
-  const result = await intentModel.generateContent(userInput);
+  const result = await getIntentModel().generateContent(userInput);
   const text = result.response.text();
 
   try {
