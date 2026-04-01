@@ -1,15 +1,15 @@
 import { createServerClient } from "../supabase/server";
+import { cache } from "react";
 import type { SongDetailRow } from "@/types/database";
 
-export async function getSongById(
-  songId: string,
-): Promise<SongDetailRow | null> {
-  const supabase = await createServerClient();
+export const getSongById = cache(
+  async (songId: string): Promise<SongDetailRow | null> => {
+    const supabase = await createServerClient();
 
-  const { data, error } = await supabase
-    .from("songs")
-    .select(
-      `
+    const { data, error } = await supabase
+      .from("songs")
+      .select(
+        `
       id,
       title_ko,
       artist_ko,
@@ -42,15 +42,17 @@ export async function getSongById(
         )
       )
     `,
-    )
-    .eq("id", songId)
-    .single();
+      )
+      .eq("id", songId)
+      .eq("ai_status", "done")
+      .single();
 
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    console.error("Error fetching song detail:", error);
-    throw new Error("Failed to fetch song detail");
-  }
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      console.error("Error fetching song detail:", error);
+      throw new Error("Failed to fetch song detail");
+    }
 
-  return data as unknown as SongDetailRow;
-}
+    return data as unknown as SongDetailRow;
+  },
+);
