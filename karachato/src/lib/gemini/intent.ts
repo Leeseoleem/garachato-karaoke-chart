@@ -49,11 +49,14 @@ pronunciation_difficulty 분류 기준:
 규칙:
 - keyword는 일본어/영어/한국어 모두 허용, 원문 우선
 - 해당 없는 필드는 아예 생략
-- 보컬로이드 캐릭터 이름이 나오면 search_artist가 아닌 recommend + category: "보컬로이드"로 분류
+- 특정 보컬로이드/UTAU 캐릭터 이름이 명시된 경우 → search_artist, keyword: 캐릭터명 원문
+- "미쿠 노래", "하츠네 미쿠 곡", "카사네 테토 찾아줘" → search_artist, keyword: "初音ミク" / "重音テト"
+- 특정 캐릭터명 없이 "보컬로이드 추천", "미쿠 같은 노래" → recommend + category: "보컬로이드"
 - "요아소비 최신곡", "아도 노래" → search_artist, keyword: "YOASOBI" / "Ado"
 - "신나는 노래", "인기곡", "요즘 유행하는 노래", "SNS에서 뜨는 곡" → recommend, vibe 또는 trait 추출
 - "애니 OST 추천", "게임 BGM" → recommend + category 추출
-- "미쿠 노래", "하츠네 미쿠 곡" → recommend + category: "보컬로이드"
+- "미쿠 노래", "하츠네 미쿠 곡", "카사네 테토 찾아줘" → search_artist, keyword: 원문 캐릭터명
+- "보컬로이드 노래 틀어줘", "미쿠 같은 분위기" → recommend + category: "보컬로이드"
 - "쉬운 곡 추천", "초보용 노래" → recommend + vocal_difficulty: "easy"
 - "발음 쉬운 애니송" → recommend + pronunciation_difficulty: "easy" + category: "애니메이션 OST"
 - "어려운 곡 추천해줘" → recommend + vocal_difficulty: "hard"
