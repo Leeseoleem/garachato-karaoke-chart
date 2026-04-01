@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const songUrls =
     songs?.map((song) => ({
       url: `${SITE_URL}/song/${song.id}`,
-      lastModified: new Date(song.updated_at),
+      lastModified: song.updated_at ? new Date(song.updated_at) : new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })) ?? [];
