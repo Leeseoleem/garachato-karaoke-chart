@@ -67,6 +67,12 @@ export async function extractIntent(userInput: string): Promise<ChatIntent> {
   const result = await getIntentModel().generateContent(userInput);
   const text = result.response.text();
 
+  const parsed = JSON.parse(text);
+
+  if (!parsed.intent) {
+    return { intent: "unknown" };
+  }
+
   try {
     return JSON.parse(text) as ChatIntent;
   } catch {
