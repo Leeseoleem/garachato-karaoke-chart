@@ -237,13 +237,17 @@ async function handleRecommend(
   if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
   if (intent.trait) query = query.contains("ai_traits", [intent.trait]);
   if (intent.vocal_difficulty === "easy")
-    query = query.lte("ai_vocal_score", 2);
+    query = query.not("ai_vocal_score", "is", null).lte("ai_vocal_score", 2);
   if (intent.vocal_difficulty === "hard")
-    query = query.gte("ai_vocal_score", 3);
+    query = query.not("ai_vocal_score", "is", null).gte("ai_vocal_score", 3);
   if (intent.pronunciation_difficulty === "easy")
-    query = query.lte("ai_pronunciation_score", 2);
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .lte("ai_pronunciation_score", 2);
   if (intent.pronunciation_difficulty === "hard")
-    query = query.gte("ai_pronunciation_score", 3);
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .gte("ai_pronunciation_score", 3);
 
   const { data } = await query.limit(20); // ← 20개 풀에서
 
