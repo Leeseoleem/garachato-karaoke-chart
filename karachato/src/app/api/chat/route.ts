@@ -1,8 +1,11 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { extractIntent } from "@/lib/gemini/intent";
 import { getToday } from "@/utils/date";
+
 import type { ChatMessage, SongCandidateMessage } from "@/types/chat";
 import type { ChatIntent } from "@/types/gemini";
+
+import { ARTIST_KO_MAP } from "@/constants/chat";
 
 // ────────────────────────────────────────────
 //  전처리 (Gemini 호출 전, API 쿼터 미소모)
@@ -143,6 +146,19 @@ async function handleSearchSong(keyword: string): Promise<Response> {
 async function handleSearchArtist(keyword: string): Promise<Response> {
   const supabase = createServerClient();
 
+  const reverseMap = Object.entries(ARTIST_KO_MAP).find(
+    ([, ko]) => ko === keyword,
+  );
+  const originalKeyword = reverseMap ? reverseMap[0] : null;
+
+  const orCondition = [
+    `artist_ko_norm.ilike.%${keyword}%`,
+    `artist_norm.ilike.%${keyword}%`,
+    originalKeyword ? `artist_norm.ilike.%${originalKeyword}%` : null,
+  ]
+    .filter(Boolean)
+    .join(",");
+
   const { data } = await supabase
     .from("songs")
     .select(
@@ -154,7 +170,7 @@ async function handleSearchArtist(keyword: string): Promise<Response> {
       )
     `,
     )
-    .or(`artist_ko_norm.ilike.%${keyword}%,artist_norm.ilike.%${keyword}%`)
+    .or(orCondition)
     .eq("ai_status", "done")
     .limit(1)
     .maybeSingle();
@@ -203,6 +219,7 @@ async function handleRecommend(
   if (intent.category) query = query.eq("ai_category", intent.category);
   if (intent.genre) query = query.contains("ai_genres", [intent.genre]);
   if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
+  if (intent.trait) query = query.contains("ai_traits", [intent.trait]);
 
   const { data } = await query.limit(1).maybeSingle();
 

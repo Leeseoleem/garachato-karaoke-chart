@@ -22,7 +22,13 @@ export interface TranslateResult {
 export type ChatIntent =
   | { intent: "search_song"; keyword: string }
   | { intent: "search_artist"; keyword: string }
-  | { intent: "recommend"; vibe?: string; genre?: string; category?: string }
+  | {
+      intent: "recommend";
+      vibe?: string;
+      genre?: string;
+      category?: string;
+      trait?: string;
+    }
   | { intent: "unknown" };
 
 // 챗봇 API 응답 타입
