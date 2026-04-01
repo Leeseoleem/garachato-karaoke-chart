@@ -8,13 +8,19 @@ import type { ChatMessage, SongCandidateMessage } from "@/types/chat";
 import type { ChatIntent } from "@/types/gemini";
 
 import { ARTIST_KO_MAP } from "@/constants/chat";
+import {
+  GreetingsMessages,
+  ClosingMessages,
+  traceUKeywords,
+  traceUMessages,
+} from "@/constants/easter";
 
 // ────────────────────────────────────────────
 //  전처리 (Gemini 호출 전, API 쿼터 미소모)
 // ────────────────────────────────────────────
 function checkEasterEgg(message: string): ChatMessage | null {
   const t = message.trim().toLowerCase();
-  if (["안녕", "hi", "hello", "안녕하세요", "ㅎㅇ", "gd"].includes(t)) {
+  if (GreetingsMessages.includes(t)) {
     return {
       type: "text",
       role: "model",
@@ -22,19 +28,21 @@ function checkEasterEgg(message: string): ChatMessage | null {
     };
   }
 
-  const traceUKeywords = [
-    "트유",
-    "트레이스 유",
-    "트레이스유",
-    "traceu",
-    "trace u",
-  ];
-
-  if (traceUKeywords.some((kw) => t.includes(kw))) {
+  if (ClosingMessages.includes(t)) {
     return {
       type: "text",
       role: "model",
-      message: "고마워, 행복하자.",
+      message: "도움이 되었다니 기뻐요! 언제든지 또 찾아주세요! 👋",
+    };
+  }
+
+  if (traceUKeywords.some((kw) => t.includes(kw))) {
+    const randomMessage =
+      traceUMessages[Math.floor(Math.random() * traceUMessages.length)];
+    return {
+      type: "text",
+      role: "model",
+      message: randomMessage,
     };
   }
   return null;
@@ -228,10 +236,22 @@ async function handleRecommend(
   if (intent.genre) query = query.contains("ai_genres", [intent.genre]);
   if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
   if (intent.trait) query = query.contains("ai_traits", [intent.trait]);
+  if (intent.vocal_difficulty === "easy")
+    query = query.not("ai_vocal_score", "is", null).lte("ai_vocal_score", 2);
+  if (intent.vocal_difficulty === "hard")
+    query = query.not("ai_vocal_score", "is", null).gte("ai_vocal_score", 3);
+  if (intent.pronunciation_difficulty === "easy")
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .lte("ai_pronunciation_score", 2);
+  if (intent.pronunciation_difficulty === "hard")
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .gte("ai_pronunciation_score", 3);
 
-  const { data } = await query.limit(1).maybeSingle();
+  const { data } = await query.limit(20); // ← 20개 풀에서
 
-  if (!data) {
+  if (!data || data.length === 0) {
     return Response.json({
       type: "off_topic",
       role: "model",
@@ -240,13 +260,19 @@ async function handleRecommend(
     } satisfies ChatMessage);
   }
 
-  const isInTop100 = await checkIsInTop100(data.id);
-  const song = buildSongField(data.id, data.karaoke_tracks ?? [], isInTop100);
+  const picked = data[Math.floor(Math.random() * data.length)]; // ← 랜덤 선택
+
+  const isInTop100 = await checkIsInTop100(picked.id);
+  const song = buildSongField(
+    picked.id,
+    picked.karaoke_tracks ?? [],
+    isInTop100,
+  );
 
   return Response.json({
     type: "song_candidate" as const,
     role: "model" as const,
-    song_id: data.id,
+    song_id: picked.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡은 어떠세요?`,
     song,
   } satisfies ChatMessage);
@@ -297,7 +323,7 @@ export async function POST(req: Request) {
         type: "error",
         role: "model",
         message: is429
-          ? "AI 요청 한도를 초과했어요. 내일 다시 시도해주세요 🥺"
+          ? "AI 요청 한도를 초과했어요. 잠시 후 다시 시도해주세요 🥺"
           : "서버 오류가 발생했어요. 다시 시도해주세요.",
       } satisfies ChatMessage,
       { status: is429 ? 429 : 500 },

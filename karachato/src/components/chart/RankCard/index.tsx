@@ -44,36 +44,47 @@ export default function RankCard({
       ? song.artistInProvider
       : (song.artistKo ?? song.artistInProvider);
 
-  const artistSub = displayMode === "translated" ? song.artistInProvider : null;
+  const artistSub =
+    displayMode === "translated" &&
+    song.artistKo &&
+    song.artistKo !== song.artistInProvider
+      ? song.artistInProvider
+      : null;
 
   const colClass = "flex flex-col items-start";
 
   return (
     <div className="relative flex flex-row justify-between items-center w-full px-5 pt-4 pb-3 border-b border-gray-30 hover:bg-gray-50/20 active:bg-gray-50/40 transition-colors duration-300">
       <Link href={`/song/${songId}`} className="absolute inset-0 z-0" />
-      <div className="pointer-events-none flex flex-row gap-5 items-center justify-center">
+      <div className="pointer-events-none flex flex-row gap-5 justify-center">
         <RankColumn {...rank} />
-        <div
-          className={clsx(
-            colClass,
-            displayMode === "original" ? "gap-2" : "gap-3",
-          )}
-        >
-          <div className={clsx(colClass, "gap-1")}>
-            <p className="typo-subtitle text-gray-white">{mainTitle}</p>
-            {subTitle && (
-              <p className="typo-body font-light text-content-primary">
-                {subTitle}
-              </p>
+        <div className={clsx(colClass, "justify-center")}>
+          <div
+            className={clsx(
+              colClass,
+              displayMode === "original" ? "gap-2" : "gap-3",
             )}
-          </div>
-          <div className={clsx(colClass, "gap-1")}>
-            {song.artistKo && (
-              <p className="typo-caption text-content-primary">{artistMain}</p>
-            )}
-            {artistSub && (
-              <p className="typo-caption text-content-secondary">{artistSub}</p>
-            )}
+          >
+            <div className={clsx(colClass, "gap-1 pr-3 whitespace-pre-wrap")}>
+              <p className="typo-subtitle text-gray-white">{mainTitle}</p>
+              {subTitle && (
+                <p className="typo-body font-light text-content-primary">
+                  {subTitle}
+                </p>
+              )}
+            </div>
+            <div className={clsx(colClass, "gap-1")}>
+              {artistMain && (
+                <p className="typo-caption text-content-primary">
+                  {artistMain}
+                </p>
+              )}
+              {artistSub && (
+                <p className="typo-caption text-content-secondary">
+                  {artistSub}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

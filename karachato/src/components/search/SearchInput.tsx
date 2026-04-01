@@ -13,7 +13,7 @@ export interface SearchInputProps {
 export default function SearchInput({
   value,
   onChange,
-  maxLength,
+  maxLength = 50,
   onFocus,
   onBlur,
   onSubmit,
