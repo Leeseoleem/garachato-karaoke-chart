@@ -62,9 +62,8 @@ export default function ChatModal({
       { type: "text", role: "user", message: input },
     ]);
     setInputValue("");
-    setIsLoading(true); // ← 주석 해제 + TODO 주석 제거
+    setIsLoading(true);
 
-    // ↓ 아래 전부 새로 추가
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -72,11 +71,14 @@ export default function ChatModal({
         body: JSON.stringify({ message: input }),
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        const errorData = await res.json();
+        setMessages((prev) => [...prev, errorData as ChatMessage]);
+        return;
+      }
 
-      // search_artist / recommend는 배열, 나머지는 단일 객체로 옴
-      const incoming: ChatMessage[] = Array.isArray(data) ? data : [data];
-      setMessages((prev) => [...prev, ...incoming]);
+      const data = await res.json();
+      setMessages((prev) => [...prev, data as ChatMessage]);
     } catch {
       setMessages((prev) => [
         ...prev,
