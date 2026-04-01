@@ -283,7 +283,14 @@ export async function POST(req: Request) {
     console.error("[chat] error:", e);
 
     const is429 =
-      e !== null && typeof e === "object" && "status" in e && e.status === 429;
+      e !== null &&
+      typeof e === "object" &&
+      (("status" in e && e.status === 429) ||
+        ("response" in e &&
+          e.response !== null &&
+          typeof e.response === "object" &&
+          "status" in e.response &&
+          (e.response as { status: number }).status === 429));
 
     return Response.json(
       {
