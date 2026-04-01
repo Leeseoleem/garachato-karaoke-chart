@@ -161,10 +161,16 @@ export default function ChatModal({
               );
             }
             /** 맥락 이탈 / 에러 */
-            if (msg.type === "off_topic" || msg.type === "error") {
+            if (msg.type === "off_topic") {
+              return (
+                <TextBubble key={idx} role="model" content={msg.message} />
+              );
+            }
+
+            if (msg.type === "error") {
               return (
                 <div key={idx} className="flex flex-col gap-2">
-                  <TextBubble key={idx} role="model" content={msg.message} />
+                  <TextBubble role="model" content={msg.message} />
                   <ChatActionButton variant="retry" onClick={handleReset} />
                 </div>
               );
