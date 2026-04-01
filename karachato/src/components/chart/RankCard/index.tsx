@@ -44,7 +44,12 @@ export default function RankCard({
       ? song.artistInProvider
       : (song.artistKo ?? song.artistInProvider);
 
-  const artistSub = displayMode === "translated" ? song.artistInProvider : null;
+  const artistSub =
+    displayMode === "translated" &&
+    song.artistKo &&
+    song.artistKo !== song.artistInProvider
+      ? song.artistInProvider
+      : null;
 
   const colClass = "flex flex-col items-start";
 
