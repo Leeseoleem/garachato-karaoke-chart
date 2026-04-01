@@ -193,6 +193,7 @@ export default function ChatModal({
 
         {/* 입력창 */}
         <UserInput
+          maxLength={200}
           ref={inputRef}
           value={inputValue}
           onChange={setInputValue}
