@@ -37,6 +37,7 @@ export default function ChatModal({
   const [inputValue, setInputValue] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -92,6 +93,12 @@ export default function ChatModal({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isLoading && !isEnded) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading, isEnded]);
 
   return (
     <ModalSheet
@@ -186,6 +193,7 @@ export default function ChatModal({
 
         {/* 입력창 */}
         <UserInput
+          ref={inputRef}
           value={inputValue}
           onChange={setInputValue}
           onSubmit={() => handleSend(inputValue)}
