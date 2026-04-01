@@ -44,6 +44,7 @@ export async function getSongById(
     `,
     )
     .eq("id", songId)
+    .eq("ai_status", "done")
     .single();
 
   if (error) {
