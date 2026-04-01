@@ -91,7 +91,6 @@ export async function extractIntent(userInput: string): Promise<ChatIntent> {
       "search_song",
       "search_artist",
       "recommend",
-      "off_topic",
       "unknown",
     ];
     if (!parsed.intent || !validIntents.includes(parsed.intent)) {
