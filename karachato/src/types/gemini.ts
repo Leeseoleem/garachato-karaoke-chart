@@ -41,7 +41,3 @@ export type ChatSongResult = {
   artist_in_provider: string;
   thumbnail_url: string | null;
 };
-
-export type ChatResponse =
-  | { type: "songs"; songs: ChatSongResult[] }
-  | { type: "message"; text: string };
