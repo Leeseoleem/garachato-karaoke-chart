@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 // === component ===
 import { ModalSheet } from "../ModalSheet";
 import { TextBubble } from "./TextBubble";
@@ -35,6 +35,12 @@ export default function ChatModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isEnded, setIsEnded] = useState(false);
   const [inputValue, setInputValue] = useState("");
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   const handleReset = () => {
     setMessages(initialMessages);
@@ -164,6 +170,7 @@ export default function ChatModal({
           })}
 
           {isLoading && <TypingIndicator />}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* 퀵 질문 — 웰컴 메시지만 있을 때 표시 */}
