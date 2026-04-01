@@ -8,15 +8,15 @@ export function SearchPageSkeleton() {
         <ChevronLeft size={24} color="#B294EE" />
         <div className="w-full px-5 pr-12 h-13 rounded-full search-border outline-none bg-transparent" />
       </div>
-      <div className="flex w-full justify-end items-center h-11">
+      <div className="flex flex-row justify-between items-center py-4 px-5">
+        <p className="typo-description text-content-secondary">
+          검색 결과를 불러오는 중...
+        </p>
         <p
           className="typo-description text-content-secondary"
           aria-hidden="true"
         >
           0개의 결과
-        </p>
-        <p className="typo-description text-content-secondary">
-          검색 결과를 불러오는 중...
         </p>
       </div>
       {Array.from({ length: 3 }).map((_, i) => (
