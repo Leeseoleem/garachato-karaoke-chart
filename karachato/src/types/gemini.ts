@@ -28,6 +28,8 @@ export type ChatIntent =
       genre?: string;
       category?: string;
       trait?: string;
+      vocal_difficulty?: "easy" | "hard";
+      pronunciation_difficulty?: "easy" | "hard";
     }
   | { intent: "unknown" };
 

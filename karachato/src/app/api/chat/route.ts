@@ -228,6 +228,15 @@ async function handleRecommend(
   if (intent.genre) query = query.contains("ai_genres", [intent.genre]);
   if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
   if (intent.trait) query = query.contains("ai_traits", [intent.trait]);
+  if (intent.vocal_difficulty === "easy")
+    query = query.lte("ai_vocal_score", 2);
+  if (intent.vocal_difficulty === "hard")
+    query = query.gte("ai_vocal_score", 3);
+
+  if (intent.pronunciation_difficulty === "easy")
+    query = query.lte("ai_pronunciation_score", 2);
+  if (intent.pronunciation_difficulty === "hard")
+    query = query.gte("ai_pronunciation_score", 3);
 
   const { data } = await query.limit(1).maybeSingle();
 
