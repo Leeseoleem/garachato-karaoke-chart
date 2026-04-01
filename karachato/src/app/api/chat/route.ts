@@ -1,5 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { extractIntent } from "@/lib/gemini/intent";
+
+import { escapePostgrestValue } from "@/utils/string";
 import { getToday } from "@/utils/date";
 
 import type { ChatMessage, SongCandidateMessage } from "@/types/chat";
@@ -102,6 +104,7 @@ function buildSongField(
 // ────────────────────────────────────────────
 async function handleSearchSong(keyword: string): Promise<Response> {
   const supabase = createServerClient();
+  const safeKeyword = escapePostgrestValue(keyword);
 
   const { data } = await supabase
     .from("songs")
@@ -114,7 +117,7 @@ async function handleSearchSong(keyword: string): Promise<Response> {
       )
     `,
     )
-    .or(`title_ko_norm.ilike.%${keyword}%,title_norm.ilike.%${keyword}%`)
+    .or(`title_ko_norm.ilike.%${keyword}%,title_norm.ilike.%${safeKeyword}%`)
     .eq("ai_status", "done")
     .limit(1)
     .maybeSingle();
@@ -151,10 +154,15 @@ async function handleSearchArtist(keyword: string): Promise<Response> {
   );
   const originalKeyword = reverseMap ? reverseMap[0] : null;
 
+  const safeKeyword = escapePostgrestValue(keyword);
+  const safeOriginal = originalKeyword
+    ? escapePostgrestValue(originalKeyword)
+    : null;
+
   const orCondition = [
-    `artist_ko_norm.ilike.%${keyword}%`,
-    `artist_norm.ilike.%${keyword}%`,
-    originalKeyword ? `artist_norm.ilike.%${originalKeyword}%` : null,
+    `artist_ko_norm.ilike.%${safeKeyword}%`,
+    `artist_norm.ilike.%${safeKeyword}%`,
+    originalKeyword ? `artist_norm.ilike.%${safeOriginal}%` : null,
   ]
     .filter(Boolean)
     .join(",");

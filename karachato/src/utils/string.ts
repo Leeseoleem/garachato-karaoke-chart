@@ -9,3 +9,8 @@ export function normalize(str: string): string {
     .trim()
     .toLowerCase();
 }
+
+export function escapePostgrestValue(value: string): string {
+  // PostgREST or() 필터에서 구분자로 사용되는 문자 이스케이프
+  return value.replace(/[,%()]/g, "");
+}
