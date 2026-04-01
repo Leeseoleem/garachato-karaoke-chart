@@ -8,13 +8,19 @@ import type { ChatMessage, SongCandidateMessage } from "@/types/chat";
 import type { ChatIntent } from "@/types/gemini";
 
 import { ARTIST_KO_MAP } from "@/constants/chat";
+import {
+  GreetingsMessages,
+  ClosingMessages,
+  traceUKeywords,
+  traceUMessages,
+} from "@/constants/easter";
 
 // ────────────────────────────────────────────
 //  전처리 (Gemini 호출 전, API 쿼터 미소모)
 // ────────────────────────────────────────────
 function checkEasterEgg(message: string): ChatMessage | null {
   const t = message.trim().toLowerCase();
-  if (["안녕", "hi", "hello", "안녕하세요", "ㅎㅇ", "gd"].includes(t)) {
+  if (GreetingsMessages.includes(t)) {
     return {
       type: "text",
       role: "model",
@@ -22,19 +28,21 @@ function checkEasterEgg(message: string): ChatMessage | null {
     };
   }
 
-  const traceUKeywords = [
-    "트유",
-    "트레이스 유",
-    "트레이스유",
-    "traceu",
-    "trace u",
-  ];
-
-  if (traceUKeywords.some((kw) => t.includes(kw))) {
+  if (ClosingMessages.includes(t)) {
     return {
       type: "text",
       role: "model",
-      message: "고마워, 행복하자.",
+      message: "도움이 되었다니 기뻐요! 언제든지 또 찾아주세요! 👋",
+    };
+  }
+
+  if (traceUKeywords.some((kw) => t.includes(kw))) {
+    const randomMessage =
+      traceUMessages[Math.floor(Math.random() * traceUMessages.length)];
+    return {
+      type: "text",
+      role: "model",
+      message: randomMessage,
     };
   }
   return null;
@@ -311,7 +319,7 @@ export async function POST(req: Request) {
         type: "error",
         role: "model",
         message: is429
-          ? "AI 요청 한도를 초과했어요. 내일 다시 시도해주세요 🥺"
+          ? "AI 요청 한도를 초과했어요. 잠시 후 다시 시도해주세요 🥺"
           : "서버 오류가 발생했어요. 다시 시도해주세요.",
       } satisfies ChatMessage,
       { status: is429 ? 429 : 500 },
