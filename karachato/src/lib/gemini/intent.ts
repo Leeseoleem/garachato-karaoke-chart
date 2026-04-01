@@ -90,7 +90,20 @@ export async function extractIntent(userInput: string): Promise<ChatIntent> {
     if (!parsed.intent) return { intent: "unknown" };
 
     return parsed as ChatIntent;
-  } catch {
+  } catch (e) {
+    // 429는 route.ts catch 블록으로 올려서 전용 메시지 처리
+    if (
+      e !== null &&
+      typeof e === "object" &&
+      (("status" in e && e.status === 429) ||
+        ("response" in e &&
+          typeof e.response === "object" &&
+          e.response !== null &&
+          "status" in e.response &&
+          (e.response as { status: number }).status === 429))
+    ) {
+      throw e;
+    }
     return { intent: "unknown" };
   }
 }
