@@ -232,15 +232,14 @@ async function handleRecommend(
     query = query.lte("ai_vocal_score", 2);
   if (intent.vocal_difficulty === "hard")
     query = query.gte("ai_vocal_score", 3);
-
   if (intent.pronunciation_difficulty === "easy")
     query = query.lte("ai_pronunciation_score", 2);
   if (intent.pronunciation_difficulty === "hard")
     query = query.gte("ai_pronunciation_score", 3);
 
-  const { data } = await query.limit(1).maybeSingle();
+  const { data } = await query.limit(20); // ← 20개 풀에서
 
-  if (!data) {
+  if (!data || data.length === 0) {
     return Response.json({
       type: "off_topic",
       role: "model",
@@ -249,13 +248,19 @@ async function handleRecommend(
     } satisfies ChatMessage);
   }
 
-  const isInTop100 = await checkIsInTop100(data.id);
-  const song = buildSongField(data.id, data.karaoke_tracks ?? [], isInTop100);
+  const picked = data[Math.floor(Math.random() * data.length)]; // ← 랜덤 선택
+
+  const isInTop100 = await checkIsInTop100(picked.id);
+  const song = buildSongField(
+    picked.id,
+    picked.karaoke_tracks ?? [],
+    isInTop100,
+  );
 
   return Response.json({
     type: "song_candidate" as const,
     role: "model" as const,
-    song_id: data.id,
+    song_id: picked.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡은 어떠세요?`,
     song,
   } satisfies ChatMessage);
