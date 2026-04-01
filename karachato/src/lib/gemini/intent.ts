@@ -98,11 +98,15 @@ export async function extractIntent(userInput: string): Promise<ChatIntent> {
       return { intent: "unknown" };
     }
 
-    if (
-      (parsed.intent === "search_song" || parsed.intent === "search_artist") &&
-      !parsed.keyword
-    ) {
-      return { intent: "unknown" };
+    if (parsed.intent === "search_song" || parsed.intent === "search_artist") {
+      const keyword =
+        typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
+
+      if (!keyword) {
+        return { intent: "unknown" };
+      }
+
+      parsed.keyword = keyword;
     }
 
     return parsed as ChatIntent;
