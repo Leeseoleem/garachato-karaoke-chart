@@ -48,7 +48,7 @@
 
 @theme inline {
   /* Font */
-  --font-sans: "Pretendard", sans-serif;
+  --font-sans: var(--font-pretendard), sans-serif;
 
   /* Gray */
   --color-gray-50: var(--gray-50);
@@ -98,7 +98,7 @@ body {
   height: 100%;
   background: var(--gray-50);
   color: var(--content-primary);
-  font-family: "Pretendard", sans-serif;
+  font-family: var(--font-pretendard), sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
