@@ -271,14 +271,21 @@ export async function POST(req: Request) {
           message: "노래 검색이나 추천에 대해 물어봐 주세요!",
         } satisfies ChatMessage);
     }
-  } catch {
+  } catch (e) {
+    console.error("[chat] error:", e);
+
+    const is429 =
+      e !== null && typeof e === "object" && "status" in e && e.status === 429;
+
     return Response.json(
       {
         type: "error",
         role: "model",
-        message: "서버 오류가 발생했어요. 다시 시도해주세요.",
+        message: is429
+          ? "AI 요청 한도를 초과했어요. 내일 다시 시도해주세요 🥺"
+          : "서버 오류가 발생했어요. 다시 시도해주세요.",
       } satisfies ChatMessage,
-      { status: 500 },
+      { status: is429 ? 429 : 500 },
     );
   }
 }
