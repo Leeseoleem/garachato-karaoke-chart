@@ -1,6 +1,7 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
 // === component ===
+import { ChartInfoPopover } from "./ChartInfoPopover";
 import KaraokeTabs from "../KaraokeTabs";
 import ChartHeader from "./ChartHeader";
 import ChartScrollContainer from "./ChartScrollContainer";
@@ -29,7 +30,10 @@ export default function ChartClientWrapper({
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex flex-row justify-between px-5 py-3">
-        <span className="typo-caption text-content-secondary">TOP 100</span>
+        <div className="flex items-center gap-1">
+          <span className="typo-caption text-content-secondary">TOP 100</span>
+          <ChartInfoPopover />
+        </div>
         <span className="typo-caption text-content-secondary">
           {latestDate} 기준
         </span>

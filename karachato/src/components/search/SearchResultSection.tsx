@@ -8,8 +8,10 @@ import SearchResultItem from "./SearchResultItem";
 
 export default function SearchResultSection({
   results,
+  query,
 }: {
   results: SearchResult[];
+  query: string;
 }) {
   const [isTranslated, setIsTranslated] = useState(true);
 
@@ -71,6 +73,7 @@ export default function SearchResultSection({
               karaokeNo: track.karaoke_no,
             }))}
             songId={result.id}
+            query={query}
           />
         );
       })}
