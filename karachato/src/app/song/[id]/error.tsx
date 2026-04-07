@@ -32,7 +32,10 @@ export default function SongError({
       </div>
 
       <div className="absolute bottom-9 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-90 flex flex-row items-center gap-4">
-        <button className="shrink-0 flex justify-center items-center w-12 h-12 border border-brand-main rounded-full hover:bg-gray-40 active:bg-gray-30 duration-150 transition-colors ease-in-out">
+        <button
+          onClick={reset}
+          className="shrink-0 flex justify-center items-center w-12 h-12 border border-brand-main rounded-full hover:bg-gray-40 active:bg-gray-30 duration-150 transition-colors ease-in-out"
+        >
           <RotateCcw color="#7c5cbf" />
         </button>
         <button
