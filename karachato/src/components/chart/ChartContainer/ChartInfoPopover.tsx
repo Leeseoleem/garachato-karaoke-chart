@@ -38,6 +38,9 @@ export function ChartInfoPopover() {
   return (
     <>
       <button
+        type="button"
+        aria-label="차트 출처 안내 보기"
+        aria-expanded={open}
         ref={refs.setReference}
         {...getReferenceProps()}
         className="p-1 rounded-full hover:bg-gray-40 active:bg-gray-30 duration-150 transition-colors ease-in-out"
