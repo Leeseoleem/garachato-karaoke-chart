@@ -44,7 +44,7 @@ export default async function SearchPage({
   return (
     <div className="flex flex-col h-dvh min-h-0">
       <SearchView initialQuery={q ?? ""} />
-      <SearchResultSection results={results} />
+      <SearchResultSection results={results} query={q ?? ""} />
     </div>
   );
 }
