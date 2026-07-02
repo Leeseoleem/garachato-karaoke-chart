@@ -92,16 +92,16 @@ chunk 맨 앞에 고아 곡(j=0)이 있으면:
 
 ## 6. 해결 로그 (Resolution Log)
 
-> 상태: **미착수.** 수정 진행 시 아래에 기록.
+> 상태: **해결됨 (2026-07-02).**
 
 ### 조치 (Actions)
-- _(작업 시 작성: 변경 파일, 커밋 해시, 접근 방식)_
+- `lib/ai/process.ts`: 배치 결과 접근을 `results[input.index]`(chunk 순번 j)에서 배열 순서 `results[k]`로 변경. `processPendingSongs`·`processArtistKo` 모두 `for (const input of batchInputs)` → `for (let k = 0; k < batchInputs.length; k++)`로 교체. `translateSongBatch`가 입력 순서 배열을 반환하므로 물리 인덱스와 정합.
 
 ### 결과 (Outcome)
-- _(작업 시 작성)_
+- 트랙 0개 고아 곡이 배치에 섞여도 인덱스 시프트가 발생하지 않음. 번역 밀림·pending 잔존 해소.
 
 ### 검증 (Verification)
-- _(작업 시 작성: 재번역 후 title_norm↔title_ko 정합 샘플, pending 0 확인)_
+- 오염 14곡 재번역 후 title_norm↔title_ko 전수 정합 확인, pending=0, 전체 145곡 done. tsc 통과.
 
 ### 관련 커밋/PR
-- _(작업 시 작성)_
+- 브랜치 `fix/translation-integrity`, 커밋 `2a261d4`.

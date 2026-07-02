@@ -52,16 +52,18 @@ related: [ISSUE-01, ISSUE-03]
 
 ## 6. 해결 로그 (Resolution Log)
 
-> 상태: **미착수.**
+> 상태: **해결됨 (2026-07-02).**
 
 ### 조치 (Actions)
-- _(작업 시 작성)_
+- `app/api/cron/route.ts`: track 우선 매칭 방어 추가 — songKey로 song을 못 찾아도 동일 `karaoke_no` 트랙이 있으면 그 트랙의 `song_id`를 재사용(트랙 없는 고아 생성 차단). trackMap을 `{id, songId}`로 확장.
+- 기존 고아 레코드 2건(`cutie street` / `かわいいだけじゃ だめですか`, `アイナ・ジ・エンド` / `革命道中 on the way`) DB 삭제 — 참조 0건 + 공백만 다른 정상본 존재 확인 후.
+- normalize 강화는 기존 title_norm 전수 재계산 위험이 커 track 우선 매칭으로 대체.
 
 ### 결과 (Outcome)
-- _(작업 시 작성)_
+- 트랙 0개 고아 song 0건. 제목 표기가 바뀌어도 기존 song 재사용으로 고아 재발 방지.
 
 ### 검증 (Verification)
-- _(작업 시 작성: 트랙 0개 songs 수 = 0 확인, 중복 title_norm 그룹 재확인)_
+- 트랙 0개 songs 수 = 0 확인. 삭제 전 정상본(예: cutie street 곡 43위 차트곡) 보존 확인.
 
 ### 관련 커밋/PR
-- _(작업 시 작성)_
+- 브랜치 `fix/translation-integrity`, 커밋 `8bd30f1`.

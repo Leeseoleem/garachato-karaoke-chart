@@ -85,8 +85,9 @@ export const processPendingSongs = async (): Promise<void> => {
       })),
     );
 
-    for (const input of batchInputs) {
-      const result = results[input.index];
+    for (let k = 0; k < batchInputs.length; k++) {
+      const input = batchInputs[k];
+      const result = results[k];
 
       if (!result) {
         console.error(
@@ -286,8 +287,9 @@ export const processArtistKo = async (): Promise<void> => {
       })),
     );
 
-    for (const input of batchInputs) {
-      const result = results[input.index];
+    for (let k = 0; k < batchInputs.length; k++) {
+      const input = batchInputs[k];
+      const result = results[k];
 
       if (!result) {
         console.error(`[processArtistKo] 번역 실패 - song_id: ${input.songId}`);
