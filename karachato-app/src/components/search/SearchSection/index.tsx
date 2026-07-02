@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 // === component ===
 import SearchHeader from "@/components/common/headers/SearchHeader";
 import SearchSuggestionOverlay from "./SearchSuggestionOverlay";
 
 export default function SearchSection() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [searchText, setSearchText] = useState<string>("");
   const [isFocused, setIsFocused] = useState(false);
@@ -26,7 +26,7 @@ export default function SearchSection() {
 
   const handleSubmit = () => {
     if (!searchText.trim()) return;
-    router.push(`/search?q=${encodeURIComponent(searchText.trim())}`);
+    navigate(`/search?q=${encodeURIComponent(searchText.trim())}`);
   };
 
   useEffect(() => {

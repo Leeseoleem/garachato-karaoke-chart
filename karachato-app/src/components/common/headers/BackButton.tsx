@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
 import { ROUTES } from "@/constants/routes";
@@ -11,13 +11,13 @@ interface BackButtonProps {
 export default function BackButton({
   fallback = ROUTES.HOME,
 }: BackButtonProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleBack = () => {
     if (window.history.length > 1) {
-      router.back();
+      navigate(-1);
     } else {
-      router.replace(fallback);
+      navigate(fallback, { replace: true });
     }
   };
 

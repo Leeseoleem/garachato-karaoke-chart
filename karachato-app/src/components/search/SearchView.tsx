@@ -1,15 +1,15 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import SearchHeader from "@/components/common/headers/SearchHeader";
 
 export default function SearchView({ initialQuery }: { initialQuery: string }) {
   const [searchText, setSearchText] = useState(initialQuery);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleSubmit = () => {
     if (!searchText.trim()) return;
-    router.push(`/search?q=${encodeURIComponent(searchText)}`);
+    navigate(`/search?q=${encodeURIComponent(searchText)}`);
   };
 
   return (

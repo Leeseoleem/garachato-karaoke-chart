@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 
 interface SearchSuggestionItemProps {
@@ -10,7 +10,7 @@ export default function SearchSuggestionItem({
 }: SearchSuggestionItemProps) {
   return (
     <Link
-      href={`/search?q=${encodeURIComponent(keyword)}`}
+      to={`/search?q=${encodeURIComponent(keyword)}`}
       className="flex items-center h-12 px-6 gap-4 bg-gray-50 hover:bg-gray-40 active:bg-gray-30 border-b border-gray-30 transition-colors duration-150"
     >
       <Search size={16} color="#7C5CBF" strokeWidth={1.5} absoluteStrokeWidth />
