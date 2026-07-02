@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📚 이슈 분석 문서 모음
+    url: https://github.com/Leeseoleem/garachato-karaoke-chart/tree/dev/docs/issues
+    about: 각 이슈의 원인·분석·해결 로그 전문은 docs/issues/ 에 있습니다.

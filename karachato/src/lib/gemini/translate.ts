@@ -109,8 +109,10 @@ export const buildTranslatePrompt = (
 - 영어 번역 규칙: 영어는 직역하지 않고 한국어 발음 표기를 우선으로 하세요
   예: Stay With Me → 스테이 위드 미, Jane Doe → 제인 도
   단, OST / OP / ED / TV / ver / feat 등 음악·방송 관련 약어는 번역하지 않고 원문 그대로 유지하세요
-- artist_ko: 일본어 가수명만 한글 발음으로 표기, 영어 이름은 원문 유지
-  예: 米津玄師 → 요네즈 켄시, 宇多田ヒカル → 우타다 히카루, YOASOBI → YOASOBI
+- artist_ko: 한국 팬덤에서 가장 널리 통용되는 표기를 최우선으로 사용
+  통용 한글명이 있으면 영문 활동명이라도 한글로 표기: Vaundy → 바운디, King Gnu → 킹누, Mrs. GREEN APPLE → 미세스 그린 애플
+  일본어 가수명은 한글 발음: 米津玄師 → 요네즈 켄시, 宇多田ヒカル → 우타다 히카루
+  단 한국에서도 원문(영문)으로 더 많이 불리면 원문 유지: YOASOBI → YOASOBI, DECO*27 → DECO*27, tuki. → tuki.
 - ai_category: 반드시 5개 중 하나. 보컬로이드 곡은 J-POP이 아닌 보컬로이드로 분류
 - ai_traits 허용값: 역주행 | 바이럴 | 최신곡 | 예전곡 | 커버곡 (이 외의 값은 절대 사용 금지)
 - ai_genres: 3개 이내
@@ -166,8 +168,10 @@ ${songList}
 - 영어 번역 규칙: 영어는 직역하지 않고 한국어 발음 표기를 우선으로 하세요
   예: Stay With Me → 스테이 위드 미, Jane Doe → 제인 도
   단, OST / OP / ED / TV / ver / feat 등 음악·방송 관련 약어는 번역하지 않고 원문 그대로 유지하세요
-- artist_ko: 일본어 가수명만 한글 발음으로 표기, 영어 이름은 원문 유지
-  예: 米津玄師 → 요네즈 켄시, 宇多田ヒカル → 우타다 히카루, YOASOBI → YOASOBI
+- artist_ko: 한국 팬덤에서 가장 널리 통용되는 표기를 최우선으로 사용
+  통용 한글명이 있으면 영문 활동명이라도 한글로 표기: Vaundy → 바운디, King Gnu → 킹누, Mrs. GREEN APPLE → 미세스 그린 애플
+  일본어 가수명은 한글 발음: 米津玄師 → 요네즈 켄시, 宇多田ヒカル → 우타다 히카루
+  단 한국에서도 원문(영문)으로 더 많이 불리면 원문 유지: YOASOBI → YOASOBI, DECO*27 → DECO*27, tuki. → tuki.
 - ai_category: 반드시 5개 중 하나. 보컬로이드 곡은 J-POP이 아닌 보컬로이드로 분류
 - ai_traits 허용값: 역주행 | 바이럴 | 최신곡 | 예전곡 | 커버곡 (이 외의 값은 절대 사용 금지)
 - ai_genres: 3개 이내

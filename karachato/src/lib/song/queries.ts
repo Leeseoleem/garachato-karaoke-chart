@@ -11,6 +11,7 @@ export const getSongById = cache(
       .select(
         `
       id,
+      ai_status,
       title_ko,
       artist_ko,
       thumbnail_url,
@@ -44,7 +45,6 @@ export const getSongById = cache(
     `,
       )
       .eq("id", songId)
-      .eq("ai_status", "done")
       .single();
 
     if (error) {

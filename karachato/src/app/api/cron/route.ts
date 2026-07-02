@@ -56,13 +56,13 @@ export async function GET(request: Request) {
     // STEP 3. karaoke_tracks 전체 조회 → Map으로 만들어두기
     const { data: existingTracks } = await supabase
       .from("karaoke_tracks")
-      .select("id, karaoke_no")
+      .select("id, karaoke_no, song_id")
       .eq("provider", "TJ");
 
-    const trackMap = new Map<string, number>();
+    const trackMap = new Map<string, { id: number; songId: string }>();
     if (existingTracks) {
       for (const t of existingTracks) {
-        trackMap.set(t.karaoke_no, t.id);
+        trackMap.set(t.karaoke_no, { id: t.id, songId: t.song_id });
       }
     }
 
@@ -71,9 +71,16 @@ export async function GET(request: Request) {
         const titleNorm = normalize(song.title);
         const artistNorm = normalize(song.artist);
         const songKey = `${titleNorm}__${artistNorm}`;
+        const existingTrack = trackMap.get(song.karaoke_no);
 
         // songs upsert
         let songId = songMap.get(songKey);
+
+        // 제목 표기가 바뀌어 songKey가 달라져도, 동일 karaoke_no 트랙이 이미
+        // 있으면 그 트랙의 song을 재사용한다 (트랙 없는 고아 song 생성 방지)
+        if (!songId && existingTrack) {
+          songId = existingTrack.songId;
+        }
 
         if (!songId) {
           const { data: inserted, error: insertError } = await supabase
@@ -114,7 +121,7 @@ export async function GET(request: Request) {
         }
 
         // karaoke_tracks upsert
-        let trackId = trackMap.get(song.karaoke_no);
+        let trackId = existingTrack?.id;
 
         if (!trackId) {
           const { data: track, error: trackError } = await supabase
