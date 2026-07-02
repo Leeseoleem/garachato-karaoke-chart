@@ -2,7 +2,7 @@
 
 아래 7개를 GitHub → New Issue(🔍 시스템 이슈 분석 리포트 템플릿)에 순서대로 붙여넣으면 된다.
 각 이슈의 **제목 / 라벨 / 추천 브랜치명 / 본문**을 그대로 복사.
-번호(#)는 실제 업로드 후 부여되는 값으로 "관련 이슈"에서 치환.
+관련 이슈는 `ISSUE-NN` 표기로 두었으니, GitHub 업로드 후 실제 이슈 번호(`#N`)로 바꾸면 자동 링크된다.
 
 ## 브랜치명 요약
 
@@ -26,7 +26,7 @@
 **라벨:** `bug` `P0` `data-integrity` **| 브랜치:** `fix/translation-batch-index-shift`
 
 ## 요약 (TL;DR)
-단일 버그가 세 증상을 유발한다. 배치 번역 결과 매핑에서 `results[input.index]`로 접근하는데, `translateSongBatch`는 입력 배열의 물리적 순서대로 결과를 반환한다. 트랙 0개인 고아 곡(#02)이 배치에서 `continue`로 빠지면 물리 인덱스와 `input.index`가 어긋나, (1) 번역이 인접 다음 곡에 잘못 저장되고 (2) 체인 끝 곡은 undefined가 되어 pending에 영구 잔존한다.
+단일 버그가 세 증상을 유발한다. 배치 번역 결과 매핑에서 `results[input.index]`로 접근하는데, `translateSongBatch`는 입력 배열의 물리적 순서대로 결과를 반환한다. 트랙 0개인 고아 곡(ISSUE-02)이 배치에서 `continue`로 빠지면 물리 인덱스와 `input.index`가 어긋나, (1) 번역이 인접 다음 곡에 잘못 저장되고 (2) 체인 끝 곡은 undefined가 되어 pending에 영구 잔존한다.
 
 ## 증상 (Symptoms)
 - 번역이 한 칸씩 밀려 저장됨(각 곡에 "다음 곡"의 번역): `可愛くてごめん/honeyworks` → `벚꽃 너 나/tuki.`, `ヒッチコック/ヨルシカ` → `튜링 러브/나나오 아카리` 등.
@@ -41,16 +41,16 @@
 - 근거: `gemini-2.5-flash`에 실제 pending 곡 배치 호출 시 HTTP 200·정상 번역 확인 → 모델 아닌 코드 버그 확정.
 
 ## 영향 범위 (Impact)
-- `songs`/`karaoke_tracks`의 번역 컬럼 + `_norm` 파생까지 오염. done 143곡 중 다수 의심 → 전수 재검증 필요(#03). 검색·차트·상세·챗봇 전부 잘못된 번역 노출.
+- `songs`/`karaoke_tracks`의 번역 컬럼 + `_norm` 파생까지 오염. done 143곡 중 다수 의심 → 전수 재검증 필요(ISSUE-03). 검색·차트·상세·챗봇 전부 잘못된 번역 노출.
 
 ## 해결 방안 (Proposed Fix)
 1. 매핑을 index 기준으로 정합화: `translateSongBatch`가 index→result 맵 반환 후 `map.get`으로 접근, 또는 process에서 반환 배열을 순서대로 zip.
 2. `processArtistKo`도 동일 수정.
-3. 수정 후 #03 복구 실행.
-4. (예방) #02 고아 레코드가 batchInputs 흐름에 섞이지 않도록 상류 차단.
+3. 수정 후 ISSUE-03 복구 실행.
+4. (예방) ISSUE-02 고아 레코드가 batchInputs 흐름에 섞이지 않도록 상류 차단.
 
 ## 우선순위 / 사이클
-- 우선순위: **P0** · 사이클: **1** · 관련: #02 #03 #04
+- 우선순위: **P0** · 사이클: **1** · 관련: ISSUE-02 ISSUE-03 ISSUE-04
 - 상세: `docs/issues/ISSUE-01-translation-batch-index-shift.md`
 
 ---
@@ -61,7 +61,7 @@
 **라벨:** `bug` `P0` `data-integrity` **| 브랜치:** `fix/orphan-song-records`
 
 ## 요약 (TL;DR)
-같은 곡이 `title_norm` 정규화 불일치로 중복 삽입되며 `karaoke_tracks`가 하나도 없는 고아 song이 생긴다. 이 곡은 번역 배치에서 건너뛰어져 영구 pending이 되고, 동시에 #01의 인덱스 시프트를 유발하는 트리거가 된다.
+같은 곡이 `title_norm` 정규화 불일치로 중복 삽입되며 `karaoke_tracks`가 하나도 없는 고아 song이 생긴다. 이 곡은 번역 배치에서 건너뛰어져 영구 pending이 되고, 동시에 ISSUE-01의 인덱스 시프트를 유발하는 트리거가 된다.
 
 ## 증상 (Symptoms)
 - 트랙 0개 pending 곡(2026-07-02, 2곡): `かわいいだけじゃ だめですか/cutie street`(2026-05-28), `革命道中 on the way/アイナ・ジ・エンド`(2026-05-28). 둘 다 updated_at이 생성 시점 그대로.
@@ -72,16 +72,16 @@
 - 트랙 없는 song 삽입 경로 점검 필요: `src/app/api/cron/route.ts`, `src/lib/crawlers/*`, `src/utils/string.ts`(`normalize`).
 
 ## 영향 범위 (Impact)
-- 고아 곡: 영구 pending, 빈 데이터 노출 위험. 배치 전체: #01의 오연결·pending 잔존 촉발.
+- 고아 곡: 영구 pending, 빈 데이터 노출 위험. 배치 전체: ISSUE-01의 오연결·pending 잔존 촉발.
 
 ## 해결 방안 (Proposed Fix)
 1. `normalize` 강화(연속 공백/전각·반각/대소문자 통일)로 중복 감지 신뢰도 향상.
 2. 기존 고아 레코드 정리(병합/삭제, 참조 무결성 확인 후).
 3. 삽입 방어: 트랙과 song을 원자적으로 함께 생성, 트랙 없는 song 생성 차단.
-4. (완화) #01 매핑 수정 병행.
+4. (완화) ISSUE-01 매핑 수정 병행.
 
 ## 우선순위 / 사이클
-- 우선순위: **P0** · 사이클: **2** · 관련: #01 #03
+- 우선순위: **P0** · 사이클: **2** · 관련: ISSUE-01 ISSUE-03
 - 상세: `docs/issues/ISSUE-02-orphan-song-records.md`
 
 ---
@@ -92,21 +92,21 @@
 **라벨:** `P0` `data-integrity` **| 브랜치:** `chore/translation-data-recovery`
 
 ## 요약 (TL;DR)
-#01로 밀려 저장된 번역본을 바로잡는다. SQL로 시프트를 되돌리는 방식은 위험하므로, 버그 수정 후 오염 곡을 재번역하는 방식으로 복구한다.
+ISSUE-01로 밀려 저장된 번역본을 바로잡는다. SQL로 시프트를 되돌리는 방식은 위험하므로, 버그 수정 후 오염 곡을 재번역하는 방식으로 복구한다.
 
 ## 배경 (Context)
 - 번역본은 `songs`(title_ko, title_ko_norm, artist_ko, artist_ko_norm, description, ai_*)와 `karaoke_tracks`(title_ko_jp, title_ko_full, artist_ko) 두 테이블에 분산.
 - 화면별 사용 컬럼이 다름 — 상세: songs / 리스트·검색표시: karaoke_tracks / 검색매칭: songs `_norm`(pg_trgm) + kt(ILIKE). 자동 전파 트리거 없음.
 
 ## 복구 방안 (Proposed Approach)
-- **권장(재번역)**: #01 수정 + #02 정리 후, 오염 의심 곡을 `ai_status='pending'`으로 리셋 → `/api/cron-ai` 재실행 → 전 컬럼(`_norm` 포함) 재생성. 범위: title_norm↔title_ko 불일치 + 고아곡 등장(~2026-05-28) 이후 곡, 또는 안전하게 전 done 재번역 검토.
+- **권장(재번역)**: ISSUE-01 수정 + ISSUE-02 정리 후, 오염 의심 곡을 `ai_status='pending'`으로 리셋 → `/api/cron-ai` 재실행 → 전 컬럼(`_norm` 포함) 재생성. 범위: title_norm↔title_ko 불일치 + 고아곡 등장(~2026-05-28) 이후 곡, 또는 안전하게 전 done 재번역 검토.
 - **비권장(SQL 시프트 되돌리기)**: 시프트 폭이 배치마다 달라 경계 불명확, 더 꼬일 위험.
 
 ## 실행 주체
 - Supabase(`twuqhafcssezckrbtkoo`)에 직접 리셋/재번역 실행 가능(승인 후). SQL Editor 수작업 불필요.
 
 ## 우선순위 / 사이클
-- 우선순위: **P0** · 사이클: **3** · 관련: #01 #02
+- 우선순위: **P0** · 사이클: **3** · 관련: ISSUE-01 ISSUE-02
 - 상세: `docs/issues/ISSUE-03-translation-data-recovery.md`
 
 ---
@@ -129,7 +129,7 @@ TOP100 리스트 쿼리엔 `ai_status` 필터가 없어 pending 곡도 노출되
 - `src/components/chart/RankCard/index.tsx` — 모든 곡 무조건 `/song/${songId}` 링크.
 
 ## 근본 vs 표면
-- 근본 트리거는 #01(pending 축적). #01~03 해결 시 현 증상은 대부분 사라짐. 단 신규곡은 크롤 직후 항상 잠깐 pending이므로 필터 정합성 자체를 고쳐 재발 방지 필요.
+- 근본 트리거는 ISSUE-01(pending 축적). ISSUE-01~03 해결 시 현 증상은 대부분 사라짐. 단 신규곡은 크롤 직후 항상 잠깐 pending이므로 필터 정합성 자체를 고쳐 재발 방지 필요.
 
 ## 해결 방안 (Proposed Fix)
 1. 리스트에서 pending 제외(차트 정확도 손상 트레이드오프).
@@ -137,7 +137,7 @@ TOP100 리스트 쿼리엔 `ai_status` 필터가 없어 pending 곡도 노출되
 3. pending 곡 카드 링크 비활성 + "준비중" 표시.
 
 ## 우선순위 / 사이클
-- 우선순위: **P1** · 사이클: **4** · 관련: #01
+- 우선순위: **P1** · 사이클: **4** · 관련: ISSUE-01
 - 상세: `docs/issues/ISSUE-04-zombie-link-404.md`
 
 ---
@@ -162,7 +162,7 @@ TOP100 리스트 쿼리엔 `ai_status` 필터가 없어 pending 곡도 노출되
 5. README 금영 서술 정정.
 
 ## 리스크
-- 금영 썸네일 미제공 → 유튜브 폴백 의존. 사이트 구조 변경 대비 셀렉터 회귀 테스트. #02 선행 권장.
+- 금영 썸네일 미제공 → 유튜브 폴백 의존. 사이트 구조 변경 대비 셀렉터 회귀 테스트. ISSUE-02 선행 권장.
 
 ## 우선순위 / 사이클
 - 우선순위: **P2** · 사이클: **5**
@@ -191,10 +191,10 @@ TOP100 리스트 쿼리엔 `ai_status` 필터가 없어 pending 곡도 노출되
 - 가수명은 1번, 곡 제목/설명은 기존 유지.
 
 ## 의존성
-- #01/#03로 오염 정리 후라야 기존 artist_ko가 신뢰 가능한 재사용 소스가 됨. #05(금영 유입) 전 반영 시 신규 KY 곡부터 일관 저장.
+- ISSUE-01/ISSUE-03로 오염 정리 후라야 기존 artist_ko가 신뢰 가능한 재사용 소스가 됨. ISSUE-05(금영 유입) 전 반영 시 신규 KY 곡부터 일관 저장.
 
 ## 우선순위 / 사이클
-- 우선순위: **P2** · 사이클: **6** · 관련: #01 #03
+- 우선순위: **P2** · 사이클: **6** · 관련: ISSUE-01 ISSUE-03
 - 상세: `docs/issues/ISSUE-06-artist-name-consistency.md`
 
 ---
