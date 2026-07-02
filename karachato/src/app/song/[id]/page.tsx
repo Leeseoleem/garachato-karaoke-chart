@@ -3,6 +3,7 @@ import { Metadata } from "next";
 // === components ===
 import BackHeader from "@/components/common/headers/BackHeader";
 import SongDetailContent from "@/components/song-detail/SongDetailContent";
+import SongPendingNotice from "@/components/song-detail/SongPendingNotice";
 // === queries ===
 import { getSongById } from "@/lib/song/queries";
 // === constants ===
@@ -18,8 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!song) return { title: "곡을 찾을 수 없습니다" };
 
-  const title = song.title_ko ?? "Unknown";
-  const artist = song.artist_ko ?? "";
+  const primaryTrack =
+    song.karaoke_tracks.find((t) => t.provider === "TJ") ??
+    song.karaoke_tracks[0];
+  const title = song.title_ko ?? primaryTrack?.title_in_provider ?? "Unknown";
+  const artist = song.artist_ko ?? primaryTrack?.artist_in_provider ?? "";
   const description =
     song.description ??
     `${title} - ${artist} 노래방 번호와 AI 해설을 확인하세요.`;
@@ -54,10 +58,21 @@ export default async function SongDetailPage({
 
   if (!song) return notFound();
 
+  const primaryTrack =
+    song.karaoke_tracks.find((t) => t.provider === "TJ") ??
+    song.karaoke_tracks[0];
+
   return (
     <div className="flex flex-col h-dvh min-h-0">
       <BackHeader title="곡 상세 정보" />
-      <SongDetailContent song={song} />
+      {song.ai_status === "done" ? (
+        <SongDetailContent song={song} />
+      ) : (
+        <SongPendingNotice
+          titleOriginal={primaryTrack?.title_in_provider ?? ""}
+          artistOriginal={primaryTrack?.artist_in_provider ?? ""}
+        />
+      )}
     </div>
   );
 }

@@ -110,6 +110,7 @@ export type RankHistoryWithJoin = ChartRow;
 // ─────────────────────────────────────────
 export interface SongDetailRow {
   id: string;
+  ai_status: ProcessStatus;
   title_ko: string | null;
   artist_ko: string | null;
   thumbnail_url: string | null;
