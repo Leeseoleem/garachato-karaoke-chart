@@ -140,3 +140,14 @@ related: [ISSUE-04, ISSUE-07]
 - 🔴 blocker: ① BackHeader/BackButton 자체 뒤로가기 제거(호스트 네비바 사용) ② `granite.config.ts` 생성(`navigationBar.theme:'dark'` + SDK≥2.8.0 확인/업)
 - 🟡 should-fix: FloatingBar 액션 전용 + safe-area inset · 핀치줌/풀투리프레시 off · 화면별 타이틀 런타임 의존 제거
 - 🟢 그대로: KaraokeTabs, ChatModal/SettingModal(다크 스타일 일관성만)
+
+### 7.5 레포 구조 & 배포 전략 (2026-07-03 확정)
+> 모노레포에서 **브랜치를 제품별로 쪼개지 않는다.** 배포는 **폴더별 설정**으로 가른다.
+
+- **구조:** 한 레포에 `karachato/`(웹 + 백엔드 Next: `/api/cron·chat·search`) + `karachato-app/`(앱인토스 Vite+React18 웹뷰 프론트).
+- **브랜치: 단일 `dev → main` 유지.** 제품별 브랜치 분리(web-main/app-main 등)는 **안티패턴** — 두 폴더가 모든 브랜치에 존재해 혼란 + 공유코드 divergence + 머지 지옥.
+- **배포는 폴더로 가름:**
+  - **웹(기존):** `karachato/` → Vercel (그대로, 무영향)
+  - **앱 → 웹:** `karachato-app/` → **별도 Vercel 프로젝트**(root directory만 다르게), 같은 `main`
+  - **앱 → 토스:** `ait build` → `.ait` → 콘솔 업로드 / `ait deploy` (**깃 브랜치와 무관**)
+- `dev→main` 머지해도 웹 배포는 `karachato/` 기준이라 새 `karachato-app/` 폴더의 영향 없음 → 지금 브랜치 전략 변경 불필요.
