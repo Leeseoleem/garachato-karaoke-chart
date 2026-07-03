@@ -1,5 +1,6 @@
 import { createServerClient } from "../supabase/server";
 import { translateSongBatch } from "../gemini/translate";
+import { generateGroundedDescription } from "../gemini/describe";
 import { normalize } from "@/utils/string";
 
 export const processPendingSongs = async (): Promise<void> => {
@@ -162,6 +163,14 @@ export const processPendingSongs = async (): Promise<void> => {
         continue;
       }
 
+      // 구글검색 그라운딩 기반 리치 description (실패 시 번역 결과로 폴백)
+      const groundedDescription =
+        (await generateGroundedDescription(
+          input.title,
+          input.artist,
+          result.ai_category,
+        )) ?? result.description;
+
       const { error: songUpdateError } = await supabase
         .from("songs")
         .update({
@@ -169,7 +178,7 @@ export const processPendingSongs = async (): Promise<void> => {
           title_ko_norm: normalize(result.title_ko),
           artist_ko: result.artist_ko,
           artist_ko_norm: normalize(result.artist_ko),
-          description: result.description,
+          description: groundedDescription,
           ai_category: result.ai_category,
           ai_traits: result.ai_traits,
           ai_genres: result.ai_genres,
