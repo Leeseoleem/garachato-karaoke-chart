@@ -4,6 +4,7 @@ import type { DeltaStatus } from "@/types/domain";
 // === component ===
 import SongHeroSection from "./SongHeroSection";
 import SongKaraokeNumber from "./SongKaraokeNumber";
+import SongIntroSection from "./SongIntroSection";
 import SongInfoSection from "./SongInfoSection";
 import VocalGuideSection from "./VocalGuideSection";
 
@@ -33,6 +34,14 @@ export default function SongDetailContent({ song }: { song: SongDetailRow }) {
           <SongKaraokeNumber provider="TJ" karaokeNo={tjTrack?.karaoke_no} />
           <SongKaraokeNumber provider="KY" karaokeNo={kyTrack?.karaoke_no} />
         </div>
+
+        {/* 곡 소개 (설명 + 상세 리스트) */}
+        <SongIntroSection
+          description={song.description ?? "곡에 대한 설명이 없어요."}
+          facts={song.ai_intro ?? []}
+        />
+
+        {/* 곡 정보 (순위·카테고리) */}
         <SongInfoSection
           rankInfo={{
             currentRank: latestRank?.rank ?? null,
@@ -42,16 +51,13 @@ export default function SongDetailContent({ song }: { song: SongDetailRow }) {
               latestRank?.delta_status !== "NEW" &&
               latestRank?.delta_value != null &&
               latestRank?.rank != null
-                ? latestRank.rank + latestRank.delta_value // 부호 포함이므로 분기 불필요
+                ? latestRank.rank + latestRank.delta_value
                 : null,
           }}
-          description={song.description ?? "곡에 대한 설명이 없어요."}
-          tags={[
-            song.ai_category ?? "JPOP",
-            ...(song.ai_traits ?? []),
-            ...(song.ai_vibes ?? []),
-          ]}
+          tags={[song.ai_category ?? "JPOP", ...(song.ai_traits ?? [])]}
         />
+
+        {/* 보컬 가이드 (난이도·팁) */}
         <VocalGuideSection
           vocalDifficult={{
             score: song.ai_vocal_score ?? 0,

@@ -22,13 +22,13 @@ export default function VocalGuideSection({
     <div className="flex flex-col items-start px-4 py-5 gap-3 border gradient-border rounded-xl">
       <div className="flex flex-col items-start gap-2 w-full">
         <div className="flex items-center justify-center px-3.5 py-1.5 bg-brand-dark border border-brand-light rounded-3xl">
-          <p className="typo-description text-brand-light">✦ AI 분석</p>
+          <p className="typo-description text-brand-light">✦ 보컬 가이드</p>
         </div>
         <div className="flex flex-col items-start gap-3 w-full">
           <DifficultyItem label="보컬 난이도" {...vocalDifficult} />
           <DifficultyItem label="발음 난이도" {...PronunciationDifficult} />
         </div>
-        <div className="flex flex-row items-center gap-1">
+        <div className="flex flex-row items-center gap-1 flex-wrap">
           {tags.map((tag) => (
             <Tag key={tag} label={tag} />
           ))}

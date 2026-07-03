@@ -125,6 +125,7 @@ export interface SongDetailRow {
   ai_pronunciation_score: number | null;
   ai_pronunciation_reason: string | null;
   ai_karaoke_tip: string | null;
+  ai_intro: { label: string; value: string }[] | null;
   karaoke_tracks: {
     id: number;
     karaoke_no: string;

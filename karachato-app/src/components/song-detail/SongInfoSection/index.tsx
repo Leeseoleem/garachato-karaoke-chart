@@ -13,13 +13,11 @@ interface SongInfoSectionProps {
     currentStatus: DeltaStatus;
     previousRank: number | null;
   };
-  description: string;
   tags: string[];
 }
 
 export default function SongInfoSection({
   rankInfo,
-  description,
   tags,
 }: SongInfoSectionProps) {
   const paddingClass = "pl-1 py-2";
@@ -35,9 +33,6 @@ export default function SongInfoSection({
       </div>
       <Divider />
       <div className={clsx(paddingClass, "flex flex-col gap-2 items-start")}>
-        <p className="typo-caption text-content-primary whitespace-pre-line wrap-break-word">
-          {description}
-        </p>
         <div className="shrink-0 flex flex-row items-center gap-x-2 flex-wrap">
           {tags.map((tag) => (
             <Tag key={tag} label={tag} />
