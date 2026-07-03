@@ -13,6 +13,7 @@
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.10.4",
     "@floating-ui/react": "^0.27.19",
+    "@supabase/supabase-js": "^2.110.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.23.0",
