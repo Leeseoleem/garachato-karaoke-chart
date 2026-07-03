@@ -97,7 +97,7 @@ const UserInput = forwardRef<HTMLTextAreaElement, UserInputProps>(
           </button>
         </div>
         <p className="text-[10px] font-medium text-content-secondary text-center">
-          챠토봇은 AI이며 실제와 다른 정보를 제공할 수 있습니다.
+          챠토봇은 AI이며 실제와 다른 정보를 제공할 수 있어요.
         </p>
       </div>
     );

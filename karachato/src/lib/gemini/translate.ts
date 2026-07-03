@@ -4,7 +4,7 @@ import type { TranslateResult } from "@/types/gemini";
 import type { AiCategory, AiTrait } from "@/types/domain";
 
 const SYSTEM_INSTRUCTION =
-  "당신은 J-POP 전문 번역가이자 음악 큐레이터입니다. 요청된 곡 정보를 분석하고 반드시 지정된 JSON 형식으로만 응답하세요.";
+  "당신은 J-POP 전문 번역가이자 음악 큐레이터입니다. 요청된 곡 정보를 분석하고 반드시 지정된 JSON 형식으로만 응답하세요. description, ai_vocal_reason, ai_pronunciation_reason, ai_karaoke_tip 등 모든 설명 문장은 '해요체'(~해요/~예요/~어요)로 친근하게 작성하고, '~습니다/~이다/~한다' 문체는 절대 쓰지 마세요.";
 
 // 배치용 입력 타입
 interface BatchInput {

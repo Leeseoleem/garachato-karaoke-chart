@@ -47,7 +47,7 @@ export default function SongKaraokeNumber({
           // 마우스 환경(데스크탑)에서만 토스트 표시
           const isDesktop = window.matchMedia("(pointer: fine)").matches;
           if (isDesktop) {
-            toast("노래방 번호가 복사되었습니다.", {
+            toast("노래방 번호가 복사되었어요.", {
               position: "bottom-center",
               style: {
                 fontFamily: "Pretendard, ...",
