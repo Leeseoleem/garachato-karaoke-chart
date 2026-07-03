@@ -55,7 +55,11 @@ export default function RankCard({
 
   return (
     <div className="relative flex flex-row justify-between items-center w-full px-5 pt-4 pb-3 border-b border-gray-30 hover:bg-gray-50/20 active:bg-gray-50/40 transition-colors duration-300">
-      <Link to={`/song/${songId}`} className="absolute inset-0 z-0" />
+      <Link
+        to={`/song/${songId}`}
+        aria-label={`곡 상세 보기: ${mainTitle}`}
+        className="absolute inset-0 z-0"
+      />
       <div className="pointer-events-none flex flex-row gap-5 justify-center">
         <RankColumn {...rank} />
         <div className={clsx(colClass, "justify-center")}>

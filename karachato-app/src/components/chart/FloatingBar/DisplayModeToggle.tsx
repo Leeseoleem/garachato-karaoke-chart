@@ -15,6 +15,7 @@ export default function DisplayModeToggle() {
     <div
       onClick={toggle}
       role="switch"
+      aria-label="차트 제목 번역 표시 전환"
       aria-checked={displayMode === "translated"}
       tabIndex={0}
       onKeyDown={(e) => {
