@@ -26,7 +26,7 @@ export default function SearchResultItem({
   return (
     <Link
       to={`/song/${songId}`}
-      className="flex justify-between items-center px-5 pt-3 pb-4 border-b border-gray-30 hover:bg-gray-40 active:bg-gray-30 transition-colors duration-150"
+      className="flex justify-between items-center gap-3 px-5 py-4 sm:py-5 border-b border-gray-30 hover:bg-gray-40 active:bg-gray-30 transition-colors duration-150"
     >
       <div className="flex-1 flex flex-col gap-1 items-start justify-center">
         <h3 className="typo-subtitle text-gray-white break-words">{highlight(title, query)}</h3>
