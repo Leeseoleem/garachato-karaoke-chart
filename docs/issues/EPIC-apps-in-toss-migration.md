@@ -3,7 +3,7 @@ id: EPIC-apps-in-toss-migration
 title: 앱인토스(Apps in Toss) 출시 마이그레이션
 cycle: 2차 (데이터 무결성 이후 · 기능 강화 이전)
 priority: EPIC
-status: 계획확정(착수대기)
+status: 진행중
 labels: [epic, migration, apps-in-toss, architecture]
 created: 2026-07-02
 related: [ISSUE-04, ISSUE-07]
