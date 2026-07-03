@@ -20,6 +20,8 @@ export function ChartInfoPopover() {
     onOpenChange: setOpen,
     middleware: [offset(8), flip()],
     placement: "right-start",
+    // top/left로 위치 → framer-motion transform 애니메이션과 충돌 없음
+    transform: false,
   });
 
   const click = useClick(context);
@@ -51,26 +53,20 @@ export function ChartInfoPopover() {
       <FloatingPortal>
         <AnimatePresence>
           {open && (
-            <div
-              // eslint-disable-next-line react-hooks/refs
+            <motion.div
               ref={refs.setFloating}
               style={floatingStyles}
               {...getFloatingProps()}
-              className="z-50"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              className="z-50 w-52 rounded-xl border border-gray-20 bg-gray-40 p-3"
             >
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.2 }}
-                className="w-52 rounded-xl border border-gray-20 bg-gray-40 p-3"
-              >
-                <p className="typo-label font-light leading-relaxed text-content-muted">
-                  이 차트는 TJ미디어의 J-POP TOP 100 데이터를 기반으로
-                  제공됩니다.
-                </p>
-              </motion.div>
-            </div>
+              <p className="typo-label font-light leading-relaxed text-content-muted">
+                이 차트는 TJ미디어의 J-POP TOP 100 데이터를 기반으로 제공됩니다.
+              </p>
+            </motion.div>
           )}
         </AnimatePresence>
       </FloatingPortal>
