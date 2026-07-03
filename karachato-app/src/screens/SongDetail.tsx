@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import SongDetailContent from "@/components/song-detail/SongDetailContent";
+import DetailHeader from "@/components/common/headers/DetailHeader";
 import { getSongById } from "@/lib/song/queries";
 import type { SongDetailRow } from "@/types/database";
 
@@ -45,6 +46,7 @@ export default function SongDetail() {
 
   return (
     <div className="flex flex-col h-dvh min-h-0">
+      <DetailHeader />
       <SongDetailContent song={song} />
     </div>
   );

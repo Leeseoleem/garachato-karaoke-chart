@@ -3,6 +3,7 @@ import SearchSection from "@/components/search/SearchSection";
 import ChartClientWrapper from "@/components/chart/ChartContainer/ChartClientWrapper";
 import SettingModal from "@/components/modals/SettingModal";
 import ChatModal from "@/components/modals/ChatModal";
+import { MainPageSkeleton } from "@/components/skeletons/pages/MainPageSkeleton";
 import { getChartByProvider } from "@/lib/chart/queries";
 import type { ChartRow } from "@/types/database";
 
@@ -31,13 +32,13 @@ export default function Home() {
 
   return (
     <main className="relative flex h-dvh flex-col overflow-hidden">
-      <SearchSection />
       {loading ? (
-        <div className="flex flex-1 items-center justify-center typo-caption text-content-secondary">
-          차트를 불러오는 중…
-        </div>
+        <MainPageSkeleton />
       ) : (
-        <ChartClientWrapper items={items} latestDate={latestDate} />
+        <>
+          <SearchSection />
+          <ChartClientWrapper items={items} latestDate={latestDate} />
+        </>
       )}
       <SettingModal />
       <ChatModal />
