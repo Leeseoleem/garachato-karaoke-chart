@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import KaraokeBadge from "../common/badges/KaraokeBadge";
 import type { KaraokeProvider } from "@/types/domain";
 import { highlight } from "@/utils/highlight";
@@ -25,7 +25,7 @@ export default function SearchResultItem({
 }: SearchResultItemProps) {
   return (
     <Link
-      href={`/song/${songId}`}
+      to={`/song/${songId}`}
       className="flex justify-between items-center px-5 pt-3 pb-4 border-b border-gray-30 hover:bg-gray-40 active:bg-gray-30 transition-colors duration-150"
     >
       <div className="flex-1 flex flex-col gap-1 items-start justify-center">

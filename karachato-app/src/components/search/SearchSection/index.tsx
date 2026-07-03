@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase/client";
 // === component ===
 import SearchHeader from "@/components/common/headers/SearchHeader";
 import SearchSuggestionOverlay from "./SearchSuggestionOverlay";
@@ -35,12 +36,11 @@ export default function SearchSection() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/search?q=${encodeURIComponent(searchText)}`,
-        );
-        if (!res.ok || isCancelled) return;
-        const data = await res.json();
-        const keywords: string[] = (data.results ?? []).map(
+        const { data, error } = await supabase.rpc("search_songs", {
+          query: searchText,
+        });
+        if (error || isCancelled) return;
+        const keywords: string[] = (data ?? []).map(
           (item: { title_ko_jp: string | null; title_in_provider: string }) =>
             item.title_ko_jp ?? item.title_in_provider,
         );
