@@ -5,7 +5,7 @@ export default defineConfig({
   brand: {
     displayName: '가라챠토',
     primaryColor: '#7C5CBF', // brand-main (globals.css)
-    icon: 'https://garachato-karaoke-chart.vercel.app/og-image.png', // TODO: 정사각 로고 URL로 교체 (임시 placeholder)
+    icon: 'https://garachato-karaoke-chart.vercel.app/karachato_logo.png', // 정사각 불투명 로고 (karachato/public/)
   },
   web: {
     host: 'localhost',
