@@ -32,7 +32,7 @@ J-POP 노래방 차트 앱(가라챠토)을 **앱인토스(WebView 트랙)**로 
 
 ## 4. 다음 할 일 (남은 것)
 > 홈·검색·상세 3화면 실데이터 + 모달까지 완료. 토스 디자인 적응(다크네비바·safe-area·핀치줌·해요체)도 완료. 남은 건 아래 3~4개.
-1. **챗봇 백엔드 연결(S6)** — `/api/chat`(Gemini, 시크릿 필요)은 **Vercel 유지**. `karachato-app` `ChatModal`의 `fetch("/api/chat")`를 절대 URL(`VITE_API_BASE`)로 재지정 + 백엔드 CORS(`*.tossmini.com` 오리진 + 로컬). **검색은 이미 클라 `supabase.rpc('search_songs')`라 백엔드 불필요.** 시크릿 로테이션 권장.
+1. **챗봇 백엔드 연결(S6)** — ✅ **코드 완료**: `karachato-app` `lib/api.ts` `apiUrl()`로 `/api/chat`를 `VITE_API_BASE`(=`https://garachato-karaoke-chart.vercel.app`, `.env.local`) 절대주소 호출 + Next `/api/chat`에 CORS(`*`, POST/OPTIONS preflight). 검색은 이미 클라 supabase.rpc라 백엔드 불필요. **남은 것: 실동작은 이 CORS가 Vercel에 배포돼야 함**(현재 브랜치 미배포). 로컬 확인 시 `karachato` 백엔드 로컬 실행(`npm run dev` :3000) + `VITE_API_BASE`를 잠깐 `http://localhost:3000`으로. 시크릿 로테이션 권장.
 2. **샌드박스 테스트** — `npm run build`(=`ait build`)→`karachato.ait` 콘솔 업로드/`ait deploy`(토큰)→폰으로 실제 토스 렌더 확인.
 3. **헤더/네비 최종** — 플랫폼 분기 헬퍼 `lib/platform.ts` `isInTossApp()`(=`window.ReactNativeWebView` 유무, 프레임워크 자체 신호) 신설. 곡 상세는 `DetailHeader`로 **웹=자체 뒤로가기 / 앱=중앙 텍스트 헤더** 분기 완료. **남은 것:** 검색결과 화면(`SearchHeader` mode="search")도 같은 헬퍼로 앱에선 뒤로가기 숨기기. granite.config는 이미 다크 네비바+webViewProps 적용됨.
 4. **정리** — 시크릿 누출 정적 감사(client 번들에 `lib/supabase/server`/gemini 미유입 확인), `granite.config` 로고 URL 실제로 교체, dead Next 코드 정리, Storybook/vitest 처리.
