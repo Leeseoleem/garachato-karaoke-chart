@@ -15,6 +15,18 @@ export default defineConfig({
       build: 'vite build',
     },
   },
+  // 다크 컨셉: 호스트 네비바를 다크로 (미적용 시 흰 네비바가 #121216과 충돌)
+  navigationBar: {
+    theme: 'dark',
+    withBackButton: true,
+    withTitle: true,
+  },
+  // 비게임(partner) + 앱처럼 동작: 당겨서새로고침/오버스크롤 off
+  webViewProps: {
+    type: 'partner',
+    pullToRefreshEnabled: false,
+    overScrollMode: 'never',
+  },
   permissions: [],
   outdir: 'dist',
 });
