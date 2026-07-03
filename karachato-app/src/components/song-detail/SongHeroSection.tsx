@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Music2 } from "lucide-react";
 
 interface SongHeroSectionProps {
@@ -56,12 +55,10 @@ export default function SongHeroSection({
         className="relative w-full aspect-video rounded-xl overflow-hidden bg-surface-secondary"
       >
         {thumbnailUrl ? (
-          <Image
+          <img
             src={thumbnailUrl}
             alt={titleKo}
-            fill
-            className="object-cover"
-            priority
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full bg-gray-20">
