@@ -40,11 +40,16 @@ export default function SongKaraokeNumber({
         type="button"
         aria-label={`${provider} 번호 복사`}
         disabled={isDisabled}
-        onClick={() => {
+        onClick={async () => {
           if (!karaokeNo) return;
-          navigator.clipboard.writeText(karaokeNo);
+          try {
+            await navigator.clipboard.writeText(karaokeNo);
+          } catch (e) {
+            console.error("[SongKaraokeNumber] 복사 실패", e);
+            return;
+          }
 
-          // 마우스 환경(데스크탑)에서만 토스트 표시
+          // 마우스 환경(데스크탑)에서만 토스트 표시 (복사 성공 후에만)
           const isDesktop = window.matchMedia("(pointer: fine)").matches;
           if (isDesktop) {
             toast("노래방 번호가 복사되었어요.", {

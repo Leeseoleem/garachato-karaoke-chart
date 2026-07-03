@@ -40,12 +40,14 @@ export default function ChatModal({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
   const handleReset = () => {
+    abortRef.current?.abort();
     setMessages(initialMessages);
     setIsEnded(false);
     setIsLoading(false);
@@ -67,11 +69,17 @@ export default function ChatModal({
     setInputValue("");
     setIsLoading(true);
 
+    // 이전 요청이 남아 있으면 취소하고 새 컨트롤러 준비 (닫기/리셋/연속전송 시 늦은 응답 방지)
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const res = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -83,6 +91,8 @@ export default function ChatModal({
       const data = await res.json();
       setMessages((prev) => [...prev, data as ChatMessage]);
     } catch {
+      // 취소된 요청은 조용히 무시 (사용자가 닫거나 리셋함)
+      if (controller.signal.aborted) return;
       setMessages((prev) => [
         ...prev,
         {
@@ -92,7 +102,7 @@ export default function ChatModal({
         },
       ]);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
   };
 

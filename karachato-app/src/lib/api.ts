@@ -6,6 +6,14 @@ const API_BASE = (
   (import.meta.env.VITE_API_BASE as string | undefined) ?? ""
 ).replace(/\/$/, "");
 
+// 누락 시 조용히 상대경로로 폴백되면 웹뷰에서 챗봇 호출이 앱 origin으로 새어나가 실패함.
+// throw는 과하므로(챗 안 쓰는 화면까지 죽음) dev에서 경고만.
+if (import.meta.env.DEV && !API_BASE) {
+  console.warn(
+    "[api] VITE_API_BASE가 비어 있어요. /api/* 호출이 앱 자체 origin으로 나가 챗봇 등이 실패할 수 있어요. karachato-app/.env.local에 VITE_API_BASE를 설정하세요.",
+  );
+}
+
 export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${API_BASE}${p}`;
