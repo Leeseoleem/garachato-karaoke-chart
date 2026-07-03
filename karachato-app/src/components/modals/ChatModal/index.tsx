@@ -12,6 +12,8 @@ import UserInput from "./UserInput";
 import type { ChatMessage } from "@/types/chat";
 // === constant ===
 import { CHAT_WELCOME_MESSAGE } from "@/constants/chat";
+// === lib ===
+import { apiUrl } from "@/lib/api";
 // === store ===
 import { useChatStore } from "@/store/chatStore";
 
@@ -66,7 +68,7 @@ export default function ChatModal({
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input }),
