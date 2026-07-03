@@ -28,13 +28,13 @@ export default function SongIntroSection({
       {facts.length > 0 && (
         <>
           <Divider className="bg-brand-main" />
-          <dl className="flex flex-col gap-2 w-full">
+          <dl className="flex flex-col gap-2 sm:gap-4 sm:py-2 w-full">
             {facts.map((fact, i) => (
               <div key={`${fact.label}-${i}`} className="flex flex-row gap-3">
                 <dt className="typo-caption text-content-secondary shrink-0 w-16">
                   {fact.label}
                 </dt>
-                <dd className="typo-caption text-content-primary flex-1 wrap-break-word">
+                <dd className="typo-caption text-content-primary flex-1 wrap-break-word sm:text-right">
                   {fact.value}
                 </dd>
               </div>
