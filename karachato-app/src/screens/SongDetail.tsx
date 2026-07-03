@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import SongDetailContent from "@/components/song-detail/SongDetailContent";
 import DetailHeader from "@/components/common/headers/DetailHeader";
+import { SongDetailSkeleton } from "@/components/skeletons/SongDetailSkeleton";
 import { getSongById } from "@/lib/song/queries";
 import type { SongDetailRow } from "@/types/database";
 
@@ -29,11 +30,7 @@ export default function SongDetail() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="flex h-dvh items-center justify-center typo-caption text-content-secondary">
-        불러오는 중…
-      </div>
-    );
+    return <SongDetailSkeleton />;
   }
 
   if (!song || song.ai_status !== "done") {

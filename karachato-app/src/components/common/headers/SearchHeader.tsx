@@ -5,6 +5,7 @@ import SearchInput, {
   type SearchInputProps,
 } from "@/components/search/SearchInput";
 import ChatButton from "../buttons/ChatButton";
+import { isInTossApp } from "@/lib/platform";
 
 type Mode = "default" | "search";
 
@@ -19,7 +20,7 @@ export default function SearchHeader({
 }: SearchHeaderProps) {
   return (
     <Header className="gap-3 h-25">
-      {mode === "search" && (
+      {mode === "search" && !isInTossApp() && (
         <div className="shrink-0">
           <BackButton />
         </div>
