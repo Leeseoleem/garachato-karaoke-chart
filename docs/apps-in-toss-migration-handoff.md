@@ -26,15 +26,16 @@ J-POP 노래방 차트 앱(가라챠토)을 **앱인토스(WebView 트랙)**로 
 6. `feat:` 홈 상단 검색바 복구 + 검색 next/* 교체
 7. `docs:` 레포 구조·배포 전략 (§7.5)
 
-**지금 동작:** `npx vite` → `localhost:5173`에서 **홈 화면**(상단 검색바 + TOP100 차트[목데이터] + TJ/금영 탭 + 플로팅바)이 다크+보라+Pretendard로 렌더됨.
+**지금 동작(갱신):** 홈·검색·상세 3화면 전부 **실제 Supabase 데이터**로 동작 + 설정/챗 모달 연결됨.
+- 추가 완료 커밋: 토스 디자인 적응(다크네비바·safe-area·핀치줌·해요체) / **곡 소개 구조화**(설명 산문 + `ai_intro` 리스트 + 곡 소개 카드) + **146곡 백필**(워크플로 웹조사→DB, Gemini 대신 Claude 웹검색) / **S2 실데이터**(공개 SELECT RLS 정책 3테이블 + publishable 키 + 클라 `getChartByProvider`·`getSongById` + `search_songs` RPC) / 설정·챗 모달.
+- 로컬 확인: `karachato-app`에서 `npx vite` → 브라우저. `.env.local`(gitignore)에 `VITE_SUPABASE_URL`·`VITE_SUPABASE_PUBLISHABLE_KEY` 있음(없으면 `karachato/.env.local`에서 복사).
 
-## 4. 다음 할 일 (순서)
-1. **검색/상세 화면 이식** — `App.tsx`에 `/search`·`/song/:id` 라우트 추가 + 화면 컴포넌트 연결. 남은 next/* 교체: `SongCard`(next/link→react-router), `SearchResultItem`(next/link), `SongHeroSection`(**next/image→`<img>`**). (지금 곡 클릭·검색 제출하면 라우트 없어 빈 화면)
-2. **모달 연결** — `SettingModal`·`ChatModal`을 홈에 렌더(FloatingBar 버튼 동작). ChatModal은 `/api/chat` 백엔드 필요(S6).
-3. **S2 실제 데이터** — `karachato/.env.local`에서 Supabase URL+publishable(anon) 키 확인 → `karachato-app`에 `VITE_` env로. **RLS 정책 신설**(현재 정책 0개 → anon SELECT가 조용히 빈 배열. songs/karaoke_tracks/rank_history public SELECT + search_songs anon EXECUTE). **DB 변경은 미리보기(SELECT)→사용자확인→적용.** 목데이터(`MOCK_CHART_ITEMS`) → 실제 `getChartByProvider`(클라 supabase)로 교체.
-4. **헤더/네비 토스 적응** — 자체 뒤로가기 `<`(BackButton) 제거(호스트 네비바 사용), **곡 상세는 헤더 아예 제거**(사용자 확정). `granite.config.ts`에 `navigationBar.theme:'dark'` 추가(SDK≥2.8.0). safe-area(viewport-fit=cover 이미 넣음 + env inset), 핀치줌/풀투리프레시 off.
-5. **백엔드 CORS(S6)** — `/api/chat`·`/api/search`를 절대 URL(VITE_API_BASE)로 재지정 + CORS(`*.tossmini.com` 오리진). 시크릿 로테이션.
-6. **샌드박스 테스트** — `.ait` 배포(`ait deploy` + 토큰)→폰으로 실제 토스 렌더 확인.
+## 4. 다음 할 일 (남은 것)
+> 홈·검색·상세 3화면 실데이터 + 모달까지 완료. 토스 디자인 적응(다크네비바·safe-area·핀치줌·해요체)도 완료. 남은 건 아래 3~4개.
+1. **챗봇 백엔드 연결(S6)** — `/api/chat`(Gemini, 시크릿 필요)은 **Vercel 유지**. `karachato-app` `ChatModal`의 `fetch("/api/chat")`를 절대 URL(`VITE_API_BASE`)로 재지정 + 백엔드 CORS(`*.tossmini.com` 오리진 + 로컬). **검색은 이미 클라 `supabase.rpc('search_songs')`라 백엔드 불필요.** 시크릿 로테이션 권장.
+2. **샌드박스 테스트** — `npm run build`(=`ait build`)→`karachato.ait` 콘솔 업로드/`ait deploy`(토큰)→폰으로 실제 토스 렌더 확인.
+3. **헤더/네비 최종** — 플랫폼 분기 헬퍼 `lib/platform.ts` `isInTossApp()`(=`window.ReactNativeWebView` 유무, 프레임워크 자체 신호) 신설. 곡 상세는 `DetailHeader`로 **웹=자체 뒤로가기 / 앱=중앙 텍스트 헤더** 분기 완료. **남은 것:** 검색결과 화면(`SearchHeader` mode="search")도 같은 헬퍼로 앱에선 뒤로가기 숨기기. granite.config는 이미 다크 네비바+webViewProps 적용됨.
+4. **정리** — 시크릿 누출 정적 감사(client 번들에 `lib/supabase/server`/gemini 미유입 확인), `granite.config` 로고 URL 실제로 교체, dead Next 코드 정리, Storybook/vitest 처리.
 
 ## 5. 실행/빌드/확인
 - 로컬 웹 확인: `cd karachato-app && npx vite` → `localhost:5173` (그냥 브라우저에서 됨, 토스 프레임워크여도 개발 중엔 웹)
