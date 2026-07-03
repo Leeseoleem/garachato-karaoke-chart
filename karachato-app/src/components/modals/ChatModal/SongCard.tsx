@@ -2,8 +2,9 @@
 
 import type { KaraokeProvider } from "@/types/domain";
 
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import clsx from "clsx";
+import { useChatStore } from "@/store/chatStore";
 
 interface KaraokeTrack {
   provider: KaraokeProvider;
@@ -29,6 +30,7 @@ export default function SongCard({
   karaokeTracks,
   isInTop100,
 }: SongCardProps) {
+  const { setIsChatOpen } = useChatStore();
   const trackNoMap: Record<string, string> = { TJ: "-", KY: "-" };
   karaokeTracks.forEach((t) => {
     trackNoMap[t.provider] = t.karaokeNo;
@@ -36,7 +38,8 @@ export default function SongCard({
 
   return (
     <Link
-      href={`/song/${songId}`}
+      to={`/song/${songId}`}
+      onClick={() => setIsChatOpen(false)}
       className={clsx(
         "flex flex-col gap-3 w-full rounded-2xl px-5 py-4",
         "max-w-[75%]",

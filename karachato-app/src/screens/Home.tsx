@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import SearchSection from "@/components/search/SearchSection";
 import ChartClientWrapper from "@/components/chart/ChartContainer/ChartClientWrapper";
+import SettingModal from "@/components/modals/SettingModal";
+import ChatModal from "@/components/modals/ChatModal";
 import { getChartByProvider } from "@/lib/chart/queries";
 import type { ChartRow } from "@/types/database";
 
@@ -37,6 +39,8 @@ export default function Home() {
       ) : (
         <ChartClientWrapper items={items} latestDate={latestDate} />
       )}
+      <SettingModal />
+      <ChatModal />
     </main>
   );
 }
