@@ -1,0 +1,63 @@
+@property --search-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 135deg;
+}
+
+.search-border {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--gray-50), var(--gray-50)),
+    conic-gradient(from var(--search-angle), #bf83fc, #ff99e5, #bf83fc);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.search-border:focus-within {
+  animation: search-rotate 2s linear infinite;
+  background-image:
+    linear-gradient(var(--gray-40), var(--gray-40)),
+    conic-gradient(from var(--search-angle), #bf83fc, #ff99e5, #bf83fc);
+}
+
+@keyframes search-rotate {
+  to {
+    --search-angle: 495deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-border:focus-within {
+    animation: none;
+  }
+}
+
+.gradient-border {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--gray-30), var(--gray-30)),
+    linear-gradient(to right, #865dad, #ff99e5);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.gradient-border-transparent {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--gray-50), var(--gray-50)),
+    linear-gradient(to right, #865dad, #ff99e5);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+}
+
+.gradient-border-transparent:hover {
+  background-image:
+    linear-gradient(var(--gray-40), var(--gray-40)),
+    linear-gradient(to right, #865dad, #ff99e5);
+}
+
+.gradient-border-transparent:active {
+  background-image:
+    linear-gradient(var(--gray-30), var(--gray-30)),
+    linear-gradient(to right, #865dad, #ff99e5);
+}

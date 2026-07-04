@@ -45,7 +45,7 @@ export default function SongDetailContent({ song }: { song: SongDetailRow }) {
                 ? latestRank.rank + latestRank.delta_value // 부호 포함이므로 분기 불필요
                 : null,
           }}
-          description={song.description ?? "곡에 대한 설명이 없습니다."}
+          description={song.description ?? "곡에 대한 설명이 없어요."}
           tags={[
             song.ai_category ?? "JPOP",
             ...(song.ai_traits ?? []),
