@@ -279,9 +279,40 @@ async function handleRecommend(
 }
 
 // ────────────────────────────────────────────
+// CORS (앱인토스 웹뷰·별도 도메인 웹에서 원격 호출 허용)
+//  - 공개 데이터 + 쿠키/인증 미사용이라 * 허용. 실제 토스 오리진 확인 후 좁혀도 됨.
+// ────────────────────────────────────────────
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+function corsify(res: Response): Response {
+  const headers = new Headers(res.headers);
+  for (const [key, value] of Object.entries(CORS_HEADERS)) {
+    headers.set(key, value);
+  }
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
+}
+
+// 브라우저 preflight
+export function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
+// ────────────────────────────────────────────
 // POST /api/chat
 // ────────────────────────────────────────────
 export async function POST(req: Request) {
+  return corsify(await handleChat(req));
+}
+
+async function handleChat(req: Request): Promise<Response> {
   try {
     const { message } = await req.json();
 

@@ -66,7 +66,7 @@ export default function SongHeroSection({
         ) : (
           <div className="flex items-center justify-center w-full h-full bg-gray-20">
             <p className="typo-caption text-gray-10">
-              영상을 가져오지 못했습니다
+              영상을 가져오지 못했어요
             </p>
           </div>
         )}

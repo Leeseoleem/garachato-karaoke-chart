@@ -31,7 +31,7 @@
 | [02](ISSUE-02-orphan-song-records.md) | 고아 song 레코드(트랙 0개) | **P0** | 1차 | 분석완료 | 중복곡이 정규화 불일치로 트랙 없이 삽입 → 01의 **트리거** |
 | [03](ISSUE-03-translation-data-recovery.md) | 오염 번역 데이터 복구 | **P0** | 1차 | 분석완료 | 01·02 수정 후 밀린 번역본 재번역·복구 |
 | [04](ISSUE-04-zombie-link-404.md) | TOP100 좀비 링크 404 | **P1** | 1차→2차 | 분석완료 | pending 곡이 리스트엔 뜨는데 상세는 done만 조회 → 404. 임시 가드 후 이주 때 정합 |
-| [EPIC](EPIC-apps-in-toss-migration.md) | **앱인토스 출시 마이그레이션** | **EPIC** | 2차 | 분석완료 | SSR 금지 → web-framework(Granite) 이주 + 데이터 계층 재작성 |
+| [EPIC](EPIC-apps-in-toss-migration.md) | **앱인토스 출시 마이그레이션** | **EPIC** | 2차 | 진행중 | SSR 금지 → web-framework(Granite) 이주 + 데이터 계층 재작성 |
 | [05](ISSUE-05-ky-crawler-revival.md) | 금영(KY) 크롤러 부활 | **P2** | 3차 | 분석완료 | "크롤 불가" 전제가 낡음 — 현재 실제로 수집 가능, 탭 유지 |
 | [06](ISSUE-06-artist-name-consistency.md) | 가수 번역명 일관성/재사용 | **P2** | 3차 | 분석완료 | 같은 가수인데 곡마다 번역이 흔들림 → 기존 값 재사용 |
 | [07](ISSUE-07-chatbot-fuzzy-search.md) | AI 챗봇 지능형(퍼지) 검색 재설계 | **P3** | 2차→3차 | 분석완료 | 오탈자·발음변형·모호한 설명을 실제 곡/가수로 매칭 |

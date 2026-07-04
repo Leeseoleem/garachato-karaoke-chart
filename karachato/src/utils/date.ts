@@ -31,10 +31,16 @@ export function getTJStartDate(timeZone: string = CHART_TIME_ZONE): string {
   const day = today.slice(8, 10); // DD
 
   if (day === "01") {
-    // 전달 마지막 날
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-    return formatDateInTimeZone(lastDay, timeZone);
+    // 전달 마지막 날.
+    // 서버 로컬 타임존(UTC 등) 영향을 제거하기 위해, KST로 뽑은 today의 연·월을 쓰고
+    // Date.UTC + getUTC* 로 계산한다. Date.UTC(year, month-1, 0) = KST 이번 달의 전날 = 전달 말일.
+    const year = Number(today.slice(0, 4));
+    const month = Number(today.slice(5, 7)); // 1-12 (KST 이번 달)
+    const lastDay = new Date(Date.UTC(year, month - 1, 0));
+    const y = lastDay.getUTCFullYear();
+    const m = String(lastDay.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(lastDay.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
 
   return `${today.slice(0, 7)}-01`;
