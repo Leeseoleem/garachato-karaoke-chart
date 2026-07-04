@@ -3,7 +3,9 @@ import { translateSongBatch } from "../gemini/translate";
 import { generateSongIntro } from "../gemini/describe";
 import { normalize } from "@/utils/string";
 
-export const processPendingSongs = async (): Promise<void> => {
+export const processPendingSongs = async (
+  deadline?: number,
+): Promise<void> => {
   const supabase = createServerClient();
 
   const { data: pendingSongs, error } = await supabase
@@ -24,6 +26,14 @@ export const processPendingSongs = async (): Promise<void> => {
   console.log(`[processPendingSongs] 처리 시작 - 총 ${pendingSongs.length}곡`);
 
   for (let i = 0; i < pendingSongs.length; i += 10) {
+    // 시간 예산 초과 시 진행분만 커밋된 상태로 종료 (나머지 pending은 다음 실행이 이어받음)
+    if (deadline !== undefined && Date.now() >= deadline) {
+      console.log(
+        `[processPendingSongs] 시간 예산 초과 - ${i}/${pendingSongs.length}곡까지 처리, 나머지는 다음 실행으로 이월`,
+      );
+      return;
+    }
+
     const chunk = pendingSongs.slice(i, i + 10);
 
     const batchInputs: {
@@ -87,6 +97,14 @@ export const processPendingSongs = async (): Promise<void> => {
     );
 
     for (let k = 0; k < batchInputs.length; k++) {
+      // 곡 단위 시간 예산 체크 (한 청크가 60s를 넘길 수 있어 곡마다 확인)
+      if (deadline !== undefined && Date.now() >= deadline) {
+        console.log(
+          "[processPendingSongs] 시간 예산 초과 - 남은 곡은 다음 실행으로 이월",
+        );
+        return;
+      }
+
       const input = batchInputs[k];
       const result = results[k];
 
@@ -202,7 +220,10 @@ export const processPendingSongs = async (): Promise<void> => {
       console.log(`[processPendingSongs] 완료 - song_id: ${input.songId}`);
     }
 
-    if (i + 10 < pendingSongs.length) {
+    if (
+      i + 10 < pendingSongs.length &&
+      (deadline === undefined || Date.now() < deadline)
+    ) {
       console.log(
         `[processPendingSongs] 다음 배치 대기 중... (${i + 10}/${pendingSongs.length})`,
       );
@@ -214,7 +235,9 @@ export const processPendingSongs = async (): Promise<void> => {
 };
 
 // artist_ko가 없는 기존 곡 재처리 (ai_status 변경 없이 artist_ko만 채움)
-export const processArtistKo = async (): Promise<void> => {
+export const processArtistKo = async (
+  deadline?: number,
+): Promise<void> => {
   const supabase = createServerClient();
 
   const { data: songs, error } = await supabase
@@ -236,6 +259,13 @@ export const processArtistKo = async (): Promise<void> => {
   console.log(`[processArtistKo] 처리 시작 - 총 ${songs.length}곡`);
 
   for (let i = 0; i < songs.length; i += 10) {
+    if (deadline !== undefined && Date.now() >= deadline) {
+      console.log(
+        `[processArtistKo] 시간 예산 초과 - ${i}/${songs.length}곡까지 처리, 나머지는 다음 실행으로 이월`,
+      );
+      return;
+    }
+
     const chunk = songs.slice(i, i + 10);
     const songIds = chunk.map((s) => s.id);
 
@@ -297,6 +327,13 @@ export const processArtistKo = async (): Promise<void> => {
     );
 
     for (let k = 0; k < batchInputs.length; k++) {
+      if (deadline !== undefined && Date.now() >= deadline) {
+        console.log(
+          "[processArtistKo] 시간 예산 초과 - 남은 곡은 다음 실행으로 이월",
+        );
+        return;
+      }
+
       const input = batchInputs[k];
       const result = results[k];
 
@@ -386,7 +423,10 @@ export const processArtistKo = async (): Promise<void> => {
       console.log(`[processArtistKo] 완료 - song_id: ${input.songId}`);
     }
 
-    if (i + 10 < songs.length) {
+    if (
+      i + 10 < songs.length &&
+      (deadline === undefined || Date.now() < deadline)
+    ) {
       console.log(
         `[processArtistKo] 다음 배치 대기 중... (${i + 10}/${songs.length})`,
       );
