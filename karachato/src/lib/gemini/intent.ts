@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { ChatIntent } from "@/types/gemini";
+import type { ChatTurn } from "@/types/chat";
 
 const SYSTEM_INSTRUCTION = `
 당신은 한국 노래방 기기(태진-TJ, 금영-KY)의 J-POP TOP 100 차트 서비스의 검색 도우미입니다.
@@ -64,6 +65,14 @@ pronunciation_difficulty 분류 기준:
 - "~말고", "~빼고", "~제외하고" 가 포함된 경우, 해당 단어는 keyword가 아닌 제외 조건임
 - "어려운 곡 추천해줘 모니터링 말고" → recommend + vocal_difficulty: "hard" (모니터링은 무시)
 - 부정어가 붙은 단어는 절대 keyword로 추출하지 말 것
+
+맥락 규칙 (이전 대화가 함께 주어질 때):
+- 입력 앞에 "[이전 대화]" 블록이 있으면, "[현재 메시지]"가 그 맥락을 참조할 수 있다.
+- "다른 거", "다른 곡", "또", "그거 말고", "딴 거" 등 = 직전에 다룬 가수/조건을 유지한 채 다른 곡을 원하는 것:
+  - 직전 맥락이 특정 가수였다면 → search_artist, keyword: 그 가수(원문 표기).
+  - 직전 맥락이 recommend 조건(분위기/장르/카테고리 등)이었다면 → 같은 조건으로 recommend.
+- "좀 더 잔잔한/신나는/쉬운" 등은 직전 조건을 이어받아 recommend로 분류.
+- 단, 현재 메시지가 새로운 가수/곡/조건을 명시하면 이전 맥락보다 그것을 우선한다.
 - JSON 외 텍스트 절대 출력 금지
 `.trim();
 
@@ -113,7 +122,20 @@ function parseIntent(text: string): ChatIntent {
   return parsed as ChatIntent;
 }
 
-export async function extractIntent(userInput: string): Promise<ChatIntent> {
+// 이전 대화(history)를 프롬프트 앞에 붙여 맥락 참조("다른 거" 등)를 가능하게 함.
+function buildContextualInput(userInput: string, history?: ChatTurn[]): string {
+  if (!history || history.length === 0) return userInput;
+  const convo = history
+    .map((t) => `${t.role === "user" ? "사용자" : "봇"}: ${t.text}`)
+    .join("\n");
+  return `[이전 대화]\n${convo}\n\n[현재 메시지]\n${userInput}`;
+}
+
+export async function extractIntent(
+  userInput: string,
+  history?: ChatTurn[],
+): Promise<ChatIntent> {
+  const input = buildContextualInput(userInput, history);
   let lastError: unknown;
 
   // 모델 폴백: 앞 모델이 실패하면 다음 모델로 재시도.
@@ -122,7 +144,7 @@ export async function extractIntent(userInput: string): Promise<ChatIntent> {
   // (실패를 unknown/off_topic으로 숨기지 않음 — 503을 "물어봐 주세요"로 오표시하던 버그 수정).
   for (const modelName of INTENT_MODELS) {
     try {
-      const result = await getIntentModel(modelName).generateContent(userInput);
+      const result = await getIntentModel(modelName).generateContent(input);
       return parseIntent(result.response.text());
     } catch (e) {
       lastError = e;

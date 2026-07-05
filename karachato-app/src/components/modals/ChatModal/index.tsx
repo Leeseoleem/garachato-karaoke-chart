@@ -9,7 +9,7 @@ import QuickQuestions from "./QuickQuestions";
 import TypingIndicator from "./TypingIndicator";
 import UserInput from "./UserInput";
 // === type ===
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage, ChatTurn } from "@/types/chat";
 // === constant ===
 import { CHAT_WELCOME_MESSAGE } from "@/constants/chat";
 // === lib ===
@@ -24,6 +24,27 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     message: CHAT_WELCOME_MESSAGE,
   },
 ];
+
+// 대화 맥락 전달용: messages를 최근 N턴 요약 turn으로 직렬화 (봇의 곡 카드는 텍스트로 요약).
+const HISTORY_LIMIT = 8;
+function buildHistory(messages: ChatMessage[]): ChatTurn[] {
+  const turns: ChatTurn[] = [];
+  for (const m of messages) {
+    if (m.type === "text") {
+      turns.push({ role: m.role, text: m.message });
+    } else if (m.type === "off_topic") {
+      turns.push({ role: "model", text: m.message });
+    } else if (m.type === "song_candidate") {
+      const title = m.song.titleKo ?? m.song.titleInProvider;
+      const artist = m.song.artistKo ?? m.song.artistInProvider;
+      turns.push({ role: "model", text: `추천곡: '${title}' - ${artist}` });
+    } else if (m.type === "confirmed") {
+      turns.push({ role: "model", text: "사용자가 곡을 확정함" });
+    }
+    // error 메시지는 맥락에서 제외
+  }
+  return turns.slice(-HISTORY_LIMIT);
+}
 
 export default function ChatModal({
   initialMessages = INITIAL_MESSAGES,
@@ -78,7 +99,7 @@ export default function ChatModal({
       const res = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: input, history: buildHistory(messages) }),
         signal: controller.signal,
       });
 

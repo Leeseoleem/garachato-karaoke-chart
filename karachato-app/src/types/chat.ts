@@ -2,6 +2,12 @@ import type { KaraokeProvider } from "./domain";
 
 export type MessageRole = "user" | "model";
 
+// 대화 맥락 전달용 — 클라가 최근 N턴을 요약해 서버로 보냄 (멀티턴 인텐트 추출)
+export interface ChatTurn {
+  role: MessageRole;
+  text: string;
+}
+
 // ────────────────────────────────────────
 // 메시지 타입 인터페이스
 // ────────────────────────────────────────

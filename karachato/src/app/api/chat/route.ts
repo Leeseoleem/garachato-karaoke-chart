@@ -4,7 +4,7 @@ import { extractIntent } from "@/lib/gemini/intent";
 import { escapePostgrestValue } from "@/utils/string";
 import { getToday } from "@/utils/date";
 
-import type { ChatMessage, SongCandidateMessage } from "@/types/chat";
+import type { ChatMessage, SongCandidateMessage, ChatTurn } from "@/types/chat";
 import type { ChatIntent } from "@/types/gemini";
 
 import { ARTIST_KO_MAP } from "@/constants/chat";
@@ -365,12 +365,15 @@ function getErrorStatus(e: unknown): number | undefined {
 
 async function handleChat(req: Request): Promise<Response> {
   try {
-    const { message } = await req.json();
+    const { message, history } = (await req.json()) as {
+      message: string;
+      history?: ChatTurn[];
+    };
 
     const easter = checkEasterEgg(message);
     if (easter) return Response.json(easter);
 
-    const intent = await extractIntent(message);
+    const intent = await extractIntent(message, history);
 
     switch (intent.intent) {
       case "search_song":
