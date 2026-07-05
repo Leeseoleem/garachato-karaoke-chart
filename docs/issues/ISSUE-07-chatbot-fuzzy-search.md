@@ -3,7 +3,7 @@ id: ISSUE-07
 title: AI 챗봇 지능형(퍼지) 검색 재설계
 cycle: 7
 priority: P3
-status: 분석완료(미착수)
+status: 진행중
 labels: [enhancement, chatbot, ai, search]
 created: 2026-07-02
 related: []
@@ -44,7 +44,28 @@ related: []
 - **"최신곡"의 실데이터화**: `ai_traits` 라벨 대신 차트 진입일/`created_at`/rank_history `NEW` 기준 정렬.
 
 ### 부수
-- intent 모델 503 대응: 재시도/폴백 모델, 또는 `gemini-2.5-flash`로 승격 검토.
+- ✅ **intent 모델 503 폴백 구현됨** — `gemini-2.5-flash-lite` → `flash` → `flash-latest` 순 폴백 + 실패 시 off_topic 대신 에러+재시도. (앱인토스 출시 준비 브랜치에서 반영, 배포됨)
+
+## 4.5 확장: 대화 맥락(멀티턴) & 후보 변주 — `feat/chat-context`
+
+> 실기기 테스트에서 발견. ISSUE-07 지능형 챗봇 방향의 일부로 먼저 착수.
+
+### 배경 / 증상
+- "히게단 노래 추천" → A곡 추천 → **"다른 거 추천"** → 생뚱맞은 **다른 가수**의 곡이 나옴.
+  → ① 이전 맥락(히게단)을 잃음, ② 이미 보여준 곡을 제외하지 않음.
+
+### 근본 원인
+- `/api/chat`이 `{ message }` **하나만** 받아 `extractIntent(message)`로 **단일턴** 분류. 대화 이력이 전혀 전달되지 않음.
+
+### 해결 (A/B/C)
+- **A. 대화 맥락 전달** — ChatModal이 `messages`를 최근 N턴 `history`로 직렬화해 `{ message, history }` 전송. `extractIntent(message, history)`가 Gemini **멀티턴 contents**로 호출 + 시스템 프롬프트에 "이전 맥락 참조" 규칙 추가 → "다른 거", "좀 더 잔잔한", "그 가수 다른 노래" 이해.
+- **B. 후보 변주(제외목록)** — 이미 보여준 `song_id`들을 `excludeIds`로 전송. 핸들러(`handleRecommend`/`handleSearchArtist`)가 `.not("id","in",…)`로 제외 후 다른 곡 반환. (recommend·artist는 다건 조회로 전환)
+- **C. "아니에요" 플로우 개선** — song_candidate에서 "아니에요"를 누르면 열린 질문 대신 **바로 다음 후보**를 제시(맥락 + 제외목록 활용). 후보 소진 시 "이 조건엔 더 없어요"로 폴백. (특정 곡 검색 흐름은 재질문 유지)
+
+### 단계 (하나씩)
+1. **A** — history 배선(클라·route·types) + 멀티턴 `extractIntent` + 프롬프트 규칙
+2. **B** — `excludeIds` 배선 + 핸들러 제외/다건화
+3. **C** — "아니에요" → 다음 후보 버튼/플로우
 
 ## 5. 비고
 
