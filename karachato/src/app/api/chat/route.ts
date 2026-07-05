@@ -346,6 +346,23 @@ export async function POST(req: Request) {
   return corsify(await handleChat(req), origin);
 }
 
+function getErrorStatus(e: unknown): number | undefined {
+  if (e === null || typeof e !== "object") return undefined;
+  if ("status" in e && typeof (e as { status: unknown }).status === "number") {
+    return (e as { status: number }).status;
+  }
+  const resp = (e as { response?: unknown }).response;
+  if (
+    resp !== null &&
+    typeof resp === "object" &&
+    "status" in resp &&
+    typeof (resp as { status: unknown }).status === "number"
+  ) {
+    return (resp as { status: number }).status;
+  }
+  return undefined;
+}
+
 async function handleChat(req: Request): Promise<Response> {
   try {
     const { message } = await req.json();
@@ -373,15 +390,9 @@ async function handleChat(req: Request): Promise<Response> {
   } catch (e) {
     console.error("[chat] error:", e);
 
-    const is429 =
-      e !== null &&
-      typeof e === "object" &&
-      (("status" in e && e.status === 429) ||
-        ("response" in e &&
-          e.response !== null &&
-          typeof e.response === "object" &&
-          "status" in e.response &&
-          (e.response as { status: number }).status === 429));
+    const status = getErrorStatus(e);
+    const is429 = status === 429;
+    const is5xx = status !== undefined && status >= 500;
 
     return Response.json(
       {
@@ -389,9 +400,11 @@ async function handleChat(req: Request): Promise<Response> {
         role: "model",
         message: is429
           ? "AI 요청 한도를 초과했어요. 잠시 후 다시 시도해주세요 🥺"
-          : "서버 오류가 발생했어요. 다시 시도해주세요.",
+          : is5xx
+            ? "AI 서버가 잠시 붐벼요. 잠시 후 다시 시도해주세요 🙏"
+            : "서버 오류가 발생했어요. 다시 시도해주세요.",
       } satisfies ChatMessage,
-      { status: is429 ? 429 : 500 },
+      { status: is429 ? 429 : is5xx ? 503 : 500 },
     );
   }
 }
