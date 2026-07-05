@@ -1,5 +1,4 @@
 "use client";
-import { AnimatePresence, motion } from "framer-motion";
 // === component ===
 import { ChartInfoPopover } from "./ChartInfoPopover";
 import KaraokeTabs from "../KaraokeTabs";
@@ -43,21 +42,11 @@ export default function ChartClientWrapper({
         <ChartHeader />
         <ChartScrollContainer ref={scrollRef} items={items} />
       </div>
-      <AnimatePresence>
-        {!isBottom && (
-          <motion.div
-            initial={{ opacity: 1, y: 0 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.1, ease: "easeInOut" }}
-          >
-            <FloatingBar
-              isScrolled={isScrolled}
-              onScrollToTop={handleScrollToTop}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <FloatingBar
+        isScrolled={isScrolled}
+        isVisible={!isBottom}
+        onScrollToTop={handleScrollToTop}
+      />
     </div>
   );
 }
