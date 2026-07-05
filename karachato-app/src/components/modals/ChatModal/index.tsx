@@ -90,14 +90,17 @@ export default function ChatModal({
     setIsChatOpen(false);
   };
 
-  const handleSend = async (input: string) => {
-    if (!input.trim() || isLoading || isEnded) return;
+  // 서버에 요청하고 응답을 messages에 추가. showUser=true면 유저 말풍선도 함께 추가.
+  const sendToChat = async (text: string, showUser: boolean) => {
+    if (isLoading || isEnded) return;
 
-    setMessages((prev) => [
-      ...prev,
-      { type: "text", role: "user", message: input },
-    ]);
-    setInputValue("");
+    if (showUser) {
+      setMessages((prev) => [
+        ...prev,
+        { type: "text", role: "user", message: text },
+      ]);
+      setInputValue("");
+    }
     setIsLoading(true);
 
     // 이전 요청이 남아 있으면 취소하고 새 컨트롤러 준비 (닫기/리셋/연속전송 시 늦은 응답 방지)
@@ -110,7 +113,7 @@ export default function ChatModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,
+          message: text,
           history: buildHistory(messages),
           excludeIds: buildExcludeIds(messages),
         }),
@@ -139,6 +142,16 @@ export default function ChatModal({
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
+  };
+
+  const handleSend = (input: string) => {
+    if (!input.trim()) return;
+    void sendToChat(input, true);
+  };
+
+  // "아니에요" → 열린 질문 대신 맥락+제외목록으로 다른 곡을 바로 요청 (유저 말풍선 없이)
+  const requestAnotherSong = () => {
+    void sendToChat("다른 곡 추천해줘", false);
   };
 
   useEffect(() => {
@@ -188,18 +201,7 @@ export default function ChatModal({
                     />
                     <ChatActionButton
                       variant="secondary"
-                      onClick={() => {
-                        if (isEnded || isLoading) return;
-                        setMessages((prev) => [
-                          ...prev,
-                          {
-                            type: "text",
-                            role: "model",
-                            message:
-                              "앗, 다시 찾아볼게요! 찾으시는 곡에 대해 더 알려주시겠어요?",
-                          },
-                        ]);
-                      }}
+                      onClick={requestAnotherSong}
                     />
                   </div>
                 </div>
