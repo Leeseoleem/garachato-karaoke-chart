@@ -67,63 +67,67 @@ pronunciation_difficulty 분류 기준:
 - JSON 외 텍스트 절대 출력 금지
 `.trim();
 
-let intentModel: ReturnType<GoogleGenerativeAI["getGenerativeModel"]> | null =
-  null;
+// 인텐트 추출 모델(폴백 순서). 앞 모델이 과부하(503)·쿼터(429) 등으로 실패하면 다음 모델로.
+// flash-lite가 자주 과부하나서 flash를 예비로 둠.
+const INTENT_MODELS = [
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-flash-latest",
+] as const;
 
-function getIntentModel() {
-  if (!intentModel) {
+const modelCache = new Map<
+  string,
+  ReturnType<GoogleGenerativeAI["getGenerativeModel"]>
+>();
+
+function getIntentModel(modelName: string) {
+  let model = modelCache.get(modelName);
+  if (!model) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.");
-    intentModel = new GoogleGenerativeAI(apiKey).getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+    model = new GoogleGenerativeAI(apiKey).getGenerativeModel({
+      model: modelName,
       systemInstruction: SYSTEM_INSTRUCTION,
       generationConfig: { responseMimeType: "application/json" },
     });
+    modelCache.set(modelName, model);
   }
-  return intentModel;
+  return model;
+}
+
+function parseIntent(text: string): ChatIntent {
+  const parsed = JSON.parse(text);
+
+  const validIntents = ["search_song", "search_artist", "recommend", "unknown"];
+  if (!parsed.intent || !validIntents.includes(parsed.intent)) {
+    return { intent: "unknown" };
+  }
+
+  if (parsed.intent === "search_song" || parsed.intent === "search_artist") {
+    const keyword =
+      typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
+    if (!keyword) return { intent: "unknown" };
+    parsed.keyword = keyword;
+  }
+
+  return parsed as ChatIntent;
 }
 
 export async function extractIntent(userInput: string): Promise<ChatIntent> {
-  try {
-    const result = await getIntentModel().generateContent(userInput);
-    const parsed = JSON.parse(result.response.text());
+  let lastError: unknown;
 
-    const validIntents = [
-      "search_song",
-      "search_artist",
-      "recommend",
-      "unknown",
-    ];
-    if (!parsed.intent || !validIntents.includes(parsed.intent)) {
-      return { intent: "unknown" };
+  // 모델 폴백: 앞 모델이 실패하면 다음 모델로 재시도.
+  // 모델이 성공적으로 응답하면(off-topic 포함) 그 결과를 사용.
+  // 모든 모델이 실패하면 에러를 전파해 route.ts가 전용 메시지+재시도로 처리
+  // (실패를 unknown/off_topic으로 숨기지 않음 — 503을 "물어봐 주세요"로 오표시하던 버그 수정).
+  for (const modelName of INTENT_MODELS) {
+    try {
+      const result = await getIntentModel(modelName).generateContent(userInput);
+      return parseIntent(result.response.text());
+    } catch (e) {
+      lastError = e;
     }
-
-    if (parsed.intent === "search_song" || parsed.intent === "search_artist") {
-      const keyword =
-        typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
-
-      if (!keyword) {
-        return { intent: "unknown" };
-      }
-
-      parsed.keyword = keyword;
-    }
-
-    return parsed as ChatIntent;
-  } catch (e) {
-    // 429는 route.ts catch 블록으로 올려서 전용 메시지 처리
-    if (
-      e !== null &&
-      typeof e === "object" &&
-      (("status" in e && e.status === 429) ||
-        ("response" in e &&
-          typeof e.response === "object" &&
-          e.response !== null &&
-          "status" in e.response &&
-          (e.response as { status: number }).status === 429))
-    ) {
-      throw e;
-    }
-    return { intent: "unknown" };
   }
+
+  throw lastError;
 }

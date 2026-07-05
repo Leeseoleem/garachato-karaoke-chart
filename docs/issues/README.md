@@ -35,6 +35,7 @@
 | [05](ISSUE-05-ky-crawler-revival.md) | 금영(KY) 크롤러 부활 | **P2** | 3차 | 분석완료 | "크롤 불가" 전제가 낡음 — 현재 실제로 수집 가능, 탭 유지 |
 | [06](ISSUE-06-artist-name-consistency.md) | 가수 번역명 일관성/재사용 | **P2** | 3차 | 분석완료 | 같은 가수인데 곡마다 번역이 흔들림 → 기존 값 재사용 |
 | [07](ISSUE-07-chatbot-fuzzy-search.md) | AI 챗봇 지능형(퍼지) 검색 재설계 | **P3** | 2차→3차 | 분석완료 | 오탈자·발음변형·모호한 설명을 실제 곡/가수로 매칭 |
+| [08](ISSUE-08-discovery-curation.md) | 탐색/큐레이션(카테고리·신규곡·가수별) | **P3** | 출시후 | 분석완료 | 데이터 대부분 기존(ai_category·delta NEW·artist) → 발견성 강화 |
 
 ## 참고 (환경)
 
