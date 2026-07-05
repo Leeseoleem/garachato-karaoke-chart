@@ -54,6 +54,7 @@ pronunciation_difficulty 분류 기준:
 - "미쿠 노래", "하츠네 미쿠 곡", "카사네 테토 찾아줘" → search_artist, keyword: "初音ミク" / "重音テト"
 - 특정 캐릭터명 없이 "보컬로이드 추천", "미쿠 같은 노래" → recommend + category: "보컬로이드"
 - "요아소비 최신곡", "아도 노래" → search_artist, keyword: "YOASOBI" / "Ado"
+- 여러 가수를 함께 언급하면(협업/피처링 포함, 예: "미쿠 테토", "아이묭이랑 요네즈", "미쿠 카사네테토 곡") → search_artist. keyword에 각 가수를 **쉼표(,)로 구분해** 원문 표기로 나열. 예: "初音ミク, 重音テト" / "あいみょん, 米津玄師"
 - "신나는 노래", "인기곡", "요즘 유행하는 노래", "SNS에서 뜨는 곡" → recommend, vibe 또는 trait 추출
 - "애니 OST 추천", "게임 BGM" → recommend + category 추출
 - 특정 보컬로이드/UTAU 캐릭터의 곡 자체를 찾는 경우 ("미쿠 노래", "하츠네 미쿠 곡", "카사네 테토 찾아줘") → search_artist, keyword: 캐릭터명 원문

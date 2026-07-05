@@ -7,7 +7,6 @@ import { getToday } from "@/utils/date";
 import type { ChatMessage, SongCandidateMessage, ChatTurn } from "@/types/chat";
 import type { ChatIntent } from "@/types/gemini";
 
-import { ARTIST_KO_MAP } from "@/constants/chat";
 import {
   GreetingsMessages,
   ClosingMessages,
@@ -163,31 +162,56 @@ async function handleSearchSong(
 // ────────────────────────────────────────────
 // 핸들러: 가수명 검색
 // ────────────────────────────────────────────
+// 여러 가수명 분리: "初音ミク, 重音テト" / "미쿠 & 테토" 등. (공백만으론 분리 안 함 — 단일 가수명 보호)
+function splitArtistNames(keyword: string): string[] {
+  const parts = keyword
+    .split(/\s*(?:,|、|・|\/|／|&|＆|＋|\+|×|·|feat\.?|ft\.?|\band\b)\s*/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts : [keyword.trim()];
+}
+
 async function handleSearchArtist(
   keyword: string,
   excludeIds: string[] = [],
 ): Promise<Response> {
   const supabase = createServerClient();
 
-  const reverseMap = Object.entries(ARTIST_KO_MAP).find(
-    ([, ko]) => ko === keyword,
+  // 가수 검색은 search_songs RPC(퍼지 + 피처링/원문 포함)를 사용.
+  // (기존 norm ilike는 (Feat.…) 피처링을 날려 미쿠/테토 같은 참여 가수를 못 찾음)
+  const names = splitArtistNames(keyword);
+  const idSets = await Promise.all(
+    names.map(async (n) => {
+      const { data } = await supabase.rpc("search_songs", { query: n });
+      return new Set<string>(
+        ((data ?? []) as { song_id: string }[]).map((r) => r.song_id),
+      );
+    }),
   );
-  const originalKeyword = reverseMap ? reverseMap[0] : null;
 
-  const safeKeyword = escapePostgrestValue(keyword);
-  const safeOriginal = originalKeyword
-    ? escapePostgrestValue(originalKeyword)
-    : null;
+  // 여러 가수면 교집합(협업곡). 교집합이 비면 합집합으로 폴백.
+  let ids: string[] = idSets.length > 0 ? [...idSets[0]] : [];
+  for (let i = 1; i < idSets.length; i++) {
+    ids = ids.filter((id) => idSets[i].has(id));
+  }
+  if (ids.length === 0 && idSets.length > 1) {
+    ids = [...new Set(idSets.flatMap((s) => [...s]))];
+  }
+  ids = ids.filter((id) => !excludeIds.includes(id));
 
-  const orCondition = [
-    `artist_ko_norm.ilike.%${safeKeyword}%`,
-    `artist_norm.ilike.%${safeKeyword}%`,
-    originalKeyword ? `artist_norm.ilike.%${safeOriginal}%` : null,
-  ]
-    .filter(Boolean)
-    .join(",");
+  if (ids.length === 0) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message:
+        excludeIds.length > 0
+          ? `"${keyword}" 가수의 다른 곡이 더 없어요. 다른 가수나 조건을 물어봐 주세요.`
+          : `"${keyword}" 가수의 곡을 찾지 못했어요.`,
+    } satisfies ChatMessage);
+  }
 
-  let query = supabase
+  // 첫 후보 곡의 트랙 상세 조회
+  const { data } = await supabase
     .from("songs")
     .select(
       `
@@ -198,21 +222,15 @@ async function handleSearchArtist(
       )
     `,
     )
-    .or(orCondition)
-    .eq("ai_status", "done");
-  if (excludeIds.length > 0) {
-    query = query.not("id", "in", `(${excludeIds.join(",")})`);
-  }
-  const { data } = await query.limit(1).maybeSingle();
+    .eq("id", ids[0])
+    .eq("ai_status", "done")
+    .maybeSingle();
 
   if (!data) {
     return Response.json({
       type: "off_topic",
       role: "model",
-      message:
-        excludeIds.length > 0
-          ? `"${keyword}" 가수의 다른 곡이 더 없어요. 다른 가수나 조건을 물어봐 주세요.`
-          : `"${keyword}" 가수의 곡을 찾지 못했어요.`,
+      message: `"${keyword}" 가수의 곡을 찾지 못했어요.`,
     } satisfies ChatMessage);
   }
 
