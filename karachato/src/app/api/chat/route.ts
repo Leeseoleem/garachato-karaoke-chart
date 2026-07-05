@@ -279,18 +279,48 @@ async function handleRecommend(
 }
 
 // ────────────────────────────────────────────
-// CORS (앱인토스 웹뷰·별도 도메인 웹에서 원격 호출 허용)
-//  - 공개 데이터 + 쿠키/인증 미사용이라 * 허용. 실제 토스 오리진 확인 후 좁혀도 됨.
+// CORS — 토스 미니앱 웹뷰(*.tossmini.com) + 로컬 개발만 허용.
+//  공개 데이터라 CSRF 위험은 낮으나 비용(Gemini) 남용 표면을 줄이려 오리진 화이트리스트로 좁힘.
+//  실제 웹뷰 오리진: https://<appName>.apps.tossmini.com(실제) / .private-apps.tossmini.com(테스트).
+//  추가 허용 도메인은 CHAT_ALLOWED_ORIGINS(콤마 구분 env)로.
 // ────────────────────────────────────────────
-const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+function isAllowedOrigin(origin: string | null): origin is string {
+  if (!origin) return false;
+  try {
+    const { hostname } = new URL(origin);
+    // 토스 미니앱 웹뷰 (apps / private-apps 등 모든 서브도메인)
+    if (hostname === "tossmini.com" || hostname.endsWith(".tossmini.com")) {
+      return true;
+    }
+    // 로컬 개발
+    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    // env 추가 허용(웹 배포 도메인 등)
+    const extra = (process.env.CHAT_ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return extra.includes(origin);
+  } catch {
+    return false;
+  }
+}
 
-function corsify(res: Response): Response {
+function corsHeaders(origin: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    Vary: "Origin",
+  };
+  // 허용 오리진만 반사(reflect). 그 외엔 ACAO 미설정 → 브라우저가 차단.
+  if (isAllowedOrigin(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
+}
+
+function corsify(res: Response, origin: string | null): Response {
   const headers = new Headers(res.headers);
-  for (const [key, value] of Object.entries(CORS_HEADERS)) {
+  for (const [key, value] of Object.entries(corsHeaders(origin))) {
     headers.set(key, value);
   }
   return new Response(res.body, {
@@ -301,15 +331,19 @@ function corsify(res: Response): Response {
 }
 
 // 브라우저 preflight
-export function OPTIONS() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS });
+export function OPTIONS(req: Request) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders(req.headers.get("origin")),
+  });
 }
 
 // ────────────────────────────────────────────
 // POST /api/chat
 // ────────────────────────────────────────────
 export async function POST(req: Request) {
-  return corsify(await handleChat(req));
+  const origin = req.headers.get("origin");
+  return corsify(await handleChat(req), origin);
 }
 
 async function handleChat(req: Request): Promise<Response> {
