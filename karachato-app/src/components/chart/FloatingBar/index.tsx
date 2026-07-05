@@ -24,7 +24,7 @@ export default function FloatingBar({
 }: FloatingBarProps) {
   const { setIsSettingsOpen } = useChartStore();
   return (
-    <div className="absolute floating-bottom left-1/2 -translate-x-1/2 z-40">
+    <div className="fixed bottom-[calc(1.5rem+var(--safe-bottom,0px))] left-1/2 -translate-x-1/2 z-40">
       <AnimatePresence>
         {isVisible && (
           <motion.div
