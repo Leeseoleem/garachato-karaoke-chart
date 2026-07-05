@@ -110,11 +110,14 @@ function buildSongField(
 // ────────────────────────────────────────────
 // 핸들러: 곡 제목 검색
 // ────────────────────────────────────────────
-async function handleSearchSong(keyword: string): Promise<Response> {
+async function handleSearchSong(
+  keyword: string,
+  excludeIds: string[] = [],
+): Promise<Response> {
   const supabase = createServerClient();
   const safeKeyword = escapePostgrestValue(keyword);
 
-  const { data } = await supabase
+  let query = supabase
     .from("songs")
     .select(
       `
@@ -126,15 +129,20 @@ async function handleSearchSong(keyword: string): Promise<Response> {
     `,
     )
     .or(`title_ko_norm.ilike.%${keyword}%,title_norm.ilike.%${safeKeyword}%`)
-    .eq("ai_status", "done")
-    .limit(1)
-    .maybeSingle();
+    .eq("ai_status", "done");
+  if (excludeIds.length > 0) {
+    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  }
+  const { data } = await query.limit(1).maybeSingle();
 
   if (!data) {
     return Response.json({
       type: "off_topic",
       role: "model",
-      message: `"${keyword}" 곡을 찾지 못했어요. 제목을 다시 확인해볼까요?`,
+      message:
+        excludeIds.length > 0
+          ? "이 조건엔 더 이상 다른 곡이 없어요. 다른 곡이나 가수를 물어봐 주세요."
+          : `"${keyword}" 곡을 찾지 못했어요. 제목을 다시 확인해볼까요?`,
     } satisfies ChatMessage);
   }
 
@@ -154,7 +162,10 @@ async function handleSearchSong(keyword: string): Promise<Response> {
 // ────────────────────────────────────────────
 // 핸들러: 가수명 검색
 // ────────────────────────────────────────────
-async function handleSearchArtist(keyword: string): Promise<Response> {
+async function handleSearchArtist(
+  keyword: string,
+  excludeIds: string[] = [],
+): Promise<Response> {
   const supabase = createServerClient();
 
   const reverseMap = Object.entries(ARTIST_KO_MAP).find(
@@ -175,7 +186,7 @@ async function handleSearchArtist(keyword: string): Promise<Response> {
     .filter(Boolean)
     .join(",");
 
-  const { data } = await supabase
+  let query = supabase
     .from("songs")
     .select(
       `
@@ -187,15 +198,20 @@ async function handleSearchArtist(keyword: string): Promise<Response> {
     `,
     )
     .or(orCondition)
-    .eq("ai_status", "done")
-    .limit(1)
-    .maybeSingle();
+    .eq("ai_status", "done");
+  if (excludeIds.length > 0) {
+    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  }
+  const { data } = await query.limit(1).maybeSingle();
 
   if (!data) {
     return Response.json({
       type: "off_topic",
       role: "model",
-      message: `"${keyword}" 가수의 곡을 찾지 못했어요.`,
+      message:
+        excludeIds.length > 0
+          ? `"${keyword}" 가수의 다른 곡이 더 없어요. 다른 가수나 조건을 물어봐 주세요.`
+          : `"${keyword}" 가수의 곡을 찾지 못했어요.`,
     } satisfies ChatMessage);
   }
 
@@ -216,6 +232,7 @@ async function handleSearchArtist(keyword: string): Promise<Response> {
 // ────────────────────────────────────────────
 async function handleRecommend(
   intent: Extract<ChatIntent, { intent: "recommend" }>,
+  excludeIds: string[] = [],
 ): Promise<Response> {
   const supabase = createServerClient();
 
@@ -249,6 +266,9 @@ async function handleRecommend(
       .not("ai_pronunciation_score", "is", null)
       .gte("ai_pronunciation_score", 3);
 
+  if (excludeIds.length > 0) {
+    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  }
   const { data } = await query.limit(20); // ← 20개 풀에서
 
   if (!data || data.length === 0) {
@@ -256,7 +276,9 @@ async function handleRecommend(
       type: "off_topic",
       role: "model",
       message:
-        "조건에 맞는 곡을 찾지 못했어요. 다른 분위기나 장르로 시도해볼까요?",
+        excludeIds.length > 0
+          ? "이 조건엔 더 이상 다른 곡이 없어요. 다른 분위기나 장르로 물어봐 주세요."
+          : "조건에 맞는 곡을 찾지 못했어요. 다른 분위기나 장르로 시도해볼까요?",
     } satisfies ChatMessage);
   }
 
@@ -365,10 +387,12 @@ function getErrorStatus(e: unknown): number | undefined {
 
 async function handleChat(req: Request): Promise<Response> {
   try {
-    const { message, history } = (await req.json()) as {
+    const { message, history, excludeIds } = (await req.json()) as {
       message: string;
       history?: ChatTurn[];
+      excludeIds?: string[];
     };
+    const exclude = excludeIds ?? [];
 
     const easter = checkEasterEgg(message);
     if (easter) return Response.json(easter);
@@ -377,11 +401,11 @@ async function handleChat(req: Request): Promise<Response> {
 
     switch (intent.intent) {
       case "search_song":
-        return handleSearchSong(intent.keyword);
+        return handleSearchSong(intent.keyword, exclude);
       case "search_artist":
-        return handleSearchArtist(intent.keyword);
+        return handleSearchArtist(intent.keyword, exclude);
       case "recommend":
-        return handleRecommend(intent);
+        return handleRecommend(intent, exclude);
       case "unknown":
       default:
         return Response.json({

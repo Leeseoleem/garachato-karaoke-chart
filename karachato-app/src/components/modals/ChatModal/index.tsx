@@ -46,6 +46,16 @@ function buildHistory(messages: ChatMessage[]): ChatTurn[] {
   return turns.slice(-HISTORY_LIMIT);
 }
 
+// 이미 보여준(제안/확정한) 곡 id 수집 → 서버에 전달해 "다른 거" 시 제외
+function buildExcludeIds(messages: ChatMessage[]): string[] {
+  const ids = new Set<string>();
+  for (const m of messages) {
+    if (m.type === "song_candidate") ids.add(m.song.songId);
+    else if (m.type === "confirmed") ids.add(m.song_id);
+  }
+  return [...ids];
+}
+
 export default function ChatModal({
   initialMessages = INITIAL_MESSAGES,
 }: {
@@ -99,7 +109,11 @@ export default function ChatModal({
       const res = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, history: buildHistory(messages) }),
+        body: JSON.stringify({
+          message: input,
+          history: buildHistory(messages),
+          excludeIds: buildExcludeIds(messages),
+        }),
         signal: controller.signal,
       });
 
