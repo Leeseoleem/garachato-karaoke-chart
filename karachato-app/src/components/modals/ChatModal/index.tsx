@@ -10,6 +10,7 @@ import TypingIndicator from "./TypingIndicator";
 import UserInput from "./UserInput";
 // === type ===
 import type { ChatMessage, ChatTurn } from "@/types/chat";
+import type { ChatIntent } from "@/types/gemini";
 // === constant ===
 import { CHAT_WELCOME_MESSAGE } from "@/constants/chat";
 // === lib ===
@@ -56,6 +57,15 @@ function buildExcludeIds(messages: ChatMessage[]): string[] {
   return [...ids];
 }
 
+// 가장 최근 song_candidate가 담아 온 검색 인텐트 → 연속("다른 거") 요청에 재사용
+function buildLastIntent(messages: ChatMessage[]): ChatIntent | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.type === "song_candidate" && m.intent) return m.intent;
+  }
+  return undefined;
+}
+
 export default function ChatModal({
   initialMessages = INITIAL_MESSAGES,
 }: {
@@ -91,7 +101,11 @@ export default function ChatModal({
   };
 
   // 서버에 요청하고 응답을 messages에 추가. showUser=true면 유저 말풍선도 함께 추가.
-  const sendToChat = async (text: string, showUser: boolean) => {
+  const sendToChat = async (
+    text: string,
+    showUser: boolean,
+    continuation = false,
+  ) => {
     if (isLoading || isEnded) return;
 
     if (showUser) {
@@ -116,6 +130,8 @@ export default function ChatModal({
           message: text,
           history: buildHistory(messages),
           excludeIds: buildExcludeIds(messages),
+          lastIntent: buildLastIntent(messages),
+          continuation,
         }),
         signal: controller.signal,
       });
@@ -151,7 +167,7 @@ export default function ChatModal({
 
   // "아니에요" → 열린 질문 대신 맥락+제외목록으로 다른 곡을 바로 요청 (유저 말풍선 없이)
   const requestAnotherSong = () => {
-    void sendToChat("다른 곡 추천해줘", false);
+    void sendToChat("다른 곡 추천해줘", false, true);
   };
 
   useEffect(() => {

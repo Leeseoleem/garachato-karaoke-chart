@@ -1,4 +1,5 @@
 import type { KaraokeProvider } from "./domain";
+import type { ChatIntent } from "./gemini";
 
 export type MessageRole = "user" | "model";
 
@@ -37,6 +38,8 @@ export interface SongCandidateMessage {
     karaokeTracks: { provider: KaraokeProvider; karaokeNo: string }[];
     isInTop100: boolean;
   };
+  // 이 후보를 만든 검색 인텐트 — 클라가 되돌려 보내 "다른 거" 연속 요청에 재사용
+  intent?: ChatIntent;
 }
 
 export interface ConfirmedMessage {

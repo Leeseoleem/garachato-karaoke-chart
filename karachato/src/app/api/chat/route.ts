@@ -156,6 +156,7 @@ async function handleSearchSong(
     song_id: data.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡 맞으세요?`,
     song,
+    intent: { intent: "search_song", keyword },
   } satisfies ChatMessage);
 }
 
@@ -224,6 +225,7 @@ async function handleSearchArtist(
     song_id: data.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡은 어떠세요?`,
     song,
+    intent: { intent: "search_artist", keyword },
   } satisfies ChatMessage);
 }
 
@@ -297,6 +299,7 @@ async function handleRecommend(
     song_id: picked.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡은 어떠세요?`,
     song,
+    intent,
   } satisfies ChatMessage);
 }
 
@@ -385,19 +388,36 @@ function getErrorStatus(e: unknown): number | undefined {
   return undefined;
 }
 
+// "다른 거/곡/노래", "딴 거", "또", "다음", "하나 더", "더 추천" 등 = 직전 검색을 이어가는 연속 요청.
+function isContinuationMessage(msg: string): boolean {
+  const t = msg.trim();
+  return /^(다른\s*(거|것|곡|노래)|딴\s*(거|것|곡|노래)|또(\s|$|다른|추천)|다음\s*(거|곡|노래)?|하나\s*더|더\s*(추천|없|줘|들려))/.test(
+    t,
+  );
+}
+
 async function handleChat(req: Request): Promise<Response> {
   try {
-    const { message, history, excludeIds } = (await req.json()) as {
-      message: string;
-      history?: ChatTurn[];
-      excludeIds?: string[];
-    };
+    const { message, history, excludeIds, lastIntent, continuation } =
+      (await req.json()) as {
+        message: string;
+        history?: ChatTurn[];
+        excludeIds?: string[];
+        lastIntent?: ChatIntent;
+        continuation?: boolean;
+      };
     const exclude = excludeIds ?? [];
 
     const easter = checkEasterEgg(message);
     if (easter) return Response.json(easter);
 
-    const intent = await extractIntent(message, history);
+    // "다른 거"류 연속 요청은 LLM에 맡기지 않고 직전 인텐트를 그대로 재사용(제외목록으로 다른 곡).
+    // 그 외에는 Gemini로 분류(history 맥락 포함).
+    const isContinue = continuation === true || isContinuationMessage(message);
+    const intent: ChatIntent =
+      isContinue && lastIntent && lastIntent.intent !== "unknown"
+        ? lastIntent
+        : await extractIntent(message, history);
 
     switch (intent.intent) {
       case "search_song":
