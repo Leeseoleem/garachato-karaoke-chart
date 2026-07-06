@@ -1,7 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { extractIntent } from "@/lib/gemini/intent";
 
-import { escapePostgrestValue } from "@/utils/string";
 import { getToday } from "@/utils/date";
 
 import type { ChatMessage, SongCandidateMessage, ChatTurn } from "@/types/chat";
@@ -114,27 +113,22 @@ async function handleSearchSong(
   excludeIds: string[] = [],
 ): Promise<Response> {
   const supabase = createServerClient();
-  const safeKeyword = escapePostgrestValue(keyword);
 
-  let query = supabase
-    .from("songs")
-    .select(
-      `
-      id,
-      karaoke_tracks (
-        provider, karaoke_no, title_ko_jp,
-        title_in_provider, artist_ko, artist_in_provider
-      )
-    `,
-    )
-    .or(`title_ko_norm.ilike.%${keyword}%,title_norm.ilike.%${safeKeyword}%`)
-    .eq("ai_status", "done");
-  if (excludeIds.length > 0) {
-    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  // 제목 검색도 search_songs(pg_trgm)로 → 오탈자·표기 변형 허용(유사도 순).
+  const { data: hits, error } = await supabase.rpc("search_songs", {
+    query: keyword,
+  });
+  if (error) throw error;
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const r of (hits ?? []) as { song_id: string }[]) {
+    if (!seen.has(r.song_id) && !excludeIds.includes(r.song_id)) {
+      seen.add(r.song_id);
+      ids.push(r.song_id);
+    }
   }
-  const { data } = await query.limit(1).maybeSingle();
 
-  if (!data) {
+  if (ids.length === 0) {
     return Response.json({
       type: "off_topic",
       role: "model",
@@ -145,14 +139,43 @@ async function handleSearchSong(
     } satisfies ChatMessage);
   }
 
-  // 단건이므로 개별 쿼리 유지
-  const isInTop100 = await checkIsInTop100(data.id);
-  const song = buildSongField(data.id, data.karaoke_tracks ?? [], isInTop100);
+  // ids(유사도 순) 중 완료(done)된 첫 곡 선택 (RPC는 상태를 안 거름)
+  const { data, error: e2 } = await supabase
+    .from("songs")
+    .select(
+      `
+      id,
+      karaoke_tracks (
+        provider, karaoke_no, title_ko_jp,
+        title_in_provider, artist_ko, artist_in_provider
+      )
+    `,
+    )
+    .in("id", ids)
+    .eq("ai_status", "done");
+  if (e2) throw e2;
+  const byId = new Map((data ?? []).map((r) => [r.id, r]));
+  const firstDone = ids.map((id) => byId.get(id)).find((r) => r != null);
+
+  if (!firstDone) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message: `"${keyword}" 곡을 찾지 못했어요. 제목을 다시 확인해볼까요?`,
+    } satisfies ChatMessage);
+  }
+
+  const isInTop100 = await checkIsInTop100(firstDone.id);
+  const song = buildSongField(
+    firstDone.id,
+    firstDone.karaoke_tracks ?? [],
+    isInTop100,
+  );
 
   return Response.json({
     type: "song_candidate",
     role: "model",
-    song_id: data.id,
+    song_id: firstDone.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡 맞으세요?`,
     song,
     intent: { intent: "search_song", keyword },
