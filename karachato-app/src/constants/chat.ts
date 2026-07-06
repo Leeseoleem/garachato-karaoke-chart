@@ -21,8 +21,8 @@ export const VOCALOID_KO_MAP = {
 } as const;
 
 export const STATIC_QUICK_QUESTIONS = [
-  "요즘 가장 인기 있는 노래는?",
-  "최근 SNS에서 유행 중인 노래 찾아줘",
+  "요즘 나온 신곡 추천해줘",
+  "신나는 노래 추천해줘",
 ] as const;
 
 // constants/chat.ts

@@ -1,6 +1,13 @@
 import type { KaraokeProvider } from "./domain";
+import type { ChatIntent } from "./gemini";
 
 export type MessageRole = "user" | "model";
+
+// 대화 맥락 전달용 — 클라가 최근 N턴을 요약해 서버로 보냄 (멀티턴 인텐트 추출)
+export interface ChatTurn {
+  role: MessageRole;
+  text: string;
+}
 
 // ────────────────────────────────────────
 // 메시지 타입 인터페이스
@@ -31,6 +38,8 @@ export interface SongCandidateMessage {
     karaokeTracks: { provider: KaraokeProvider; karaokeNo: string }[];
     isInTop100: boolean;
   };
+  // 이 후보를 만든 검색 인텐트 — 클라가 되돌려 보내 "다른 거" 연속 요청에 재사용
+  intent?: ChatIntent;
 }
 
 export interface ConfirmedMessage {
@@ -58,6 +67,15 @@ export interface ErrorMessage {
   message: string;
 }
 
+export interface OptionPromptMessage {
+  type: "option_prompt";
+  role: "model";
+  // 넓은 가수 검색 시 실제 데이터로 만든 선택지 버튼으로 좁히기
+  // 각 옵션은 클릭 시 그대로 재사용할 인텐트를 들고 있음
+  message: string;
+  options: { label: string; intent: ChatIntent }[];
+}
+
 // ────────────────────────────────────────
 // 유니온 + 파생 타입
 // ────────────────────────────────────────
@@ -67,7 +85,8 @@ export type ChatMessage =
   | SongCandidateMessage
   | ConfirmedMessage
   | OffTopicMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | OptionPromptMessage;
 
 // ChatMessage에서 자동 추출 — 인터페이스 추가 시 자동 반영
 export type ChatMessageType = ChatMessage["type"];

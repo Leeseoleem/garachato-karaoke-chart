@@ -24,6 +24,7 @@ export type ChatIntent =
   | { intent: "search_artist"; keyword: string }
   | {
       intent: "recommend";
+      artist?: string; // 특정 가수로 한정된 추천 (옵션 좁히기용)
       vibe?: string;
       genre?: string;
       category?: string;
