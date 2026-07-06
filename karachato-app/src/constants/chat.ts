@@ -13,7 +13,7 @@ export const ARTIST_KO_MAP = {
   "King Gnu": "킹누",
 } as const;
 
-// DB에 곡이 있는 보컬로이드만. IA(2글자 노이즈)·flower(DB표기 "Flower"라 한글 불일치)는 제외.
+// DB에 곡이 있는 보컬로이드 전체. flower는 DB표기가 "Flower"(영어)라 값도 영어.
 export const VOCALOID_KO_MAP = {
   初音ミク: "하츠네 미쿠",
   鏡音リン: "카가미네 린",
@@ -21,8 +21,10 @@ export const VOCALOID_KO_MAP = {
   巡音ルカ: "메구리네 루카",
   重音テト: "카사네 테토",
   GUMI: "구미",
+  IA: "IA",
   可不: "카후",
   歌愛ユキ: "카아이 유키",
+  flower: "flower",
 } as const;
 
 export const STATIC_QUICK_QUESTIONS = [
