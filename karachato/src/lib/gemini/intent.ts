@@ -138,19 +138,26 @@ export async function extractIntent(
 ): Promise<ChatIntent> {
   const input = buildContextualInput(userInput, history);
   let lastError: unknown;
+  let sawUnknown = false;
 
-  // 모델 폴백: 앞 모델이 실패하면 다음 모델로 재시도.
-  // 모델이 성공적으로 응답하면(off-topic 포함) 그 결과를 사용.
-  // 모든 모델이 실패하면 에러를 전파해 route.ts가 전용 메시지+재시도로 처리
-  // (실패를 unknown/off_topic으로 숨기지 않음 — 503을 "물어봐 주세요"로 오표시하던 버그 수정).
+  // 모델 순회(flash-lite→flash→flash-latest, 뒤로 갈수록 안정적):
+  // - 예외(429/503 등) → 다음 모델로 폴백.
+  // - 확신 있는 분류(non-unknown)면 즉시 채택.
+  // - unknown은 약한 모델의 오분류일 수 있어 다음(더 강한) 모델로 재확인.
+  //   ("요네즈 켄시 노래 찾아줘"를 flash-lite가 간헐적으로 unknown 처리하던 버그 보정.)
   for (const modelName of INTENT_MODELS) {
     try {
       const result = await getIntentModel(modelName).generateContent(input);
-      return parseIntent(result.response.text());
+      const intent = parseIntent(result.response.text());
+      if (intent.intent !== "unknown") return intent;
+      sawUnknown = true;
     } catch (e) {
       lastError = e;
     }
   }
 
+  // 응답한 모델이 모두 unknown → 진짜 무관. 아무도 응답 못함(전부 에러) → 에러 전파
+  // (503/429를 "물어봐 주세요"로 숨기지 않고 route.ts가 전용 메시지+재시도로 처리).
+  if (sawUnknown) return { intent: "unknown" };
   throw lastError;
 }
