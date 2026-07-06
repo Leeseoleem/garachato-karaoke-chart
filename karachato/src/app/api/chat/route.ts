@@ -480,26 +480,16 @@ const CHART_SORT_LEAD: Record<ChartSort, string> = {
 
 async function handleChartRecommend(
   mode: ChartSort,
+  intent: Extract<ChatIntent, { intent: "recommend" }>,
   excludeIds: string[] = [],
 ): Promise<Response> {
   const ids = (await getChartSortedSongIds(mode)).filter(
     (id) => !excludeIds.includes(id),
   );
 
-  if (ids.length === 0) {
-    return Response.json({
-      type: "off_topic",
-      role: "model",
-      message:
-        excludeIds.length > 0
-          ? "이 조건엔 더 이상 다른 곡이 없어요. 다른 걸로 물어봐 주세요."
-          : "지금은 보여드릴 곡을 찾지 못했어요. 다른 걸로 시도해볼까요?",
-    } satisfies ChatMessage);
-  }
-
-  // ids 순서(등록/이동폭 순)대로 완료(done)된 첫 곡 선택
+  // ids 순서(등록/이동폭 순)를 유지하며 완료(done)곡 + 함께 온 속성 필터(vocal_tags·category 등) 적용.
   const supabase = createServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("songs")
     .select(
       `
@@ -512,6 +502,29 @@ async function handleChartRecommend(
     )
     .in("id", ids)
     .eq("ai_status", "done");
+  if (intent.category) query = query.eq("ai_category", intent.category);
+  if (intent.genre) query = query.contains("ai_genres", [intent.genre]);
+  if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
+  if (intent.trait) query = query.contains("ai_traits", [intent.trait]);
+  if (intent.vocal_tags && intent.vocal_tags.length > 0)
+    query = query.contains("vocal_tags", intent.vocal_tags);
+  if (intent.vocal_difficulty === "easy")
+    query = query.not("ai_vocal_score", "is", null).lte("ai_vocal_score", 2);
+  if (intent.vocal_difficulty === "hard")
+    query = query.not("ai_vocal_score", "is", null).gte("ai_vocal_score", 3);
+  if (intent.pronunciation_difficulty === "easy")
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .lte("ai_pronunciation_score", 2);
+  if (intent.pronunciation_difficulty === "hard")
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .gte("ai_pronunciation_score", 3);
+  if (intent.artist) {
+    const artistIds = await getArtistSongIds(intent.artist);
+    query = query.in("id", artistIds);
+  }
+  const { data, error } = await query;
   if (error) throw error;
 
   const byId = new Map((data ?? []).map((r) => [r.id, r]));
@@ -520,7 +533,10 @@ async function handleChartRecommend(
     return Response.json({
       type: "off_topic",
       role: "model",
-      message: "지금은 보여드릴 곡을 찾지 못했어요. 다른 걸로 시도해볼까요?",
+      message:
+        excludeIds.length > 0
+          ? "이 조건엔 더 이상 다른 곡이 없어요. 다른 걸로 물어봐 주세요."
+          : "지금은 보여드릴 곡을 찾지 못했어요. 다른 걸로 시도해볼까요?",
     } satisfies ChatMessage);
   }
 
@@ -537,7 +553,7 @@ async function handleChartRecommend(
     song_id: firstDone.id,
     message: `${CHART_SORT_LEAD[mode]}! "${song.titleKo ?? song.titleInProvider}" 이 곡 어떠세요?`,
     song,
-    intent: { intent: "recommend", chart_sort: mode },
+    intent,
   } satisfies ChatMessage);
 }
 
@@ -548,8 +564,9 @@ async function handleRecommend(
   intent: Extract<ChatIntent, { intent: "recommend" }>,
   excludeIds: string[] = [],
 ): Promise<Response> {
-  // 차트 기반 모드(등록순·순위변동)는 전용 경로로
-  if (intent.chart_sort) return handleChartRecommend(intent.chart_sort, excludeIds);
+  // 차트 기반 모드(등록순·순위변동)는 전용 경로로 (속성 필터도 함께 전달)
+  if (intent.chart_sort)
+    return handleChartRecommend(intent.chart_sort, intent, excludeIds);
 
   const supabase = createServerClient();
 
