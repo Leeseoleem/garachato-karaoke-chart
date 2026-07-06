@@ -30,7 +30,6 @@ export const VOCALOID_KO_MAP = {
 export const STATIC_QUICK_QUESTIONS = [
   "요즘 나온 신곡 추천해줘",
   "요즘 순위 오른 곡 알려줘",
-  "노래방에 새로 들어온 곡 알려줘",
 ] as const;
 
 // constants/chat.ts
