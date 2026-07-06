@@ -575,6 +575,9 @@ async function handleRecommend(
   if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
   if (intent.trait && !wantNewest)
     query = query.contains("ai_traits", [intent.trait]);
+  // 보컬 속성(여성/보컬로이드/파란머리/대파 등) — 곡의 vocal_tags에 모두 포함되어야 매칭
+  if (intent.vocal_tags && intent.vocal_tags.length > 0)
+    query = query.contains("vocal_tags", intent.vocal_tags);
   if (intent.vocal_difficulty === "easy")
     query = query.not("ai_vocal_score", "is", null).lte("ai_vocal_score", 2);
   if (intent.vocal_difficulty === "hard")

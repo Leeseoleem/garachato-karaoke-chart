@@ -34,6 +34,8 @@ export type ChatIntent =
       // 차트 기반 정렬 모드 — recent_registered: 노래방 신규 등록순(created_at),
       // rank_up/rank_down: 최근 차트 순위 상승/하락순(rank_history)
       chart_sort?: "recent_registered" | "rank_up" | "rank_down";
+      // 보컬 속성 태그 (곡의 songs.vocal_tags와 교집합 필터). 예: 여성, 보컬로이드, 파란머리, 대파
+      vocal_tags?: string[];
     }
   | { intent: "unknown" };
 
