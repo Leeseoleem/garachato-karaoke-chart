@@ -1,7 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { extractIntent } from "@/lib/gemini/intent";
 
-import { escapePostgrestValue } from "@/utils/string";
 import { getToday } from "@/utils/date";
 
 import type { ChatMessage, SongCandidateMessage, ChatTurn } from "@/types/chat";
@@ -106,35 +105,40 @@ function buildSongField(
   };
 }
 
+// 여러 검색어(원어 변환본 + 한글 원문 등)를 순서대로 search_songs 조회해 곡 id 병합(중복·제외 제거).
+async function collectSearchIds(
+  queries: (string | undefined | null)[],
+  excludeIds: string[] = [],
+): Promise<string[]> {
+  const supabase = createServerClient();
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const query of queries) {
+    if (!query) continue;
+    const { data, error } = await supabase.rpc("search_songs", { query });
+    if (error) throw error;
+    for (const r of (data ?? []) as { song_id: string }[]) {
+      if (!seen.has(r.song_id) && !excludeIds.includes(r.song_id)) {
+        seen.add(r.song_id);
+        ids.push(r.song_id);
+      }
+    }
+  }
+  return ids;
+}
+
 // ────────────────────────────────────────────
 // 핸들러: 곡 제목 검색
 // ────────────────────────────────────────────
 async function handleSearchSong(
   keyword: string,
   excludeIds: string[] = [],
+  keywordRaw?: string,
 ): Promise<Response> {
-  const supabase = createServerClient();
-  const safeKeyword = escapePostgrestValue(keyword);
+  // 원어 변환본(keyword) + 한글 원문(keywordRaw) 둘 다 검색 → 변환이 틀려도 원문 오타 매칭.
+  const ids = await collectSearchIds([keyword, keywordRaw], excludeIds);
 
-  let query = supabase
-    .from("songs")
-    .select(
-      `
-      id,
-      karaoke_tracks (
-        provider, karaoke_no, title_ko_jp,
-        title_in_provider, artist_ko, artist_in_provider
-      )
-    `,
-    )
-    .or(`title_ko_norm.ilike.%${keyword}%,title_norm.ilike.%${safeKeyword}%`)
-    .eq("ai_status", "done");
-  if (excludeIds.length > 0) {
-    query = query.not("id", "in", `(${excludeIds.join(",")})`);
-  }
-  const { data } = await query.limit(1).maybeSingle();
-
-  if (!data) {
+  if (ids.length === 0) {
     return Response.json({
       type: "off_topic",
       role: "model",
@@ -145,17 +149,47 @@ async function handleSearchSong(
     } satisfies ChatMessage);
   }
 
-  // 단건이므로 개별 쿼리 유지
-  const isInTop100 = await checkIsInTop100(data.id);
-  const song = buildSongField(data.id, data.karaoke_tracks ?? [], isInTop100);
+  // ids(유사도 순) 중 완료(done)된 첫 곡 선택 (RPC는 상태를 안 거름)
+  const supabase = createServerClient();
+  const { data, error: e2 } = await supabase
+    .from("songs")
+    .select(
+      `
+      id,
+      karaoke_tracks (
+        provider, karaoke_no, title_ko_jp,
+        title_in_provider, artist_ko, artist_in_provider
+      )
+    `,
+    )
+    .in("id", ids)
+    .eq("ai_status", "done");
+  if (e2) throw e2;
+  const byId = new Map((data ?? []).map((r) => [r.id, r]));
+  const firstDone = ids.map((id) => byId.get(id)).find((r) => r != null);
+
+  if (!firstDone) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message: `"${keyword}" 곡을 찾지 못했어요. 제목을 다시 확인해볼까요?`,
+    } satisfies ChatMessage);
+  }
+
+  const isInTop100 = await checkIsInTop100(firstDone.id);
+  const song = buildSongField(
+    firstDone.id,
+    firstDone.karaoke_tracks ?? [],
+    isInTop100,
+  );
 
   return Response.json({
     type: "song_candidate",
     role: "model",
-    song_id: data.id,
+    song_id: firstDone.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡 맞으세요?`,
     song,
-    intent: { intent: "search_song", keyword },
+    intent: { intent: "search_song", keyword, keyword_raw: keywordRaw },
   } satisfies ChatMessage);
 }
 
@@ -244,10 +278,21 @@ async function deriveArtistOptions(
 async function handleSearchArtist(
   keyword: string,
   excludeIds: string[] = [],
+  keywordRaw?: string,
 ): Promise<Response> {
-  const ids = (await getArtistSongIds(keyword)).filter(
-    (id) => !excludeIds.includes(id),
-  );
+  // 원어 변환본 + 한글 원문 둘 다로 후보 수집 (변환이 틀려도 원문으로 매칭)
+  const seen = new Set<string>();
+  const collected: string[] = [];
+  for (const kw of [keyword, keywordRaw]) {
+    if (!kw) continue;
+    for (const id of await getArtistSongIds(kw)) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        collected.push(id);
+      }
+    }
+  }
+  const ids = collected.filter((id) => !excludeIds.includes(id));
 
   if (ids.length === 0) {
     return Response.json({
@@ -322,7 +367,7 @@ async function handleSearchArtist(
     song_id: firstDone.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡은 어떠세요?`,
     song,
-    intent: { intent: "search_artist", keyword },
+    intent: { intent: "search_artist", keyword, keyword_raw: keywordRaw },
   } satisfies ChatMessage);
 }
 
@@ -362,12 +407,167 @@ function compareNewest(
 }
 
 // ────────────────────────────────────────────
+// 차트 기반 추천 (등록순 / 순위 상승·하락) — ISSUE-08
+// ────────────────────────────────────────────
+type ChartSort = NonNullable<
+  Extract<ChatIntent, { intent: "recommend" }>["chart_sort"]
+>;
+
+// 모드별 곡 id 목록(정렬 순). recent_registered: 등록 최신순 / rank_up·down: 최신 차트 순위 이동폭 순.
+async function getChartSortedSongIds(mode: ChartSort): Promise<string[]> {
+  const supabase = createServerClient();
+
+  if (mode === "recent_registered") {
+    const { data, error } = await supabase
+      .from("songs")
+      .select("id")
+      .eq("ai_status", "done")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return (data ?? []).map((r) => r.id);
+  }
+
+  // rank_up / rank_down — 가장 최근 차트일의 delta로 정렬 (UP: 양수 내림차순, DOWN: 음수 오름차순)
+  const status = mode === "rank_up" ? "UP" : "DOWN";
+  const { data: latestRow, error: e1 } = await supabase
+    .from("rank_history")
+    .select("chart_date")
+    .order("chart_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (e1) throw e1;
+  const latest = latestRow?.chart_date;
+  if (!latest) return [];
+
+  const { data: rhRows, error: e2 } = await supabase
+    .from("rank_history")
+    .select("karaoke_track_id, delta_value")
+    .eq("chart_date", latest)
+    .eq("delta_status", status)
+    .order("delta_value", { ascending: mode === "rank_down" })
+    .limit(50);
+  if (e2) throw e2;
+
+  const trackIds = (rhRows ?? []).map((r) => r.karaoke_track_id);
+  if (trackIds.length === 0) return [];
+
+  const { data: tracks, error: e3 } = await supabase
+    .from("karaoke_tracks")
+    .select("id, song_id")
+    .in("id", trackIds);
+  if (e3) throw e3;
+  const trackToSong = new Map((tracks ?? []).map((t) => [t.id, t.song_id]));
+
+  // rhRows 순서(이동폭 순) 유지 + 한 곡이 TJ/KY 둘 다면 dedup
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const r of rhRows ?? []) {
+    const sid = trackToSong.get(r.karaoke_track_id);
+    if (sid && !seen.has(sid)) {
+      seen.add(sid);
+      ids.push(sid);
+    }
+  }
+  return ids;
+}
+
+const CHART_SORT_LEAD: Record<ChartSort, string> = {
+  recent_registered: "최근 노래방에 등록된 곡이에요",
+  rank_up: "요즘 순위가 오르는 곡이에요",
+  rank_down: "최근 순위가 내려간 곡이에요",
+};
+
+async function handleChartRecommend(
+  mode: ChartSort,
+  intent: Extract<ChatIntent, { intent: "recommend" }>,
+  excludeIds: string[] = [],
+): Promise<Response> {
+  const ids = (await getChartSortedSongIds(mode)).filter(
+    (id) => !excludeIds.includes(id),
+  );
+
+  // ids 순서(등록/이동폭 순)를 유지하며 완료(done)곡 + 함께 온 속성 필터(vocal_tags·category 등) 적용.
+  const supabase = createServerClient();
+  let query = supabase
+    .from("songs")
+    .select(
+      `
+      id,
+      karaoke_tracks (
+        provider, karaoke_no, title_ko_jp,
+        title_in_provider, artist_ko, artist_in_provider
+      )
+    `,
+    )
+    .in("id", ids)
+    .eq("ai_status", "done");
+  if (intent.category) query = query.eq("ai_category", intent.category);
+  if (intent.genre) query = query.contains("ai_genres", [intent.genre]);
+  if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
+  if (intent.trait) query = query.contains("ai_traits", [intent.trait]);
+  if (intent.vocal_tags && intent.vocal_tags.length > 0)
+    query = query.contains("vocal_tags", intent.vocal_tags);
+  if (intent.vocal_difficulty === "easy")
+    query = query.not("ai_vocal_score", "is", null).lte("ai_vocal_score", 2);
+  if (intent.vocal_difficulty === "hard")
+    query = query.not("ai_vocal_score", "is", null).gte("ai_vocal_score", 3);
+  if (intent.pronunciation_difficulty === "easy")
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .lte("ai_pronunciation_score", 2);
+  if (intent.pronunciation_difficulty === "hard")
+    query = query
+      .not("ai_pronunciation_score", "is", null)
+      .gte("ai_pronunciation_score", 3);
+  if (intent.artist) {
+    const artistIds = await getArtistSongIds(intent.artist);
+    query = query.in("id", artistIds);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const byId = new Map((data ?? []).map((r) => [r.id, r]));
+  const firstDone = ids.map((id) => byId.get(id)).find((r) => r != null);
+  if (!firstDone) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message:
+        excludeIds.length > 0
+          ? "이 조건엔 더 이상 다른 곡이 없어요. 다른 걸로 물어봐 주세요."
+          : "지금은 보여드릴 곡을 찾지 못했어요. 다른 걸로 시도해볼까요?",
+    } satisfies ChatMessage);
+  }
+
+  const isInTop100 = await checkIsInTop100(firstDone.id);
+  const song = buildSongField(
+    firstDone.id,
+    firstDone.karaoke_tracks ?? [],
+    isInTop100,
+  );
+
+  return Response.json({
+    type: "song_candidate" as const,
+    role: "model" as const,
+    song_id: firstDone.id,
+    message: `${CHART_SORT_LEAD[mode]}! "${song.titleKo ?? song.titleInProvider}" 이 곡 어떠세요?`,
+    song,
+    intent,
+  } satisfies ChatMessage);
+}
+
+// ────────────────────────────────────────────
 // 핸들러: 추천
 // ────────────────────────────────────────────
 async function handleRecommend(
   intent: Extract<ChatIntent, { intent: "recommend" }>,
   excludeIds: string[] = [],
 ): Promise<Response> {
+  // 차트 기반 모드(등록순·순위변동)는 전용 경로로 (속성 필터도 함께 전달)
+  if (intent.chart_sort)
+    return handleChartRecommend(intent.chart_sort, intent, excludeIds);
+
   const supabase = createServerClient();
 
   let query = supabase
@@ -392,6 +592,9 @@ async function handleRecommend(
   if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
   if (intent.trait && !wantNewest)
     query = query.contains("ai_traits", [intent.trait]);
+  // 보컬 속성(여성/보컬로이드/파란머리/대파 등) — 곡의 vocal_tags에 모두 포함되어야 매칭
+  if (intent.vocal_tags && intent.vocal_tags.length > 0)
+    query = query.contains("vocal_tags", intent.vocal_tags);
   if (intent.vocal_difficulty === "easy")
     query = query.not("ai_vocal_score", "is", null).lte("ai_vocal_score", 2);
   if (intent.vocal_difficulty === "hard")
@@ -614,9 +817,9 @@ async function handleChat(req: Request): Promise<Response> {
 
     switch (intent.intent) {
       case "search_song":
-        return handleSearchSong(intent.keyword, exclude);
+        return handleSearchSong(intent.keyword, exclude, intent.keyword_raw);
       case "search_artist":
-        return handleSearchArtist(intent.keyword, exclude);
+        return handleSearchArtist(intent.keyword, exclude, intent.keyword_raw);
       case "recommend":
         return handleRecommend(intent, exclude);
       case "unknown":

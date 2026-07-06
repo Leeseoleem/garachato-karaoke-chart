@@ -23,12 +23,19 @@ const getRandomVocaloidQuestion = () => {
   return `${random} 노래 찾아줘`;
 };
 
+const getRandomGenderQuestion = () => {
+  const gender = Math.random() < 0.5 ? "여성" : "남성";
+  return `${gender} 보컬 노래 추천해줘`;
+};
+
 export default function QuickQuestions({ onSelect }: QuickQuestionsProps) {
   const [artistQuestion] = useState(() => getRandomArtistQuestion());
   const [vocaloidQuestion] = useState(() => getRandomVocaloidQuestion());
+  const [genderQuestion] = useState(() => getRandomGenderQuestion());
 
   const questions = [
     ...STATIC_QUICK_QUESTIONS,
+    genderQuestion,
     artistQuestion,
     vocaloidQuestion,
   ];

@@ -97,7 +97,8 @@ export const buildTranslatePrompt = (
   "ai_vocal_reason": "보컬 난이도 이유 1~2문장",
   "ai_pronunciation_score": 1~5 사이 정수,
   "ai_pronunciation_reason": "발음 난이도 이유 1~2문장",
-  "ai_karaoke_tip": "노래방에서 이 곡을 부를 때 유용한 팁 1~2문장"
+  "ai_karaoke_tip": "노래방에서 이 곡을 부를 때 유용한 팁 1~2문장",
+  "vocal_gender": "리드보컬 성별. 남성 | 여성 | 혼성 | 불명 중 하나"
 }
 
 ---
@@ -118,6 +119,7 @@ export const buildTranslatePrompt = (
 - ai_genres: 3개 이내
 - ai_vibes: 3개 이내
 - ai_vocal_score / ai_pronunciation_score: 1(매우 쉬움) ~ 5(매우 어려움)
+- vocal_gender: 이 곡을 부르는 리드보컬의 성별. 밴드/그룹은 메인 보컬 기준(구성원 성비 아님). 남녀가 함께 부르면 혼성. 보컬로이드/버추얼 캐릭터는 그 캐릭터 목소리 성별. 확실하지 않으면 불명
 `.trim();
 
 export const buildBatchPrompt = (songs: BatchInput[]): string => {
@@ -153,7 +155,8 @@ ${songList}
     "ai_vocal_reason": "보컬 난이도 이유 1~2문장",
     "ai_pronunciation_score": 1~5 사이 정수,
     "ai_pronunciation_reason": "발음 난이도 이유 1~2문장",
-    "ai_karaoke_tip": "노래방 팁 1~2문장"
+    "ai_karaoke_tip": "노래방 팁 1~2문장",
+    "vocal_gender": "리드보컬 성별. 남성 | 여성 | 혼성 | 불명 중 하나"
   },
   ...나머지 곡들
 ]
@@ -177,6 +180,7 @@ ${songList}
 - ai_genres: 3개 이내
 - ai_vibes: 3개 이내
 - ai_vocal_score / ai_pronunciation_score: 1(매우 쉬움) ~ 5(매우 어려움)
+- vocal_gender: 이 곡을 부르는 리드보컬의 성별. 밴드/그룹은 메인 보컬 기준(구성원 성비 아님). 남녀가 함께 부르면 혼성. 보컬로이드/버추얼 캐릭터는 그 캐릭터 목소리 성별. 확실하지 않으면 불명
 `.trim();
 };
 

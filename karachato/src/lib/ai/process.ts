@@ -2,6 +2,34 @@ import { createServerClient } from "../supabase/server";
 import { translateSongBatch } from "../gemini/translate";
 import { generateSongIntro } from "../gemini/describe";
 import { normalize } from "@/utils/string";
+import { deriveVocalTags } from "@/constants/vocaloid";
+
+// 같은 가수(artist_norm)의 기존 곡에서 성별 태그(여성/남성)를 재사용 → 신규 곡 성별 자동 채움.
+// (보컬로이드는 하드코딩 맵으로, 사람 성별은 이 재사용으로. 완전 신규 가수는 null → 이후 수동/AI 보강.)
+async function reuseGenderTags(
+  supabase: ReturnType<typeof createServerClient>,
+  artistNorm: string,
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("songs")
+    .select("vocal_tags")
+    .eq("artist_norm", artistNorm)
+    .not("vocal_tags", "is", null)
+    .limit(20);
+  const genders = new Set<string>();
+  for (const row of data ?? [])
+    for (const t of (row.vocal_tags ?? []) as string[])
+      if (t === "여성" || t === "남성") genders.add(t);
+  return [...genders];
+}
+
+// AI가 유추한 리드보컬 성별을 태그로. 불명/누락은 빈 배열(억지로 안 붙임).
+function aiGenderToTags(g: string | undefined | null): string[] {
+  if (g === "남성") return ["남성"];
+  if (g === "여성") return ["여성"];
+  if (g === "혼성") return ["여성", "남성"];
+  return [];
+}
 
 export const processPendingSongs = async (
   deadline?: number,
@@ -10,7 +38,7 @@ export const processPendingSongs = async (
 
   const { data: pendingSongs, error } = await supabase
     .from("songs")
-    .select("id")
+    .select("id, artist_norm")
     .eq("ai_status", "pending");
 
   if (error) {
@@ -39,6 +67,7 @@ export const processPendingSongs = async (
     const batchInputs: {
       index: number;
       songId: string;
+      artistNorm: string;
       trackId: number;
       title: string;
       artist: string;
@@ -77,6 +106,7 @@ export const processPendingSongs = async (
       batchInputs.push({
         index: j,
         songId: song.id,
+        artistNorm: song.artist_norm,
         trackId: primaryTrack.id,
         title: primaryTrack.title_in_provider,
         artist: primaryTrack.artist_in_provider,
@@ -188,6 +218,19 @@ export const processPendingSongs = async (
         result.ai_category,
       );
 
+      // 보컬 속성: 보컬로이드(캐릭터 맵) + 사람 성별을 합집합으로.
+      // 성별은 같은 가수 기존 곡 재사용 우선 → 없으면 (보컬로이드는 맵이 담당) AI 유추.
+      const vocaloidTags =
+        deriveVocalTags(input.allTracks.map((t) => t.artist_in_provider)) ?? [];
+      const reusedGender = await reuseGenderTags(supabase, input.artistNorm);
+      const genderTags =
+        reusedGender.length > 0
+          ? reusedGender
+          : vocaloidTags.length > 0
+            ? []
+            : aiGenderToTags(result.vocal_gender);
+      const vocalTags = [...new Set([...vocaloidTags, ...genderTags])];
+
       const { error: songUpdateError } = await supabase
         .from("songs")
         .update({
@@ -197,6 +240,7 @@ export const processPendingSongs = async (
           artist_ko_norm: normalize(result.artist_ko),
           description: intro?.description ?? result.description,
           ai_intro: intro?.facts ?? null,
+          vocal_tags: vocalTags.length > 0 ? vocalTags : null,
           ai_category: result.ai_category,
           ai_traits: result.ai_traits,
           ai_genres: result.ai_genres,

@@ -26,6 +26,7 @@ export interface Song {
   ai_traits: AiTrait[] | null;
   ai_genres: string[] | null;
   ai_vibes: string[] | null;
+  vocal_tags: string[] | null; // 보컬 속성 (여성/남성/보컬로이드/파란머리/대파 등)
   ai_vocal_score: number | null;
   ai_vocal_reason: string | null;
   ai_pronunciation_score: number | null;

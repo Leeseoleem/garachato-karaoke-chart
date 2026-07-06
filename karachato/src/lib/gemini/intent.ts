@@ -17,10 +17,13 @@ const SYSTEM_INSTRUCTION = `
 {
   "intent": "search_song" | "search_artist" | "recommend" | "unknown",
   "keyword": "곡명 또는 가수명 (search_song, search_artist일 때만)",
+  "keyword_raw": "사용자가 입력한 곡명·가수명의 한글 원문 그대로 (원어 변환 전, search_song·search_artist일 때만)",
   "vibe": "분위기 (recommend일 때만, 예: 신나는, 잔잔한, 슬픈)",
   "genre": "장르 (recommend일 때만, 예: 시티팝, 록, 애니송)",
   "category": "출처 (recommend일 때만. 반드시 아래 5개 중 하나만: 애니메이션 OST, 극장판 OST, 게임 OST, 보컬로이드, J-POP)",
   "trait": "차트 특성 (recommend일 때만. 반드시 아래 5개 중 하나만: 역주행, 바이럴, 최신곡, 예전곡, 커버곡)",
+  "chart_sort": "차트 정렬 (recommend일 때만. recent_registered=노래방 신규 등록순 / rank_up=순위 상승 / rank_down=순위 하락)",
+  "vocal_tags": "보컬 속성 배열 (recommend일 때만. 아래 정해진 태그만. 예: 여성, 파란머리, 대파)",
   "vocal_difficulty": "보컬 난이도 (recommend일 때만. easy 또는 hard)",
   "pronunciation_difficulty": "발음 난이도 (recommend일 때만. easy 또는 hard)"
 }
@@ -31,6 +34,20 @@ trait 분류 기준:
 - "오래된", "추억의", "옛날" → "예전곡"
 - "역주행", "다시 뜨는" → "역주행"
 - "커버", "어레인지" → "커버곡"
+
+chart_sort 분류 기준 (recommend. trait보다 우선 — "순위/차트/노래방 등록"이 명시된 경우):
+- "최근 노래방에 등록된/들어온/생긴 곡", "노래방 신곡", "새로 들어온 곡" → chart_sort: "recent_registered"
+- "순위 오른/오르는/올라온 곡", "차트 상승곡", "순위 급상승" → chart_sort: "rank_up"
+- "순위 내린/떨어진/하락한 곡", "차트 하락곡" → chart_sort: "rank_down"
+- 단, "순위/차트/노래방 등록" 언급 없는 일반 "요즘 뜨는/인기곡"은 chart_sort가 아니라 trait: "바이럴".
+
+vocal_tags 분류 기준 (recommend. 곡의 보컬 속성 필터. 아래 정해진 태그만, 여러 개면 배열):
+- 성별: "여자/여성 보컬"→여성, "남자/남성 보컬"→남성
+- 보컬로이드: "보컬로이드/보카로 곡"→보컬로이드
+- 머리색: "파란/청록 머리"→파란머리, "빨간/레드 머리"→빨간머리, "금발/노란 머리"→노란머리, "분홍/핑크 머리"→분홍머리, "초록/녹색 머리"→초록머리, "검은/흑발"→검은머리, "은발/회색 머리"→은발
+- 상징 아이템: "대파/파"→대파, "프랑스빵/바게트"→프랑스빵, "바나나"→바나나, "참치"→참치, "당근"→당근
+- 조합 예: "파란 머리 보컬로이드"→["파란머리","보컬로이드"], "여성 보컬로이드"→["여성","보컬로이드"], "대파 든 캐릭터"→["대파"]
+- 특정 캐릭터명(미쿠·테토 등)이 명시되면 vocal_tags가 아니라 search_artist. vocal_tags는 속성으로 묘사할 때만.
 
 category 분류 기준:
 - TV 애니메이션 OP/ED/삽입곡 → "애니메이션 OST"
@@ -54,6 +71,7 @@ pronunciation_difficulty 분류 기준:
   - 일본어로 발매된 제목/가수 → 일본어: "요루시카"→"ヨルシカ", "요네즈 켄시"→"米津玄師", "요루니카케루"→"夜に駆ける"
   - 이미 흔히 쓰이는 한국어 번역 제목이면 그대로 둔다: "밤에 달리다"→"밤에 달리다"
   - 원어 표기가 불확실하면 가장 널리 쓰이는 공식 표기를 택한다.
+- keyword_raw: keyword를 원어로 바꾸기 **전에**, 사용자가 친 한글 표기 그대로도 keyword_raw에 담아라(불필요한 말 "찾아줘/곡/노래/추천" 등만 제거, 오타가 있어도 그대로). 예: "하므라이 하트 찾아줘" → keyword: "サムライハート"(추정), keyword_raw: "하므라이 하트". 한글 입력이 아니면 생략 가능.
 - keyword는 일본어/영어/한국어 모두 허용, 원문 우선
 - 해당 없는 필드는 아예 생략
 - 특정 보컬로이드/UTAU 캐릭터 이름이 명시된 경우 → search_artist, keyword: 캐릭터명 원문
@@ -124,6 +142,14 @@ function parseIntent(text: string): ChatIntent {
       typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
     if (!keyword) return { intent: "unknown" };
     parsed.keyword = keyword;
+    // 한글 원문(변환 전) — 있으면 유지, 없으면 제거
+    if (typeof parsed.keyword_raw === "string") {
+      const kr = parsed.keyword_raw.trim();
+      if (kr) parsed.keyword_raw = kr;
+      else delete parsed.keyword_raw;
+    } else {
+      delete parsed.keyword_raw;
+    }
   }
 
   return parsed as ChatIntent;
