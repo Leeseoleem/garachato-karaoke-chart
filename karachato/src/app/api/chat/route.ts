@@ -338,10 +338,13 @@ async function handleRecommend(
     )
     .eq("ai_status", "done");
 
+  // "최신곡"은 LLM 주관 라벨(ai_traits) 대신 created_at 최신순 실데이터로 처리(아래 정렬).
+  const wantNewest = intent.trait === "최신곡";
   if (intent.category) query = query.eq("ai_category", intent.category);
   if (intent.genre) query = query.contains("ai_genres", [intent.genre]);
   if (intent.vibe) query = query.contains("ai_vibes", [intent.vibe]);
-  if (intent.trait) query = query.contains("ai_traits", [intent.trait]);
+  if (intent.trait && !wantNewest)
+    query = query.contains("ai_traits", [intent.trait]);
   if (intent.vocal_difficulty === "easy")
     query = query.not("ai_vocal_score", "is", null).lte("ai_vocal_score", 2);
   if (intent.vocal_difficulty === "hard")
@@ -371,7 +374,10 @@ async function handleRecommend(
   if (excludeIds.length > 0) {
     query = query.not("id", "in", `(${excludeIds.join(",")})`);
   }
-  const { data } = await query.limit(20); // ← 20개 풀에서
+  // 최신곡: created_at 최신순 결정론 → "다른 거"는 excludeIds로 그 다음 최신곡.
+  // 그 외: 조건 풀 20개에서 랜덤 1곡.
+  if (wantNewest) query = query.order("created_at", { ascending: false }).order("id");
+  const { data } = await query.limit(wantNewest ? 1 : 20);
 
   if (!data || data.length === 0) {
     return Response.json({
@@ -384,7 +390,9 @@ async function handleRecommend(
     } satisfies ChatMessage);
   }
 
-  const picked = data[Math.floor(Math.random() * data.length)]; // ← 랜덤 선택
+  const picked = wantNewest
+    ? data[0]
+    : data[Math.floor(Math.random() * data.length)];
 
   const isInTop100 = await checkIsInTop100(picked.id);
   const song = buildSongField(
