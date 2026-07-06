@@ -316,6 +316,41 @@ async function handleSearchArtist(
   } satisfies ChatMessage);
 }
 
+// ai_intro(AI 소개)의 발매/투고 날짜 라벨을 찾아 파싱 → 정렬용 timestamp(ms).
+// "2021년 6월 5일", "2021년 4월 27일 (디지털 싱글)", "2026년 1월 9일(선행), 2월 11일" 등 첫 YYYY-M-D.
+function parseIntroReleaseDate(aiIntro: unknown): number | null {
+  if (!Array.isArray(aiIntro)) return null;
+  for (const e of aiIntro) {
+    if (!e || typeof e !== "object") continue;
+    const { label, value } = e as { label?: unknown; value?: unknown };
+    if (typeof label !== "string" || typeof value !== "string") continue;
+    if (!/투고|발매|발표|공개/.test(label)) continue;
+    const md = value.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+    if (md) return Date.UTC(+md[1], +md[2] - 1, +md[3]);
+    const y = value.match(/(\d{4})/); // 연도만 있는 경우
+    if (y) return Date.UTC(+y[1], 0, 1);
+  }
+  return null;
+}
+
+// "최신곡" 정렬: 발매/투고일 있는 곡을 최신순으로 먼저, 날짜 없는 곡은 뒤로(수집일 최신순).
+//  created_at('우리 수집일')은 발매일보다 큰 값이 되기 쉬워 폴백으로 섞으면 날짜 없는 곡이
+//  신곡 목록을 오염시킴 → 날짜 있는 곡을 항상 우선.
+function createdMs(created?: string | null): number {
+  return created ? new Date(created).getTime() : 0;
+}
+function compareNewest(
+  a: { ai_intro?: unknown; created_at?: string | null },
+  b: { ai_intro?: unknown; created_at?: string | null },
+): number {
+  const ra = parseIntroReleaseDate(a.ai_intro);
+  const rb = parseIntroReleaseDate(b.ai_intro);
+  if (ra !== null && rb !== null) return rb - ra; // 둘 다 날짜 → 최신순
+  if (ra !== null) return -1; // 날짜 있는 쪽 우선
+  if (rb !== null) return 1;
+  return createdMs(b.created_at) - createdMs(a.created_at); // 둘 다 없음 → 수집일 최신순
+}
+
 // ────────────────────────────────────────────
 // 핸들러: 추천
 // ────────────────────────────────────────────
@@ -330,6 +365,8 @@ async function handleRecommend(
     .select(
       `
     id,
+    ai_intro,
+    created_at,
     karaoke_tracks (
       provider, karaoke_no, title_ko_jp,
       title_in_provider, artist_ko, artist_in_provider
@@ -338,7 +375,7 @@ async function handleRecommend(
     )
     .eq("ai_status", "done");
 
-  // "최신곡"은 LLM 주관 라벨(ai_traits) 대신 created_at 최신순 실데이터로 처리(아래 정렬).
+  // "최신곡"은 LLM 주관 라벨(ai_traits) 대신 발매/투고일 최신순 실데이터로 처리(아래 정렬).
   const wantNewest = intent.trait === "최신곡";
   if (intent.category) query = query.eq("ai_category", intent.category);
   if (intent.genre) query = query.contains("ai_genres", [intent.genre]);
@@ -374,10 +411,11 @@ async function handleRecommend(
   if (excludeIds.length > 0) {
     query = query.not("id", "in", `(${excludeIds.join(",")})`);
   }
-  // 최신곡: created_at 최신순 결정론 → "다른 거"는 excludeIds로 그 다음 최신곡.
+  // 최신곡: 발매/투고일(ai_intro) 최신순, 없으면 created_at 폴백. "다른 거"는 excludeIds로 다음 곡.
+  //  (풀을 받아 JS에서 정렬 — 날짜가 jsonb 자유형이라 SQL 정렬 대신 파싱.)
   // 그 외: 조건 풀 20개에서 랜덤 1곡.
-  if (wantNewest) query = query.order("created_at", { ascending: false }).order("id");
-  const { data } = await query.limit(wantNewest ? 1 : 20);
+  if (wantNewest) query = query.order("created_at", { ascending: false });
+  const { data } = await query.limit(wantNewest ? 200 : 20);
 
   if (!data || data.length === 0) {
     return Response.json({
@@ -391,7 +429,7 @@ async function handleRecommend(
   }
 
   const picked = wantNewest
-    ? data[0]
+    ? [...data].sort(compareNewest)[0]
     : data[Math.floor(Math.random() * data.length)];
 
   const isInTop100 = await checkIsInTop100(picked.id);
