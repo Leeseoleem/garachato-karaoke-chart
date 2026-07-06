@@ -171,14 +171,9 @@ function splitArtistNames(keyword: string): string[] {
   return parts.length > 0 ? parts : [keyword.trim()];
 }
 
-async function handleSearchArtist(
-  keyword: string,
-  excludeIds: string[] = [],
-): Promise<Response> {
+// 가수명(들)로 곡 id 목록 조회. search_songs(피처링 포함) + 여러 가수는 교집합(협업곡), 없으면 합집합.
+async function getArtistSongIds(keyword: string): Promise<string[]> {
   const supabase = createServerClient();
-
-  // 가수 검색은 search_songs RPC(퍼지 + 피처링/원문 포함)를 사용.
-  // (기존 norm ilike는 (Feat.…) 피처링을 날려 미쿠/테토 같은 참여 가수를 못 찾음)
   const names = splitArtistNames(keyword);
   const idSets = await Promise.all(
     names.map(async (n) => {
@@ -188,8 +183,6 @@ async function handleSearchArtist(
       );
     }),
   );
-
-  // 여러 가수면 교집합(협업곡). 교집합이 비면 합집합으로 폴백.
   let ids: string[] = idSets.length > 0 ? [...idSets[0]] : [];
   for (let i = 1; i < idSets.length; i++) {
     ids = ids.filter((id) => idSets[i].has(id));
@@ -197,7 +190,63 @@ async function handleSearchArtist(
   if (ids.length === 0 && idSets.length > 1) {
     ids = [...new Set(idSets.flatMap((s) => [...s]))];
   }
-  ids = ids.filter((id) => !excludeIds.includes(id));
+  return ids;
+}
+
+// 넓은 가수 결과에서 옵션 좁히기를 시작할 최소 곡 수
+const OPTION_MIN_SONGS = 6;
+
+// 가수 곡들의 실제 메타(vibe/trait/category)에서 좁히기 옵션 도출.
+// 일부 곡에만 있는 값(2곡 이상, 전부는 아님)만 = 실제로 좁혀지는 옵션. dead-end 없음.
+async function deriveArtistOptions(
+  artist: string,
+  songIds: string[],
+): Promise<{ label: string; intent: ChatIntent }[]> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("songs")
+    .select("ai_category, ai_vibes, ai_traits")
+    .in("id", songIds);
+  if (!data) return [];
+
+  const rows = data as {
+    ai_category: string | null;
+    ai_vibes: string[] | null;
+    ai_traits: string[] | null;
+  }[];
+  const total = rows.length;
+  const tally = (getVals: (r: (typeof rows)[number]) => string[]) => {
+    const m = new Map<string, number>();
+    for (const r of rows) getVals(r).forEach((v) => m.set(v, (m.get(v) ?? 0) + 1));
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
+
+  const opts: { label: string; intent: ChatIntent }[] = [];
+  const add = (
+    label: string,
+    filter: { vibe?: string; trait?: string; category?: string },
+    c: number,
+  ) => {
+    if (c >= 2 && c < total && opts.length < 3) {
+      opts.push({ label, intent: { intent: "recommend", artist, ...filter } });
+    }
+  };
+  // 분위기 > 특성 > 카테고리 순 (사용자 직관 우선)
+  tally((r) => r.ai_vibes ?? []).forEach(([v, c]) => add(`${v} 곡`, { vibe: v }, c));
+  tally((r) => r.ai_traits ?? []).forEach(([t, c]) => add(t, { trait: t }, c));
+  tally((r) => (r.ai_category ? [r.ai_category] : [])).forEach(([cat, c]) =>
+    add(cat, { category: cat }, c),
+  );
+  return opts.slice(0, 3);
+}
+
+async function handleSearchArtist(
+  keyword: string,
+  excludeIds: string[] = [],
+): Promise<Response> {
+  const ids = (await getArtistSongIds(keyword)).filter(
+    (id) => !excludeIds.includes(id),
+  );
 
   if (ids.length === 0) {
     return Response.json({
@@ -210,7 +259,27 @@ async function handleSearchArtist(
     } satisfies ChatMessage);
   }
 
-  // 첫 후보 곡의 트랙 상세 조회
+  // 첫 요청(제외목록 없음) + 결과 다수 + 옵션 2개+ → 곡 대신 선택지로 좁히기
+  if (excludeIds.length === 0 && ids.length >= OPTION_MIN_SONGS) {
+    const options = await deriveArtistOptions(keyword, ids);
+    if (options.length >= 2) {
+      return Response.json({
+        type: "option_prompt",
+        role: "model",
+        message: `"${keyword}" 곡이 많네요! 어떤 걸 찾으세요?`,
+        options: [
+          ...options,
+          {
+            label: "아무거나",
+            intent: { intent: "recommend", artist: keyword },
+          },
+        ],
+      } satisfies ChatMessage);
+    }
+  }
+
+  // 좁은 결과거나 옵션 부족 → 첫 곡 바로
+  const supabase = createServerClient();
   const { data } = await supabase
     .from("songs")
     .select(
@@ -285,6 +354,19 @@ async function handleRecommend(
     query = query
       .not("ai_pronunciation_score", "is", null)
       .gte("ai_pronunciation_score", 3);
+
+  // 특정 가수로 한정된 추천 (옵션 좁히기: {가수 + 필터})
+  if (intent.artist) {
+    const artistIds = await getArtistSongIds(intent.artist);
+    if (artistIds.length === 0) {
+      return Response.json({
+        type: "off_topic",
+        role: "model",
+        message: `"${intent.artist}" 가수의 곡을 찾지 못했어요.`,
+      } satisfies ChatMessage);
+    }
+    query = query.in("id", artistIds);
+  }
 
   if (excludeIds.length > 0) {
     query = query.not("id", "in", `(${excludeIds.join(",")})`);

@@ -67,6 +67,15 @@ export interface ErrorMessage {
   message: string;
 }
 
+export interface OptionPromptMessage {
+  type: "option_prompt";
+  role: "model";
+  // 넓은 가수 검색 시 실제 데이터로 만든 선택지 버튼으로 좁히기
+  // 각 옵션은 클릭 시 그대로 재사용할 인텐트를 들고 있음
+  message: string;
+  options: { label: string; intent: ChatIntent }[];
+}
+
 // ────────────────────────────────────────
 // 유니온 + 파생 타입
 // ────────────────────────────────────────
@@ -76,7 +85,8 @@ export type ChatMessage =
   | SongCandidateMessage
   | ConfirmedMessage
   | OffTopicMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | OptionPromptMessage;
 
 // ChatMessage에서 자동 추출 — 인터페이스 추가 시 자동 반영
 export type ChatMessageType = ChatMessage["type"];
