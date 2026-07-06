@@ -490,7 +490,7 @@ async function handleChartRecommend(
     type: "song_candidate" as const,
     role: "model" as const,
     song_id: firstDone.id,
-    message: `${CHART_SORT_LEAD[mode]} — "${song.titleKo ?? song.titleInProvider}" 어떠세요?`,
+    message: `${CHART_SORT_LEAD[mode]}! "${song.titleKo ?? song.titleInProvider}" 이 곡 어떠세요?`,
     song,
     intent: { intent: "recommend", chart_sort: mode },
   } satisfies ChatMessage);

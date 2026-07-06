@@ -13,8 +13,6 @@ export const VOCALOID_KO_MAP = {
   鏡音リン: "카가미네 린",
   鏡音レン: "카가미네 렌",
   巡音ルカ: "메구리네 루카",
-  KAITO: "카이토",
-  MEIKO: "메이코",
   重音テト: "카사네 테토",
   GUMI: "구미",
   IA: "IA",
@@ -22,8 +20,8 @@ export const VOCALOID_KO_MAP = {
 
 export const STATIC_QUICK_QUESTIONS = [
   "요즘 나온 신곡 추천해줘",
-  "요즘 순위 오른 곡",
-  "최근 노래방에 등록된 곡",
+  "요즘 순위 오른 곡 알려줘",
+  "노래방에 새로 들어온 곡 알려줘",
 ] as const;
 
 // constants/chat.ts
