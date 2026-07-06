@@ -31,6 +31,9 @@ export type ChatIntent =
       trait?: string;
       vocal_difficulty?: "easy" | "hard";
       pronunciation_difficulty?: "easy" | "hard";
+      // 차트 기반 정렬 모드 — recent_registered: 노래방 신규 등록순(created_at),
+      // rank_up/rank_down: 최근 차트 순위 상승/하락순(rank_history)
+      chart_sort?: "recent_registered" | "rank_up" | "rank_down";
     }
   | { intent: "unknown" };
 

@@ -21,6 +21,7 @@ const SYSTEM_INSTRUCTION = `
   "genre": "장르 (recommend일 때만, 예: 시티팝, 록, 애니송)",
   "category": "출처 (recommend일 때만. 반드시 아래 5개 중 하나만: 애니메이션 OST, 극장판 OST, 게임 OST, 보컬로이드, J-POP)",
   "trait": "차트 특성 (recommend일 때만. 반드시 아래 5개 중 하나만: 역주행, 바이럴, 최신곡, 예전곡, 커버곡)",
+  "chart_sort": "차트 정렬 (recommend일 때만. recent_registered=노래방 신규 등록순 / rank_up=순위 상승 / rank_down=순위 하락)",
   "vocal_difficulty": "보컬 난이도 (recommend일 때만. easy 또는 hard)",
   "pronunciation_difficulty": "발음 난이도 (recommend일 때만. easy 또는 hard)"
 }
@@ -31,6 +32,12 @@ trait 분류 기준:
 - "오래된", "추억의", "옛날" → "예전곡"
 - "역주행", "다시 뜨는" → "역주행"
 - "커버", "어레인지" → "커버곡"
+
+chart_sort 분류 기준 (recommend. trait보다 우선 — "순위/차트/노래방 등록"이 명시된 경우):
+- "최근 노래방에 등록된/들어온/생긴 곡", "노래방 신곡", "새로 들어온 곡" → chart_sort: "recent_registered"
+- "순위 오른/오르는/올라온 곡", "차트 상승곡", "순위 급상승" → chart_sort: "rank_up"
+- "순위 내린/떨어진/하락한 곡", "차트 하락곡" → chart_sort: "rank_down"
+- 단, "순위/차트/노래방 등록" 언급 없는 일반 "요즘 뜨는/인기곡"은 chart_sort가 아니라 trait: "바이럴".
 
 category 분류 기준:
 - TV 애니메이션 OP/ED/삽입곡 → "애니메이션 OST"

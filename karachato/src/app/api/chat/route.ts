@@ -362,12 +362,150 @@ function compareNewest(
 }
 
 // ────────────────────────────────────────────
+// 차트 기반 추천 (등록순 / 순위 상승·하락) — ISSUE-08
+// ────────────────────────────────────────────
+type ChartSort = NonNullable<
+  Extract<ChatIntent, { intent: "recommend" }>["chart_sort"]
+>;
+
+// 모드별 곡 id 목록(정렬 순). recent_registered: 등록 최신순 / rank_up·down: 최신 차트 순위 이동폭 순.
+async function getChartSortedSongIds(mode: ChartSort): Promise<string[]> {
+  const supabase = createServerClient();
+
+  if (mode === "recent_registered") {
+    const { data, error } = await supabase
+      .from("songs")
+      .select("id")
+      .eq("ai_status", "done")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return (data ?? []).map((r) => r.id);
+  }
+
+  // rank_up / rank_down — 가장 최근 차트일의 delta로 정렬 (UP: 양수 내림차순, DOWN: 음수 오름차순)
+  const status = mode === "rank_up" ? "UP" : "DOWN";
+  const { data: latestRow, error: e1 } = await supabase
+    .from("rank_history")
+    .select("chart_date")
+    .order("chart_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (e1) throw e1;
+  const latest = latestRow?.chart_date;
+  if (!latest) return [];
+
+  const { data: rhRows, error: e2 } = await supabase
+    .from("rank_history")
+    .select("karaoke_track_id, delta_value")
+    .eq("chart_date", latest)
+    .eq("delta_status", status)
+    .order("delta_value", { ascending: mode === "rank_down" })
+    .limit(50);
+  if (e2) throw e2;
+
+  const trackIds = (rhRows ?? []).map((r) => r.karaoke_track_id);
+  if (trackIds.length === 0) return [];
+
+  const { data: tracks, error: e3 } = await supabase
+    .from("karaoke_tracks")
+    .select("id, song_id")
+    .in("id", trackIds);
+  if (e3) throw e3;
+  const trackToSong = new Map((tracks ?? []).map((t) => [t.id, t.song_id]));
+
+  // rhRows 순서(이동폭 순) 유지 + 한 곡이 TJ/KY 둘 다면 dedup
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const r of rhRows ?? []) {
+    const sid = trackToSong.get(r.karaoke_track_id);
+    if (sid && !seen.has(sid)) {
+      seen.add(sid);
+      ids.push(sid);
+    }
+  }
+  return ids;
+}
+
+const CHART_SORT_LEAD: Record<ChartSort, string> = {
+  recent_registered: "최근 노래방에 등록된 곡이에요",
+  rank_up: "요즘 순위가 오르는 곡이에요",
+  rank_down: "최근 순위가 내려간 곡이에요",
+};
+
+async function handleChartRecommend(
+  mode: ChartSort,
+  excludeIds: string[] = [],
+): Promise<Response> {
+  const ids = (await getChartSortedSongIds(mode)).filter(
+    (id) => !excludeIds.includes(id),
+  );
+
+  if (ids.length === 0) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message:
+        excludeIds.length > 0
+          ? "이 조건엔 더 이상 다른 곡이 없어요. 다른 걸로 물어봐 주세요."
+          : "지금은 보여드릴 곡을 찾지 못했어요. 다른 걸로 시도해볼까요?",
+    } satisfies ChatMessage);
+  }
+
+  // ids 순서(등록/이동폭 순)대로 완료(done)된 첫 곡 선택
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("songs")
+    .select(
+      `
+      id,
+      karaoke_tracks (
+        provider, karaoke_no, title_ko_jp,
+        title_in_provider, artist_ko, artist_in_provider
+      )
+    `,
+    )
+    .in("id", ids)
+    .eq("ai_status", "done");
+  if (error) throw error;
+
+  const byId = new Map((data ?? []).map((r) => [r.id, r]));
+  const firstDone = ids.map((id) => byId.get(id)).find((r) => r != null);
+  if (!firstDone) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message: "지금은 보여드릴 곡을 찾지 못했어요. 다른 걸로 시도해볼까요?",
+    } satisfies ChatMessage);
+  }
+
+  const isInTop100 = await checkIsInTop100(firstDone.id);
+  const song = buildSongField(
+    firstDone.id,
+    firstDone.karaoke_tracks ?? [],
+    isInTop100,
+  );
+
+  return Response.json({
+    type: "song_candidate" as const,
+    role: "model" as const,
+    song_id: firstDone.id,
+    message: `${CHART_SORT_LEAD[mode]} — "${song.titleKo ?? song.titleInProvider}" 어떠세요?`,
+    song,
+    intent: { intent: "recommend", chart_sort: mode },
+  } satisfies ChatMessage);
+}
+
+// ────────────────────────────────────────────
 // 핸들러: 추천
 // ────────────────────────────────────────────
 async function handleRecommend(
   intent: Extract<ChatIntent, { intent: "recommend" }>,
   excludeIds: string[] = [],
 ): Promise<Response> {
+  // 차트 기반 모드(등록순·순위변동)는 전용 경로로
+  if (intent.chart_sort) return handleChartRecommend(intent.chart_sort, excludeIds);
+
   const supabase = createServerClient();
 
   let query = supabase
