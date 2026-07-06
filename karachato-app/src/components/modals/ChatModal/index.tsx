@@ -229,13 +229,10 @@ export default function ChatModal({
                 </div>
               );
             }
-            /** 챗봇 완료 채팅 */
+            /** 챗봇 완료 채팅 — 마무리 멘트만 (새 채팅 버튼은 입력창 위로) */
             if (msg.type === "confirmed") {
               return (
-                <div key={idx} className="flex flex-col gap-2">
-                  <TextBubble role="model" content={msg.message} />
-                  <ChatActionButton variant="new" onClick={handleReset} />
-                </div>
+                <TextBubble key={idx} role="model" content={msg.message} />
               );
             }
             /** 맥락 이탈 / 에러 */
@@ -283,6 +280,18 @@ export default function ChatModal({
 
         {/* 퀵 질문 — 웰컴 메시지만 있을 때 표시 */}
         {messages.length === 1 && <QuickQuestions onSelect={handleSend} />}
+
+        {/* 곡 확정 후 — 입력창 위에 새 채팅 시작 버튼 (반투명) */}
+        {isEnded && (
+          <div className="flex justify-center px-5 pt-2">
+            <button
+              onClick={handleReset}
+              className="px-5 py-2 rounded-2xl border border-brand-main/50 bg-brand-main/10 text-gray-white typo-caption hover:bg-brand-main/20 active:bg-brand-main/30 transition-colors"
+            >
+              새 채팅 시작하기
+            </button>
+          </div>
+        )}
 
         {/* 입력창 */}
         <UserInput
