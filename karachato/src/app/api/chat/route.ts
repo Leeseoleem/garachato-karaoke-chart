@@ -105,28 +105,38 @@ function buildSongField(
   };
 }
 
+// 여러 검색어(원어 변환본 + 한글 원문 등)를 순서대로 search_songs 조회해 곡 id 병합(중복·제외 제거).
+async function collectSearchIds(
+  queries: (string | undefined | null)[],
+  excludeIds: string[] = [],
+): Promise<string[]> {
+  const supabase = createServerClient();
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const query of queries) {
+    if (!query) continue;
+    const { data, error } = await supabase.rpc("search_songs", { query });
+    if (error) throw error;
+    for (const r of (data ?? []) as { song_id: string }[]) {
+      if (!seen.has(r.song_id) && !excludeIds.includes(r.song_id)) {
+        seen.add(r.song_id);
+        ids.push(r.song_id);
+      }
+    }
+  }
+  return ids;
+}
+
 // ────────────────────────────────────────────
 // 핸들러: 곡 제목 검색
 // ────────────────────────────────────────────
 async function handleSearchSong(
   keyword: string,
   excludeIds: string[] = [],
+  keywordRaw?: string,
 ): Promise<Response> {
-  const supabase = createServerClient();
-
-  // 제목 검색도 search_songs(pg_trgm)로 → 오탈자·표기 변형 허용(유사도 순).
-  const { data: hits, error } = await supabase.rpc("search_songs", {
-    query: keyword,
-  });
-  if (error) throw error;
-  const seen = new Set<string>();
-  const ids: string[] = [];
-  for (const r of (hits ?? []) as { song_id: string }[]) {
-    if (!seen.has(r.song_id) && !excludeIds.includes(r.song_id)) {
-      seen.add(r.song_id);
-      ids.push(r.song_id);
-    }
-  }
+  // 원어 변환본(keyword) + 한글 원문(keywordRaw) 둘 다 검색 → 변환이 틀려도 원문 오타 매칭.
+  const ids = await collectSearchIds([keyword, keywordRaw], excludeIds);
 
   if (ids.length === 0) {
     return Response.json({
@@ -140,6 +150,7 @@ async function handleSearchSong(
   }
 
   // ids(유사도 순) 중 완료(done)된 첫 곡 선택 (RPC는 상태를 안 거름)
+  const supabase = createServerClient();
   const { data, error: e2 } = await supabase
     .from("songs")
     .select(
@@ -178,7 +189,7 @@ async function handleSearchSong(
     song_id: firstDone.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡 맞으세요?`,
     song,
-    intent: { intent: "search_song", keyword },
+    intent: { intent: "search_song", keyword, keyword_raw: keywordRaw },
   } satisfies ChatMessage);
 }
 
@@ -267,10 +278,21 @@ async function deriveArtistOptions(
 async function handleSearchArtist(
   keyword: string,
   excludeIds: string[] = [],
+  keywordRaw?: string,
 ): Promise<Response> {
-  const ids = (await getArtistSongIds(keyword)).filter(
-    (id) => !excludeIds.includes(id),
-  );
+  // 원어 변환본 + 한글 원문 둘 다로 후보 수집 (변환이 틀려도 원문으로 매칭)
+  const seen = new Set<string>();
+  const collected: string[] = [];
+  for (const kw of [keyword, keywordRaw]) {
+    if (!kw) continue;
+    for (const id of await getArtistSongIds(kw)) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        collected.push(id);
+      }
+    }
+  }
+  const ids = collected.filter((id) => !excludeIds.includes(id));
 
   if (ids.length === 0) {
     return Response.json({
@@ -345,7 +367,7 @@ async function handleSearchArtist(
     song_id: firstDone.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡은 어떠세요?`,
     song,
-    intent: { intent: "search_artist", keyword },
+    intent: { intent: "search_artist", keyword, keyword_raw: keywordRaw },
   } satisfies ChatMessage);
 }
 
@@ -775,9 +797,9 @@ async function handleChat(req: Request): Promise<Response> {
 
     switch (intent.intent) {
       case "search_song":
-        return handleSearchSong(intent.keyword, exclude);
+        return handleSearchSong(intent.keyword, exclude, intent.keyword_raw);
       case "search_artist":
-        return handleSearchArtist(intent.keyword, exclude);
+        return handleSearchArtist(intent.keyword, exclude, intent.keyword_raw);
       case "recommend":
         return handleRecommend(intent, exclude);
       case "unknown":

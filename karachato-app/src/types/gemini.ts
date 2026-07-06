@@ -20,8 +20,8 @@ export interface TranslateResult {
 
 // 챗봇 유형 정의
 export type ChatIntent =
-  | { intent: "search_song"; keyword: string }
-  | { intent: "search_artist"; keyword: string }
+  | { intent: "search_song"; keyword: string; keyword_raw?: string }
+  | { intent: "search_artist"; keyword: string; keyword_raw?: string }
   | {
       intent: "recommend";
       artist?: string; // 특정 가수로 한정된 추천 (옵션 좁히기용)

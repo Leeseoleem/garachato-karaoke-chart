@@ -17,6 +17,7 @@ const SYSTEM_INSTRUCTION = `
 {
   "intent": "search_song" | "search_artist" | "recommend" | "unknown",
   "keyword": "곡명 또는 가수명 (search_song, search_artist일 때만)",
+  "keyword_raw": "사용자가 입력한 곡명·가수명의 한글 원문 그대로 (원어 변환 전, search_song·search_artist일 때만)",
   "vibe": "분위기 (recommend일 때만, 예: 신나는, 잔잔한, 슬픈)",
   "genre": "장르 (recommend일 때만, 예: 시티팝, 록, 애니송)",
   "category": "출처 (recommend일 때만. 반드시 아래 5개 중 하나만: 애니메이션 OST, 극장판 OST, 게임 OST, 보컬로이드, J-POP)",
@@ -61,6 +62,7 @@ pronunciation_difficulty 분류 기준:
   - 일본어로 발매된 제목/가수 → 일본어: "요루시카"→"ヨルシカ", "요네즈 켄시"→"米津玄師", "요루니카케루"→"夜に駆ける"
   - 이미 흔히 쓰이는 한국어 번역 제목이면 그대로 둔다: "밤에 달리다"→"밤에 달리다"
   - 원어 표기가 불확실하면 가장 널리 쓰이는 공식 표기를 택한다.
+- keyword_raw: keyword를 원어로 바꾸기 **전에**, 사용자가 친 한글 표기 그대로도 keyword_raw에 담아라(불필요한 말 "찾아줘/곡/노래/추천" 등만 제거, 오타가 있어도 그대로). 예: "하므라이 하트 찾아줘" → keyword: "サムライハート"(추정), keyword_raw: "하므라이 하트". 한글 입력이 아니면 생략 가능.
 - keyword는 일본어/영어/한국어 모두 허용, 원문 우선
 - 해당 없는 필드는 아예 생략
 - 특정 보컬로이드/UTAU 캐릭터 이름이 명시된 경우 → search_artist, keyword: 캐릭터명 원문
@@ -131,6 +133,14 @@ function parseIntent(text: string): ChatIntent {
       typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
     if (!keyword) return { intent: "unknown" };
     parsed.keyword = keyword;
+    // 한글 원문(변환 전) — 있으면 유지, 없으면 제거
+    if (typeof parsed.keyword_raw === "string") {
+      const kr = parsed.keyword_raw.trim();
+      if (kr) parsed.keyword_raw = kr;
+      else delete parsed.keyword_raw;
+    } else {
+      delete parsed.keyword_raw;
+    }
   }
 
   return parsed as ChatIntent;
