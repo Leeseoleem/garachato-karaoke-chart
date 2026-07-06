@@ -177,7 +177,8 @@ async function getArtistSongIds(keyword: string): Promise<string[]> {
   const names = splitArtistNames(keyword);
   const idSets = await Promise.all(
     names.map(async (n) => {
-      const { data } = await supabase.rpc("search_songs", { query: n });
+      const { data, error } = await supabase.rpc("search_songs", { query: n });
+      if (error) throw error; // RPC 장애를 "곡 없음"으로 숨기지 않고 오류 경로로
       return new Set<string>(
         ((data ?? []) as { song_id: string }[]).map((r) => r.song_id),
       );
@@ -278,9 +279,11 @@ async function handleSearchArtist(
     }
   }
 
-  // 좁은 결과거나 옵션 부족 → 첫 곡 바로
+  // 좁은 결과거나 옵션 부족 → 첫 곡 바로.
+  //  ids는 관련도 순인데 ai_status='done'이 보장되지 않으므로, ids 순서대로 '완료된' 첫 곡을 고른다.
+  //  (ids[0]이 아직 미완료(번역 전)여도 뒤의 완료곡으로 넘어감.)
   const supabase = createServerClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("songs")
     .select(
       `
@@ -291,11 +294,14 @@ async function handleSearchArtist(
       )
     `,
     )
-    .eq("id", ids[0])
-    .eq("ai_status", "done")
-    .maybeSingle();
+    .in("id", ids)
+    .eq("ai_status", "done");
+  if (error) throw error;
 
-  if (!data) {
+  const byId = new Map((data ?? []).map((r) => [r.id, r]));
+  const firstDone = ids.map((id) => byId.get(id)).find((r) => r != null);
+
+  if (!firstDone) {
     return Response.json({
       type: "off_topic",
       role: "model",
@@ -303,13 +309,17 @@ async function handleSearchArtist(
     } satisfies ChatMessage);
   }
 
-  const isInTop100 = await checkIsInTop100(data.id);
-  const song = buildSongField(data.id, data.karaoke_tracks ?? [], isInTop100);
+  const isInTop100 = await checkIsInTop100(firstDone.id);
+  const song = buildSongField(
+    firstDone.id,
+    firstDone.karaoke_tracks ?? [],
+    isInTop100,
+  );
 
   return Response.json({
     type: "song_candidate" as const,
     role: "model" as const,
-    song_id: data.id,
+    song_id: firstDone.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡은 어떠세요?`,
     song,
     intent: { intent: "search_artist", keyword },
@@ -534,9 +544,20 @@ function getErrorStatus(e: unknown): number | undefined {
   return undefined;
 }
 
-// "다른 거/곡/노래", "딴 거", "또", "다음", "하나 더", "더 추천" 등 = 직전 검색을 이어가는 연속 요청.
+// 요청 본문 정규화 상수 — 신뢰할 수 없는 클라 입력을 서버에서 제한.
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_MESSAGE_LEN = 200; // 클라 입력 상한과 동일
+const MAX_EXCLUDE_IDS = 100;
+const MAX_HISTORY_TURNS = 12;
+const MAX_TURN_TEXT_LEN = 500;
+
+// "다른 거/곡/노래", "딴 거", "또", "다음", "하나 더", "더 추천", "아니에요" 등 = 직전 검색을 이어가는 연속 요청.
 function isContinuationMessage(msg: string): boolean {
   const t = msg.trim();
+  // 부정("아니에요/아니요/아니야/아님")은 그 자체로 끝날 때만 = 다음 후보 요청.
+  //  ("아니메(애니메) 노래"처럼 '아니'로 시작하는 검색어 오탐 방지 위해 종료 경계 요구)
+  if (/^(아니(에요|여|요|야)?|아님)\s*$/.test(t)) return true;
   return /^(다른\s*(거|것|곡|노래)|딴\s*(거|것|곡|노래)|또(\s|$|다른|추천)|다음\s*(거|곡|노래)?|하나\s*더|더\s*(추천|없|줘|들려))/.test(
     t,
   );
@@ -544,15 +565,41 @@ function isContinuationMessage(msg: string): boolean {
 
 async function handleChat(req: Request): Promise<Response> {
   try {
-    const { message, history, excludeIds, lastIntent, continuation } =
-      (await req.json()) as {
-        message: string;
-        history?: ChatTurn[];
-        excludeIds?: string[];
-        lastIntent?: ChatIntent;
-        continuation?: boolean;
-      };
-    const exclude = excludeIds ?? [];
+    const body = (await req.json()) as {
+      message?: unknown;
+      history?: unknown;
+      excludeIds?: unknown;
+      lastIntent?: ChatIntent;
+      continuation?: unknown;
+    };
+
+    // 신뢰할 수 없는 요청 본문 → 타입·길이·형식을 정규화한 값만 사용.
+    if (typeof body.message !== "string" || body.message.trim().length === 0) {
+      return Response.json({
+        type: "off_topic",
+        role: "model",
+        message: "노래 검색이나 추천에 대해 물어봐 주세요!",
+      } satisfies ChatMessage);
+    }
+    const message = body.message.trim().slice(0, MAX_MESSAGE_LEN);
+    // 제외 ID는 SQL 필터 문자열에 들어가므로 UUID 형식만 통과시킴(주입 방지).
+    const exclude = (Array.isArray(body.excludeIds) ? body.excludeIds : [])
+      .filter((id): id is string => typeof id === "string" && UUID_RE.test(id))
+      .slice(0, MAX_EXCLUDE_IDS);
+    const history: ChatTurn[] | undefined = Array.isArray(body.history)
+      ? body.history
+          .filter(
+            (t): t is ChatTurn =>
+              !!t && typeof (t as ChatTurn).text === "string",
+          )
+          .slice(-MAX_HISTORY_TURNS)
+          .map((t) => ({
+            role: t.role === "user" ? "user" : "model",
+            text: String(t.text).slice(0, MAX_TURN_TEXT_LEN),
+          }))
+      : undefined;
+    const lastIntent = body.lastIntent;
+    const continuation = body.continuation === true;
 
     const easter = checkEasterEgg(message);
     if (easter) return Response.json(easter);
