@@ -23,6 +23,14 @@ async function reuseGenderTags(
   return [...genders];
 }
 
+// AI가 유추한 리드보컬 성별을 태그로. 불명/누락은 빈 배열(억지로 안 붙임).
+function aiGenderToTags(g: string | undefined | null): string[] {
+  if (g === "남성") return ["남성"];
+  if (g === "여성") return ["여성"];
+  if (g === "혼성") return ["여성", "남성"];
+  return [];
+}
+
 export const processPendingSongs = async (
   deadline?: number,
 ): Promise<void> => {
@@ -210,10 +218,17 @@ export const processPendingSongs = async (
         result.ai_category,
       );
 
-      // 보컬 속성: 보컬로이드(캐릭터 맵) + 사람 성별(같은 가수 재사용)을 합집합으로
+      // 보컬 속성: 보컬로이드(캐릭터 맵) + 사람 성별을 합집합으로.
+      // 성별은 같은 가수 기존 곡 재사용 우선 → 없으면 (보컬로이드는 맵이 담당) AI 유추.
       const vocaloidTags =
         deriveVocalTags(input.allTracks.map((t) => t.artist_in_provider)) ?? [];
-      const genderTags = await reuseGenderTags(supabase, input.artistNorm);
+      const reusedGender = await reuseGenderTags(supabase, input.artistNorm);
+      const genderTags =
+        reusedGender.length > 0
+          ? reusedGender
+          : vocaloidTags.length > 0
+            ? []
+            : aiGenderToTags(result.vocal_gender);
       const vocalTags = [...new Set([...vocaloidTags, ...genderTags])];
 
       const { error: songUpdateError } = await supabase

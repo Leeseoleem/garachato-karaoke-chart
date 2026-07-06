@@ -16,6 +16,7 @@ export interface TranslateResult {
   ai_pronunciation_score: number;
   ai_pronunciation_reason: string;
   ai_karaoke_tip: string;
+  vocal_gender?: "남성" | "여성" | "혼성" | "불명"; // 리드보컬 성별 (AI 유추)
 }
 
 // 챗봇 유형 정의
