@@ -3,7 +3,7 @@ id: ISSUE-08-discovery-curation
 title: 탐색/큐레이션 — 카테고리·신규곡·가수별 둘러보기
 cycle: 출시 후 (기능 강화)
 priority: P3
-status: 분석완료(미착수)
+status: 진행중
 labels: [feature, discovery, ux, curation]
 related: [EPIC-apps-in-toss-migration, ISSUE-07]
 created: 2026-07-05
@@ -68,4 +68,11 @@ created: 2026-07-05
 - 퀵버튼으로 노출("최근 노래방에 등록된 곡", "요즘 순위 오른 곡").
 
 ## 해결 로그
-- _(작업 시 작성)_
+
+### §6 챗봇 추천 옵션 1차 구현 (feat/chat-chart-options)
+- **조치**: recommend 인텐트에 `chart_sort`(recent_registered/rank_up/rank_down) 추가. `handleChartRecommend`로
+  등록순(`created_at DESC`)·순위 상승/하락(`rank_history` 최신일 `delta_value` 순)을 실데이터로 정렬. 프롬프트 규칙 +
+  퀵버튼("요즘 순위 오른 곡", "최근 노래방에 등록된 곡") 노출.
+- **검증**(2026-07-06, 결정론 continuation): 등록순→모시모시?(최신 등록), 순위상승→모시모시?(+10)·#2 푸르름이 사는 곳(+6),
+  순위하락→튜링 러브(-6). DB 정답과 일치. Gemini 분류(퀵버튼 문구)는 쿼터 회복 후 라이브 확인.
+- **남은 것**: 탐색 화면(브라우즈 레이어)·카테고리/가수별 큐레이션은 미착수(출시 후).
