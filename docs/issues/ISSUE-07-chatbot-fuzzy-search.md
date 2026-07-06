@@ -94,16 +94,31 @@ related: []
 
 ## 6. 해결 로그 (Resolution Log)
 
-> 상태: **진행중.**
+> 상태: **진행중 (핵심 대부분 완료, 로마자 음차·속성추림 잔여).**
 
 ### 조치 (Actions)
-- _(작업 시 작성)_
+- **대화 맥락/후보 변주**(§4.5 A·B·C): history·excludeIds·lastIntent 배선, 연속요청 결정론 재사용, "아니에요"→다음후보. (feat/chat-context)
+- **가수 검색**: search_songs RPC 전환(피처링·다중가수 교집합), 넓은 결과는 옵션 좁히기(option_prompt).
+- **분류 안정화**: intent unknown 시 상위 모델 재확인.
+- **"최신곡" 실데이터화**: ai_traits 라벨 대신 ai_intro 발매/투고일 최신순.
+- **음차→원어 정규화 프롬프트**: 피피피피→PPPP, 에이도→Ado (유명한 것 한정).
+- **오탈자·띄어쓰기 퍼지매칭 (Phase 1+2)**:
+  - 곡 제목 검색을 substring→search_songs(trigram)로.
+  - `normalize()` 공백 전부 제거 + 기존 `_norm` 컬럼 백필(공백 제거).
+  - RPC 재정의(마이그레이션 `search_songs_fuzzy_spacing`): 쿼리·컬럼 공백 무시 비교, `title_ko_jp`(음차) trigram 포함, 짧은 제목은 `levenshtein`(fuzzystrmatch) 편집거리 ≤2 병행, 유사도순 정렬.
+  - **메인 검색(`/api/search`)과 챗봇이 같은 RPC라 앱 전체 검색이 함께 개선됨.**
 
 ### 결과 (Outcome)
-- _(작업 시 작성)_
+- 띄어쓰기 차이·오타로도 대부분 검색 성공. 데이터 품질(발매일·번역)에 검색·추천 품질이 연동.
+- **주의**: `normalize()` 코드 변경은 배포(dev→main) 돼야 신규 크롤 곡도 공백 없는 `_norm`으로 저장됨(기존 곡은 백필 완료).
 
 ### 검증 (Verification)
-- _(작업 시 작성: PPPP/에이도/여성보컬 등 케이스 매칭 확인)_
+- (2026-07-06) 튜링러부→튜링 러브, 히치코크→히치콕(편집거리), 요네즈 겐시→米津玄師, 밤의 오도리코(음차) 매칭. 정확검색·가수검색 회귀 없음. 피피피피→PPPP는 아직 실패(Phase 3 대기).
+
+### 남은 것
+- **로마자 음차**(PPPP→피피피피): 순수 음차 컬럼 생성·백필 필요(Phase 3). → [ISSUE-02](ISSUE-02-orphan-song-records.md) normalize 강화와 별개.
+- **속성 기반 추림**("여성 보컬" 등): 보컬 편성 데이터 축 신설 필요.
+- **음차 정규화 라이브 검증**: Gemini 쿼터(429) 회복 후.
 
 ### 관련 커밋/PR
-- _(작업 시 작성)_
+- feat/chat-context(#31, 머지됨) + feat/chat-chart-options(진행중).
