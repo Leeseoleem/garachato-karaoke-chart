@@ -105,6 +105,7 @@ export default function ChatModal({
     text: string,
     showUser: boolean,
     continuation = false,
+    overrideIntent?: ChatIntent,
   ) => {
     if (isLoading || isEnded) return;
 
@@ -130,8 +131,8 @@ export default function ChatModal({
           message: text,
           history: buildHistory(messages),
           excludeIds: buildExcludeIds(messages),
-          lastIntent: buildLastIntent(messages),
-          continuation,
+          lastIntent: overrideIntent ?? buildLastIntent(messages),
+          continuation: continuation || overrideIntent != null,
         }),
         signal: controller.signal,
       });
@@ -168,6 +169,11 @@ export default function ChatModal({
   // "아니에요" → 열린 질문 대신 맥락+제외목록으로 다른 곡을 바로 요청 (유저 말풍선 없이)
   const requestAnotherSong = () => {
     void sendToChat("다른 곡 추천해줘", false, true);
+  };
+
+  // 옵션 좁히기 버튼 클릭 → 그 옵션의 인텐트를 그대로 재사용해 요청
+  const pickOption = (option: { label: string; intent: ChatIntent }) => {
+    void sendToChat(option.label, true, true, option.intent);
   };
 
   useEffect(() => {
@@ -244,6 +250,28 @@ export default function ChatModal({
                 <div key={idx} className="flex flex-col gap-2">
                   <TextBubble role="model" content={msg.message} />
                   <ChatActionButton variant="retry" onClick={handleReset} />
+                </div>
+              );
+            }
+
+            /** 옵션 좁히기 — 선택지 버튼 */
+            if (msg.type === "option_prompt") {
+              return (
+                <div key={idx} className="flex flex-col gap-2">
+                  <TextBubble role="model" content={msg.message} />
+                  <div className="flex flex-wrap gap-2">
+                    {msg.options.map((opt, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={isEnded || isLoading}
+                        onClick={() => pickOption(opt)}
+                        className="px-4 py-2 rounded-2xl border border-brand-main text-gray-white typo-caption hover:bg-gray-40 active:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               );
             }
