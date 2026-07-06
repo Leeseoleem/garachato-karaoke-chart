@@ -41,6 +41,12 @@ function buildHistory(messages: ChatMessage[]): ChatTurn[] {
       turns.push({ role: "model", text: `추천곡: '${title}' - ${artist}` });
     } else if (m.type === "confirmed") {
       turns.push({ role: "model", text: "사용자가 곡을 확정함" });
+    } else if (m.type === "option_prompt") {
+      // 선택지 제시도 맥락에 포함 → 유저가 옵션을 직접 입력("아무거나")해도 서버가 맥락 파악
+      turns.push({
+        role: "model",
+        text: `${m.message} 선택지: ${m.options.map((o) => o.label).join(", ")}`,
+      });
     }
     // error 메시지는 맥락에서 제외
   }
