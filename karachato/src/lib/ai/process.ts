@@ -2,6 +2,7 @@ import { createServerClient } from "../supabase/server";
 import { translateSongBatch } from "../gemini/translate";
 import { generateSongIntro } from "../gemini/describe";
 import { normalize } from "@/utils/string";
+import { deriveVocalTags } from "@/constants/vocaloid";
 
 export const processPendingSongs = async (
   deadline?: number,
@@ -197,6 +198,9 @@ export const processPendingSongs = async (
           artist_ko_norm: normalize(result.artist_ko),
           description: intro?.description ?? result.description,
           ai_intro: intro?.facts ?? null,
+          vocal_tags: deriveVocalTags(
+            input.allTracks.map((t) => t.artist_in_provider),
+          ),
           ai_category: result.ai_category,
           ai_traits: result.ai_traits,
           ai_genres: result.ai_genres,
