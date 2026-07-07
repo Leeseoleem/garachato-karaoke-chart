@@ -4,10 +4,12 @@ import type { KaraokeProvider } from "@/types/domain";
 
 // 클라이언트(publishable 키 + RLS) 차트 조회. 기존 서버 getChartByProvider의 클라 버전.
 export async function getChartByProvider(provider: KaraokeProvider) {
-  // STEP 1. 최신 chart_date
+  // STEP 1. 이 provider의 최신 chart_date (provider별로 스코프)
+  // 어느 한쪽 크롤이 실패한 날 다른 provider의 최신 날짜를 집어 빈 차트가 되는 것을 방지.
   const { data: latest, error: latestError } = await supabase
     .from("rank_history")
-    .select("chart_date")
+    .select("chart_date, karaoke_tracks!inner(provider)")
+    .eq("karaoke_tracks.provider", provider)
     .order("chart_date", { ascending: false })
     .limit(1)
     .single();

@@ -5,10 +5,13 @@ import type { KaraokeProvider } from "@/types/domain";
 export async function getChartByProvider(provider: KaraokeProvider) {
   const supabase = await createServerClient();
 
-  // STEP 1. 최신 chart_date 조회
+  // STEP 1. 이 provider의 최신 chart_date 조회 (provider별로 스코프)
+  // provider 무관하게 최신 날짜를 잡으면, 어느 날 한 provider만 크롤에 실패했을 때
+  // 그 탭이 데이터 없는 날짜를 집어 빈 차트가 될 수 있다. provider별 최신 날짜를 쓴다.
   const { data: latest, error: latestError } = await supabase
     .from("rank_history")
-    .select("chart_date")
+    .select("chart_date, karaoke_tracks!inner(provider)")
+    .eq("karaoke_tracks.provider", provider)
     .order("chart_date", { ascending: false })
     .limit(1)
     .single();

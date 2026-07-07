@@ -1,6 +1,5 @@
 "use client";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import toast from "react-hot-toast";
 // === component ===
 import TabItem from "./TabItem";
 // === function ===
@@ -30,10 +29,6 @@ export default function KaraokeTabs({
   const handleTabClick = (value: KaraokeProvider) => {
     onScrollToTop();
 
-    if (value === "KY") {
-      toast("금영 노래방은 아직 준비중이에요!", { icon: "🚧" });
-      return;
-    }
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("provider", value);
     navigate(`?${nextParams.toString()}`);
