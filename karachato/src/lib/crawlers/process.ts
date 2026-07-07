@@ -12,8 +12,9 @@
 //   3) 같은 provider의 동일 karaoke_no 트랙 재사용
 // 어느 것도 아니면 새 song을 만든다.
 //
-// 같은 곡으로 판정되면, KY 트랙의 제목·가수 표기와 번역은 TJ 트랙 값을 그대로
-// 따른다(곡번호만 KY 실제값). 잘린 KY 원문 노출을 막고 재번역을 생략하기 위함.
+// 같은 곡으로 판정되면, KY 트랙의 번역(한글)은 TJ 트랙 값을 공유해 재번역을
+// 생략한다. 단 원문 표기(title_in_provider)는 provider별 실제값을 유지해,
+// 금영 탭에서는 금영 표기가, TJ 탭에서는 TJ 표기가 보이게 한다.
 // ============================================================
 
 import type { CrawledSong } from "@/types/crawler";
@@ -29,10 +30,8 @@ export interface ProcessResult {
   failed: number; // 실패한 곡 수
 }
 
-// 같은 곡 판정에 쓰는 TJ 트랙 표기·번역 (곡명 TJ 따르기용)
-interface TrackDisplay {
-  title_in_provider: string;
-  artist_in_provider: string;
+// 같은 곡의 KY 트랙이 공유할 TJ 번역 (원문은 provider별로 유지하므로 번역만 담는다)
+interface TrackTranslation {
   title_ko_jp: string | null;
   title_ko_full: string | null;
   artist_ko: string | null;
@@ -117,7 +116,7 @@ export async function processCrawledSongs(
     );
 
   const strongMap = new Map<string, string>(); // 강화정규화 키 → song_id
-  const tjTrackBySong = new Map<string, TrackDisplay>(); // song_id → TJ 트랙 표기/번역
+  const tjTrackBySong = new Map<string, TrackTranslation>(); // song_id → TJ 번역 (KY가 공유)
   const trackMap = new Map<string, { id: number; songId: string }>(); // 이 provider의 karaoke_no → 트랙
 
   if (allTracks) {
@@ -127,8 +126,6 @@ export async function processCrawledSongs(
 
       if (t.provider === "TJ" && !tjTrackBySong.has(t.song_id)) {
         tjTrackBySong.set(t.song_id, {
-          title_in_provider: t.title_in_provider,
-          artist_in_provider: t.artist_in_provider,
           title_ko_jp: t.title_ko_jp,
           title_ko_full: t.title_ko_full,
           artist_ko: t.artist_ko,
@@ -210,22 +207,22 @@ export async function processCrawledSongs(
       let trackId = existingTrack?.id;
 
       if (!trackId) {
-        // 같은 곡으로 판정됐고 TJ 트랙이 있으면(KY 적재 시), 표기·번역을 TJ에서 따른다.
-        // 곡번호(karaoke_no)만 이 provider의 실제값을 쓴다.
+        // 원문 표기는 언제나 이 provider의 실제값을 저장한다(금영 탭=금영 표기).
+        // 같은 곡으로 판정됐고 TJ 트랙이 있으면(KY 적재 시) 번역만 TJ 것을 공유해
+        // 재번역을 생략한다. 곡번호도 이 provider의 실제값을 쓴다.
         const tjRef = provider !== "TJ" ? tjTrackBySong.get(songId!) : undefined;
 
-        const trackFields = tjRef
-          ? {
-              title_in_provider: tjRef.title_in_provider,
-              artist_in_provider: tjRef.artist_in_provider,
-              title_ko_jp: tjRef.title_ko_jp,
-              title_ko_full: tjRef.title_ko_full,
-              artist_ko: tjRef.artist_ko,
-            }
-          : {
-              title_in_provider: song.title,
-              artist_in_provider: song.artist,
-            };
+        const trackFields = {
+          title_in_provider: song.title,
+          artist_in_provider: song.artist,
+          ...(tjRef
+            ? {
+                title_ko_jp: tjRef.title_ko_jp,
+                title_ko_full: tjRef.title_ko_full,
+                artist_ko: tjRef.artist_ko,
+              }
+            : {}),
+        };
 
         const { data: track, error: trackError } = await supabase
           .from("karaoke_tracks")
