@@ -1,7 +1,7 @@
 ---
-id: ISSUE-08
+id: ISSUE-09
 title: 배포 후 금영 크롤 점검 및 정기 모니터링
-cycle: 8
+cycle: 9
 priority: P1
 status: 대기(배포 후 착수)
 labels: [ops, crawler, monitoring]
@@ -9,7 +9,7 @@ created: 2026-07-07
 related: [ISSUE-05]
 ---
 
-# ISSUE-08 · 배포 후 금영 크롤 점검 및 정기 모니터링
+# ISSUE-09 · 배포 후 금영 크롤 점검 및 정기 모니터링
 
 ## 1. 요약 (TL;DR)
 

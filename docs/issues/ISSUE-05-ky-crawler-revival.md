@@ -82,5 +82,5 @@ related: []
 - 브랜치 `feat/ky-crawler-revival` (공통함수 추출 / ky.ts / cron 연결·매칭·원문보존 / 탭 / 유튜브 폴백 / 차트 날짜 / 금영 안내 / README / 문서).
 
 ### 남은 것 / 후속
-- **배포(dev→main) 후 Vercel 런타임에서 kygabang 접근 확인** → [ISSUE-08](ISSUE-08-post-deploy-crawl-check.md) 크롤 점검.
+- **배포(dev→main) 후 Vercel 런타임에서 kygabang 접근 확인** → [ISSUE-09](ISSUE-09-post-deploy-crawl-check.md) 크롤 점검.
 - 번역 26곡: gemini 무료 일당 한도 회복 시 매일 cron-ai가 자동 처리(또는 유료 전환 시 즉시).
