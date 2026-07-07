@@ -36,23 +36,33 @@ export async function processPendingYoutube(): Promise<void> {
 
   const songIds = pendingSongs.map((s) => s.id);
 
-  // 2. 각 song_id에 대해 TJ 기준 karaoke_tracks 원문 조회 (배치)
-  // TODO: feat/crawler-ky 작업 시 TJ 없으면 KY로 fallback 처리 추가
-  //   .in("provider", ["TJ", "KY"]) 로 변경 후
-  //   const track = tracks.find(t => t.provider === "TJ") ?? tracks.find(t => t.provider === "KY");
+  // 2. 각 song_id에 대해 karaoke_tracks 원문 조회 (배치). TJ 우선, 없으면 KY로 폴백.
   const { data: tracks, error: tracksError } = await supabase
     .from("karaoke_tracks")
-    .select("song_id, title_in_provider, artist_in_provider")
+    .select("song_id, provider, title_in_provider, artist_in_provider")
     .in("song_id", songIds)
-    .eq("provider", "TJ");
+    .in("provider", ["TJ", "KY"]);
 
   if (tracksError) {
     console.error("[youtube] karaoke_tracks 조회 실패:", tracksError);
     return;
   }
 
-  // song_id → track 매핑
-  const trackMap = new Map((tracks ?? []).map((t) => [t.song_id, t]));
+  // song_id → track 매핑 (TJ 우선, 없으면 KY)
+  const trackMap = new Map<
+    string,
+    { title_in_provider: string; artist_in_provider: string }
+  >();
+  for (const t of tracks ?? []) {
+    const existing = trackMap.get(t.song_id);
+    // TJ는 무조건 우선, KY는 아직 없을 때만 채운다
+    if (!existing || t.provider === "TJ") {
+      trackMap.set(t.song_id, {
+        title_in_provider: t.title_in_provider,
+        artist_in_provider: t.artist_in_provider,
+      });
+    }
+  }
 
   let successCount = 0;
   let failCount = 0;
@@ -62,8 +72,8 @@ export async function processPendingYoutube(): Promise<void> {
     const track = trackMap.get(song.id);
 
     if (!track) {
-      console.warn(`[youtube] TJ 트랙 없음, 스킵: song_id=${song.id}`);
-      // TJ 트랙이 없는 경우 failed 처리 (무한 pending 방지)
+      console.warn(`[youtube] TJ/KY 트랙 없음, 스킵: song_id=${song.id}`);
+      // 트랙이 없는 경우 failed 처리 (무한 pending 방지)
       const { error: updateError } = await supabase
         .from("songs")
         .update({ youtube_status: "failed" })
