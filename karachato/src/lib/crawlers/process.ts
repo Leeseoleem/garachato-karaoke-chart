@@ -5,8 +5,15 @@
 //       songs / karaoke_tracks / rank_history 세 테이블에 반영하는 공통 파이프라인.
 //
 // provider(TJ/KY)만 다르고 적재 로직은 동일하므로 한 함수로 묶는다.
-// 기존 cron/route.ts의 인라인 TJ 처리 로직을 그대로 옮기고
-// provider와 썸네일 처리만 파라미터로 분기했다.
+//
+// 같은 곡 판정(중복 song 방지)은 세 단계로 시도한다.
+//   1) title_norm + artist_norm 정확 일치 (기존 방식)
+//   2) 강화 정규화(괄호/ feat 이후 제거) 일치 (KY의 부제·콜라보 표기차 보정)
+//   3) 같은 provider의 동일 karaoke_no 트랙 재사용
+// 어느 것도 아니면 새 song을 만든다.
+//
+// 같은 곡으로 판정되면, KY 트랙의 제목·가수 표기와 번역은 TJ 트랙 값을 그대로
+// 따른다(곡번호만 KY 실제값). 잘린 KY 원문 노출을 막고 재번역을 생략하기 위함.
 // ============================================================
 
 import type { CrawledSong } from "@/types/crawler";
@@ -22,12 +29,39 @@ export interface ProcessResult {
   failed: number; // 실패한 곡 수
 }
 
+// 같은 곡 판정에 쓰는 TJ 트랙 표기·번역 (곡명 TJ 따르기용)
+interface TrackDisplay {
+  title_in_provider: string;
+  artist_in_provider: string;
+  title_ko_jp: string | null;
+  title_ko_full: string | null;
+  artist_ko: string | null;
+}
+
+// ─────────────────────────────────────────
+// normalizeForMatch: 같은 곡 판정 전용 강화 정규화
+//
+// KY는 부제를 "(작품 OP)"로 붙이고(사이트가 25자쯤에서 잘라 괄호가 안 닫히기도 함),
+// feat/콜라보 가수를 "가수 feat.X"처럼 괄호 밖에 둔다. 이런 표기차로 같은 곡을
+// 놓치지 않도록, 여는 괄호 이후와 feat 이후를 통째로 버린 뒤 정규화한다.
+// (전역 normalize는 그대로 두고, 매칭 판정에만 이 함수를 쓴다)
+// ─────────────────────────────────────────
+function normalizeForMatch(str: string): string {
+  return str
+    .replace(/[(（][\s\S]*$/, "") // 여는 괄호(반각/전각) 이후 전부 제거 (부제, 잘림 포함)
+    .replace(/\s*feat\.?.*$/i, "") // "feat" 이후 제거
+    .replace(/\s*featuring.*$/i, "") // "featuring" 이후 제거
+    .replace(/[^\w\s぀-ヿ一-鿿가-힣]/g, "") // 특수문자 제거
+    .replace(/\s+/g, "") // 공백 제거
+    .toLowerCase();
+}
+
 // ─────────────────────────────────────────
 // processCrawledSongs: 크롤 결과를 DB에 반영
 //
 // supabase : 서버 클라이언트 (호출자가 만들어 넘김. TJ/KY가 하나를 공유)
 // songs    : 크롤로 받은 곡 목록
-// provider : "TJ" | "KY" (트랙 필터/삽입, 썸네일 출처 분기에 사용)
+// provider : "TJ" | "KY" (트랙 필터/삽입, 썸네일 출처, 곡명 따르기 분기에 사용)
 // today    : 크롤 기준 날짜 (YYYY-MM-DD)
 // ─────────────────────────────────────────
 export async function processCrawledSongs(
@@ -36,10 +70,13 @@ export async function processCrawledSongs(
   provider: KaraokeProvider,
   today: string,
 ): Promise<ProcessResult> {
-  // STEP 1. 직전 크롤링 날짜의 rank_history를 Map으로 만들어두기 (delta 계산용)
+  // STEP 1. 직전 크롤 날짜의 이 provider rank_history를 Map으로 (delta 계산용)
+  // provider별로 스코프해야, KY 첫 크롤 때 어제 TJ 데이터 때문에 전 곡이 잘못
+  // "NEW"로 뜨는 것을 막는다(이 provider 데이터가 없으면 UNKNOWN).
   const { data: latestDateRow } = await supabase
     .from("rank_history")
-    .select("chart_date")
+    .select("chart_date, karaoke_tracks!inner(provider)")
+    .eq("karaoke_tracks.provider", provider)
     .lt("chart_date", today)
     .order("chart_date", { ascending: false })
     .limit(1)
@@ -49,8 +86,9 @@ export async function processCrawledSongs(
   if (latestDateRow) {
     const { data: prevRanks } = await supabase
       .from("rank_history")
-      .select("karaoke_track_id, rank")
-      .eq("chart_date", latestDateRow.chart_date);
+      .select("karaoke_track_id, rank, karaoke_tracks!inner(provider)")
+      .eq("chart_date", latestDateRow.chart_date)
+      .eq("karaoke_tracks.provider", provider);
 
     if (prevRanks) {
       for (const row of prevRanks) {
@@ -59,7 +97,7 @@ export async function processCrawledSongs(
     }
   }
 
-  // STEP 2. songs 전체 조회 → Map으로 만들어두기 (provider 무관: 같은 곡이면 재사용)
+  // STEP 2. songs 전체 조회 → title_norm+artist_norm 정확 매칭 Map
   const { data: existingSongs } = await supabase
     .from("songs")
     .select("id, title_norm, artist_norm");
@@ -71,16 +109,35 @@ export async function processCrawledSongs(
     }
   }
 
-  // STEP 3. 이 provider의 karaoke_tracks 조회 → Map으로 만들어두기
-  const { data: existingTracks } = await supabase
+  // STEP 3. karaoke_tracks 전체 조회 → 강화 매칭 Map + TJ 표기 Map + 이 provider 트랙 Map
+  const { data: allTracks } = await supabase
     .from("karaoke_tracks")
-    .select("id, karaoke_no, song_id")
-    .eq("provider", provider);
+    .select(
+      "id, karaoke_no, song_id, provider, title_in_provider, artist_in_provider, title_ko_jp, title_ko_full, artist_ko",
+    );
 
-  const trackMap = new Map<string, { id: number; songId: string }>();
-  if (existingTracks) {
-    for (const t of existingTracks) {
-      trackMap.set(t.karaoke_no, { id: t.id, songId: t.song_id });
+  const strongMap = new Map<string, string>(); // 강화정규화 키 → song_id
+  const tjTrackBySong = new Map<string, TrackDisplay>(); // song_id → TJ 트랙 표기/번역
+  const trackMap = new Map<string, { id: number; songId: string }>(); // 이 provider의 karaoke_no → 트랙
+
+  if (allTracks) {
+    for (const t of allTracks) {
+      const strongKey = `${normalizeForMatch(t.title_in_provider)}__${normalizeForMatch(t.artist_in_provider)}`;
+      if (!strongMap.has(strongKey)) strongMap.set(strongKey, t.song_id);
+
+      if (t.provider === "TJ" && !tjTrackBySong.has(t.song_id)) {
+        tjTrackBySong.set(t.song_id, {
+          title_in_provider: t.title_in_provider,
+          artist_in_provider: t.artist_in_provider,
+          title_ko_jp: t.title_ko_jp,
+          title_ko_full: t.title_ko_full,
+          artist_ko: t.artist_ko,
+        });
+      }
+
+      if (t.provider === provider) {
+        trackMap.set(t.karaoke_no, { id: t.id, songId: t.song_id });
+      }
     }
   }
 
@@ -91,15 +148,21 @@ export async function processCrawledSongs(
       const songKey = `${titleNorm}__${artistNorm}`;
       const existingTrack = trackMap.get(song.karaoke_no);
 
-      // songs upsert
+      // 같은 곡 판정: 정확 매칭 → 강화 매칭 → 동일 karaoke_no 트랙 재사용
       let songId = songMap.get(songKey);
 
-      // 제목 표기가 바뀌어 songKey가 달라져도, 동일 karaoke_no 트랙이 이미
-      // 있으면 그 트랙의 song을 재사용한다 (트랙 없는 고아 song 생성 방지)
+      if (!songId) {
+        const strongKey = `${normalizeForMatch(song.title)}__${normalizeForMatch(song.artist)}`;
+        songId = strongMap.get(strongKey);
+      }
+
+      // 표기가 달라 songKey가 어긋나도, 동일 karaoke_no 트랙이 이미 있으면
+      // 그 트랙의 song을 재사용한다 (트랙 없는 고아 song 생성 방지)
       if (!songId && existingTrack) {
         songId = existingTrack.songId;
       }
 
+      // 어느 것에도 안 걸리면 새 song 생성
       if (!songId) {
         // provider별 썸네일: TJ는 앨범 썸네일, KY는 미제공(NONE) → 유튜브 폴백이 채움
         const thumbnailFields =
@@ -147,6 +210,23 @@ export async function processCrawledSongs(
       let trackId = existingTrack?.id;
 
       if (!trackId) {
+        // 같은 곡으로 판정됐고 TJ 트랙이 있으면(KY 적재 시), 표기·번역을 TJ에서 따른다.
+        // 곡번호(karaoke_no)만 이 provider의 실제값을 쓴다.
+        const tjRef = provider !== "TJ" ? tjTrackBySong.get(songId!) : undefined;
+
+        const trackFields = tjRef
+          ? {
+              title_in_provider: tjRef.title_in_provider,
+              artist_in_provider: tjRef.artist_in_provider,
+              title_ko_jp: tjRef.title_ko_jp,
+              title_ko_full: tjRef.title_ko_full,
+              artist_ko: tjRef.artist_ko,
+            }
+          : {
+              title_in_provider: song.title,
+              artist_in_provider: song.artist,
+            };
+
         const { data: track, error: trackError } = await supabase
           .from("karaoke_tracks")
           .upsert(
@@ -154,8 +234,7 @@ export async function processCrawledSongs(
               song_id: songId,
               provider,
               karaoke_no: song.karaoke_no,
-              title_in_provider: song.title,
-              artist_in_provider: song.artist,
+              ...trackFields,
             },
             { onConflict: "provider,karaoke_no" },
           )
