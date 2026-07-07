@@ -3,7 +3,7 @@ id: ISSUE-05
 title: 금영(KY) 크롤러 부활
 cycle: 5
 priority: P2
-status: 분석완료(미착수)
+status: 해결(코드 완료, 배포·잔여번역 대기)
 labels: [feature, crawler]
 created: 2026-07-02
 related: []
@@ -52,16 +52,35 @@ related: []
 
 ## 6. 해결 로그 (Resolution Log)
 
-> 상태: **미착수.**
+> 상태: **코드 완료(2026-07-07). dev→main 배포와 잔여 번역만 남음.**
 
 ### 조치 (Actions)
-- _(작업 시 작성)_
+- `src/lib/crawlers/ky.ts` 신설: kygabang.com 차트를 cheerio로 파싱, `?page=1~5`로 TOP100 수집. 한 페이지라도 실패/0곡이면 부분 오염 방지를 위해 전체 실패.
+- `src/lib/crawlers/process.ts` 신설: cron/route.ts의 TJ 인라인 적재 로직을 provider 파라미터화한 `processCrawledSongs` 공통 함수로 추출(TJ/KY 공용).
+- `src/app/api/cron/route.ts`: TJ 다음 KY 순차 처리. KY 실패가 TJ 결과를 무효화하지 않도록 분리.
+- 같은 곡 판정 강화: 정확 매칭 → 강화 정규화(괄호/feat 이후 제거) → 동일 karaoke_no 재사용. 원문 표기는 provider별로 유지하고 번역만 TJ에서 공유(재번역 0).
+- delta용 직전 순위 조회를 provider별로 스코프(KY 첫 크롤 때 UNKNOWN 처리).
+- `KaraokeTabs`: "준비중" 토스트 제거 → 정상 라우팅.
+- `src/lib/youtube/process.ts`: 유튜브 썸네일 폴백을 TJ 전용에서 TJ/KY로 확장.
+- `src/lib/chart/queries.ts`: 최신 chart_date 조회를 provider별로 스코프(어느 한쪽 크롤 실패 시 빈 차트 방지).
+- `ChartInfoPopover`: 출처 안내에 금영(KY) 추가.
+- README 금영 서술 정정("크롤 불가"는 구 도메인 소멸이 원인이었음).
+- (DB 운영 도구) `normalize_ko()` 함수 생성: 번역 수동 수정 시 `title_ko_norm`/`artist_ko_norm` 자동 계산.
 
 ### 결과 (Outcome)
-- _(작업 시 작성)_
+- KY TOP100 100곡 적재. 53곡은 기존 TJ와 공유(원문 각자, 번역 공유), 47곡은 금영 전용 신규.
+- 4곡 수동 병합: 丸ノ内サディスティック(가나 の↔ノ), さよーならまたいつか(로마자 병기차), ルカルカ★ナイトフィーバー·ワールドイズマイン(보컬로이드 작곡가/보컬 표기차).
+- 유튜브 썸네일 47/47 완료. AI 번역 21/47(나머지 26곡은 gemini 무료 일당 한도로 이월, 매일 자동 처리).
 
 ### 검증 (Verification)
-- _(작업 시 작성: KY TOP100 100곡 수집, 탭 라우팅, 썸네일 폴백)_
+- 로컬 크론 실행: TJ/KY 각 100곡 처리, 실패 0 (`ok:true`).
+- 원문 보존 + 번역 공유 확인(天ノ弱/pretender/オレンジ: KY 원문 유지, `title_ko_jp`는 TJ 번역 공유).
+- 금영 전용 47곡 전수 유사도 검증: 강후보 0, 놓친 동일곡 없음(전부 진짜 신규 확정).
+- 강화 매칭 6곡 검수: 오매칭 0. 고아 song 0.
 
 ### 관련 커밋/PR
-- _(작업 시 작성)_
+- 브랜치 `feat/ky-crawler-revival` (공통함수 추출 / ky.ts / cron 연결·매칭·원문보존 / 탭 / 유튜브 폴백 / 차트 날짜 / 금영 안내 / README / 문서).
+
+### 남은 것 / 후속
+- **배포(dev→main) 후 Vercel 런타임에서 kygabang 접근 확인** → [ISSUE-08](ISSUE-08-post-deploy-crawl-check.md) 크롤 점검.
+- 번역 26곡: gemini 무료 일당 한도 회복 시 매일 cron-ai가 자동 처리(또는 유료 전환 시 즉시).
