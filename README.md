@@ -348,9 +348,11 @@ app/api/chat/route.ts
 
 TJ Media API는 `x-csrf-token` 헤더와 `JSESSIONID` 쿠키를 함께 요구합니다. 차트 페이지를 먼저 GET 요청해 토큰과 세션을 추출한 뒤 차트 API를 POST 호출합니다. `set-cookie`를 `,`로 파싱하면 날짜 형식 내 쉼표까지 분리되므로, 정규식으로 각 값을 직접 추출합니다.
 
-### KY(금영) 크롤러 — TLS 핑거프린트 차단
+### KY(금영) 크롤러 — HTML 파싱
 
-`kygabang.com`은 TLS 핑거프린트 수준에서 Node.js 환경을 차단합니다. User-Agent, Sec-Fetch 헤더 등 다양한 우회 시도에도 불구하고 만료 도메인으로 리다이렉트하는 방식으로 차단되며, PowerShell(WinHTTP)에서는 정상 응답을 확인했습니다. Vercel 환경에서 Puppeteer 도입은 비용·복잡도 문제로 현재 보류 상태이며, KY 탭은 toast 알림으로 안내합니다.
+`kygabang.com/chart/new_jpop.php`를 cheerio로 파싱해 JPOP TOP100을 수집합니다. 페이지당 20곡이라 `?page=1~5`로 100곡 전체를 순회합니다(page=6부터는 101위~라 제외). 서버사이드 렌더링이라 HTML에 실제 데이터가 담겨 있고, Node.js fetch로 정상 응답합니다.
+
+과거 "TLS 핑거프린트 차단"으로 기록됐던 증상은 구 도메인 `karaokeyou.com`이 소멸(DNS 만료)해 만료 도메인으로 리다이렉트되던 것이었습니다. 현재 살아있는 `kygabang.com`은 별도 차단이 없습니다. 금영은 앨범 썸네일을 제공하지 않으므로, 썸네일은 유튜브 검색 폴백으로 채웁니다.
 
 ### YouTube API 쿼터 관리
 

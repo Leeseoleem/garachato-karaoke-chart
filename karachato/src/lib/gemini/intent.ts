@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { ChatIntent } from "@/types/gemini";
+import type { ChatTurn } from "@/types/chat";
 
 const SYSTEM_INSTRUCTION = `
 당신은 한국 노래방 기기(태진-TJ, 금영-KY)의 J-POP TOP 100 차트 서비스의 검색 도우미입니다.
@@ -16,20 +17,37 @@ const SYSTEM_INSTRUCTION = `
 {
   "intent": "search_song" | "search_artist" | "recommend" | "unknown",
   "keyword": "곡명 또는 가수명 (search_song, search_artist일 때만)",
+  "keyword_raw": "사용자가 입력한 곡명·가수명의 한글 원문 그대로 (원어 변환 전, search_song·search_artist일 때만)",
   "vibe": "분위기 (recommend일 때만, 예: 신나는, 잔잔한, 슬픈)",
   "genre": "장르 (recommend일 때만, 예: 시티팝, 록, 애니송)",
   "category": "출처 (recommend일 때만. 반드시 아래 5개 중 하나만: 애니메이션 OST, 극장판 OST, 게임 OST, 보컬로이드, J-POP)",
   "trait": "차트 특성 (recommend일 때만. 반드시 아래 5개 중 하나만: 역주행, 바이럴, 최신곡, 예전곡, 커버곡)",
+  "chart_sort": "차트 정렬 (recommend일 때만. recent_registered=노래방 신규 등록순 / rank_up=순위 상승 / rank_down=순위 하락)",
+  "vocal_tags": "보컬 속성 배열 (recommend일 때만. 아래 정해진 태그만. 예: 여성, 파란머리, 대파)",
   "vocal_difficulty": "보컬 난이도 (recommend일 때만. easy 또는 hard)",
   "pronunciation_difficulty": "발음 난이도 (recommend일 때만. easy 또는 hard)"
 }
 
 trait 분류 기준:
-- "인기곡", "요즘 뜨는", "핫한" → "최신곡"
-- "SNS 유행", "틱톡", "바이럴", "화제" → "바이럴"
+- "최신곡", "신곡", "새로 나온", "최근 나온", "요즘 나온" → "최신곡" (실제 발매일 최신순으로 처리됨)
+- "인기곡", "요즘 뜨는", "핫한", "SNS 유행", "틱톡", "바이럴", "화제" → "바이럴"
 - "오래된", "추억의", "옛날" → "예전곡"
 - "역주행", "다시 뜨는" → "역주행"
 - "커버", "어레인지" → "커버곡"
+
+chart_sort 분류 기준 (recommend. trait보다 우선 — "순위/차트/노래방 등록"이 명시된 경우):
+- "최근 노래방에 등록된/들어온/생긴 곡", "노래방 신곡", "새로 들어온 곡" → chart_sort: "recent_registered"
+- "순위 오른/오르는/올라온 곡", "차트 상승곡", "순위 급상승" → chart_sort: "rank_up"
+- "순위 내린/떨어진/하락한 곡", "차트 하락곡" → chart_sort: "rank_down"
+- 단, "순위/차트/노래방 등록" 언급 없는 일반 "요즘 뜨는/인기곡"은 chart_sort가 아니라 trait: "바이럴".
+
+vocal_tags 분류 기준 (recommend. 곡의 보컬 속성 필터. 아래 정해진 태그만, 여러 개면 배열):
+- 성별: "여자/여성 보컬"→여성, "남자/남성 보컬"→남성
+- 보컬로이드: "보컬로이드/보카로 곡"→보컬로이드
+- 머리색: "파란/청록 머리"→파란머리, "빨간/레드 머리"→빨간머리, "금발/노란 머리"→노란머리, "분홍/핑크 머리"→분홍머리, "초록/녹색 머리"→초록머리, "검은/흑발"→검은머리, "은발/회색 머리"→은발
+- 상징 아이템: "대파/파"→대파, "프랑스빵/바게트"→프랑스빵, "바나나"→바나나, "참치"→참치, "당근"→당근
+- 조합 예: "파란 머리 보컬로이드"→["파란머리","보컬로이드"], "여성 보컬로이드"→["여성","보컬로이드"], "대파 든 캐릭터"→["대파"]
+- 특정 캐릭터명(미쿠·테토 등)이 명시되면 vocal_tags가 아니라 search_artist. vocal_tags는 속성으로 묘사할 때만.
 
 category 분류 기준:
 - TV 애니메이션 OP/ED/삽입곡 → "애니메이션 OST"
@@ -47,12 +65,20 @@ pronunciation_difficulty 분류 기준:
 - "발음 어려운", "일본어 발음 어려운" → "hard"
 
 규칙:
+- keyword 표기 정규화 (중요): keyword는 그 곡/가수가 **실제 발매·표기된 원어**로 변환해 출력한다.
+  한글 음차(발음만 한글로 옮긴 것)로 들어와도 원어로 되돌린다. DB엔 원어(일본어/로마자)와 한국어 번역만 있고 한글 음차는 없기 때문이다.
+  - 로마자로 발매된 제목/가수 → 알파벳: "피피피피"→"PPPP", "에이도"→"Ado", "원오크락"→"ONE OK ROCK", "요아소비"→"YOASOBI"
+  - 일본어로 발매된 제목/가수 → 일본어: "요루시카"→"ヨルシカ", "요네즈 켄시"→"米津玄師", "요루니카케루"→"夜に駆ける"
+  - 이미 흔히 쓰이는 한국어 번역 제목이면 그대로 둔다: "밤에 달리다"→"밤에 달리다"
+  - 원어 표기가 불확실하면 가장 널리 쓰이는 공식 표기를 택한다.
+- keyword_raw: keyword를 원어로 바꾸기 **전에**, 사용자가 친 한글 표기 그대로도 keyword_raw에 담아라(불필요한 말 "찾아줘/곡/노래/추천" 등만 제거, 오타가 있어도 그대로). 예: "하므라이 하트 찾아줘" → keyword: "サムライハート"(추정), keyword_raw: "하므라이 하트". 한글 입력이 아니면 생략 가능.
 - keyword는 일본어/영어/한국어 모두 허용, 원문 우선
 - 해당 없는 필드는 아예 생략
 - 특정 보컬로이드/UTAU 캐릭터 이름이 명시된 경우 → search_artist, keyword: 캐릭터명 원문
 - "미쿠 노래", "하츠네 미쿠 곡", "카사네 테토 찾아줘" → search_artist, keyword: "初音ミク" / "重音テト"
 - 특정 캐릭터명 없이 "보컬로이드 추천", "미쿠 같은 노래" → recommend + category: "보컬로이드"
 - "요아소비 최신곡", "아도 노래" → search_artist, keyword: "YOASOBI" / "Ado"
+- 여러 가수를 함께 언급하면(협업/피처링 포함, 예: "미쿠 테토", "아이묭이랑 요네즈", "미쿠 카사네테토 곡") → search_artist. keyword에 각 가수를 **쉼표(,)로 구분해** 원문 표기로 나열. 예: "初音ミク, 重音テト" / "あいみょん, 米津玄師"
 - "신나는 노래", "인기곡", "요즘 유행하는 노래", "SNS에서 뜨는 곡" → recommend, vibe 또는 trait 추출
 - "애니 OST 추천", "게임 BGM" → recommend + category 추출
 - 특정 보컬로이드/UTAU 캐릭터의 곡 자체를 찾는 경우 ("미쿠 노래", "하츠네 미쿠 곡", "카사네 테토 찾아줘") → search_artist, keyword: 캐릭터명 원문
@@ -64,6 +90,14 @@ pronunciation_difficulty 분류 기준:
 - "~말고", "~빼고", "~제외하고" 가 포함된 경우, 해당 단어는 keyword가 아닌 제외 조건임
 - "어려운 곡 추천해줘 모니터링 말고" → recommend + vocal_difficulty: "hard" (모니터링은 무시)
 - 부정어가 붙은 단어는 절대 keyword로 추출하지 말 것
+
+맥락 규칙 (이전 대화가 함께 주어질 때):
+- 입력 앞에 "[이전 대화]" 블록이 있으면, "[현재 메시지]"가 그 맥락을 참조할 수 있다.
+- "다른 거", "다른 곡", "또", "그거 말고", "딴 거" 등 = 직전에 다룬 가수/조건을 유지한 채 다른 곡을 원하는 것:
+  - 직전 맥락이 특정 가수였다면 → search_artist, keyword: 그 가수(원문 표기).
+  - 직전 맥락이 recommend 조건(분위기/장르/카테고리 등)이었다면 → 같은 조건으로 recommend.
+- "좀 더 잔잔한/신나는/쉬운" 등은 직전 조건을 이어받아 recommend로 분류.
+- 단, 현재 메시지가 새로운 가수/곡/조건을 명시하면 이전 맥락보다 그것을 우선한다.
 - JSON 외 텍스트 절대 출력 금지
 `.trim();
 
@@ -108,26 +142,54 @@ function parseIntent(text: string): ChatIntent {
       typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
     if (!keyword) return { intent: "unknown" };
     parsed.keyword = keyword;
+    // 한글 원문(변환 전) — 있으면 유지, 없으면 제거
+    if (typeof parsed.keyword_raw === "string") {
+      const kr = parsed.keyword_raw.trim();
+      if (kr) parsed.keyword_raw = kr;
+      else delete parsed.keyword_raw;
+    } else {
+      delete parsed.keyword_raw;
+    }
   }
 
   return parsed as ChatIntent;
 }
 
-export async function extractIntent(userInput: string): Promise<ChatIntent> {
-  let lastError: unknown;
+// 이전 대화(history)를 프롬프트 앞에 붙여 맥락 참조("다른 거" 등)를 가능하게 함.
+function buildContextualInput(userInput: string, history?: ChatTurn[]): string {
+  if (!history || history.length === 0) return userInput;
+  const convo = history
+    .map((t) => `${t.role === "user" ? "사용자" : "봇"}: ${t.text}`)
+    .join("\n");
+  return `[이전 대화]\n${convo}\n\n[현재 메시지]\n${userInput}`;
+}
 
-  // 모델 폴백: 앞 모델이 실패하면 다음 모델로 재시도.
-  // 모델이 성공적으로 응답하면(off-topic 포함) 그 결과를 사용.
-  // 모든 모델이 실패하면 에러를 전파해 route.ts가 전용 메시지+재시도로 처리
-  // (실패를 unknown/off_topic으로 숨기지 않음 — 503을 "물어봐 주세요"로 오표시하던 버그 수정).
+export async function extractIntent(
+  userInput: string,
+  history?: ChatTurn[],
+): Promise<ChatIntent> {
+  const input = buildContextualInput(userInput, history);
+  let lastError: unknown;
+  let sawUnknown = false;
+
+  // 모델 순회(flash-lite→flash→flash-latest, 뒤로 갈수록 안정적):
+  // - 예외(429/503 등) → 다음 모델로 폴백.
+  // - 확신 있는 분류(non-unknown)면 즉시 채택.
+  // - unknown은 약한 모델의 오분류일 수 있어 다음(더 강한) 모델로 재확인.
+  //   ("요네즈 켄시 노래 찾아줘"를 flash-lite가 간헐적으로 unknown 처리하던 버그 보정.)
   for (const modelName of INTENT_MODELS) {
     try {
-      const result = await getIntentModel(modelName).generateContent(userInput);
-      return parseIntent(result.response.text());
+      const result = await getIntentModel(modelName).generateContent(input);
+      const intent = parseIntent(result.response.text());
+      if (intent.intent !== "unknown") return intent;
+      sawUnknown = true;
     } catch (e) {
       lastError = e;
     }
   }
 
+  // 응답한 모델이 모두 unknown → 진짜 무관. 아무도 응답 못함(전부 에러) → 에러 전파
+  // (503/429를 "물어봐 주세요"로 숨기지 않고 route.ts가 전용 메시지+재시도로 처리).
+  if (sawUnknown) return { intent: "unknown" };
   throw lastError;
 }

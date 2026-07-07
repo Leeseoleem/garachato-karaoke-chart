@@ -5,8 +5,7 @@ export function normalize(str: string): string {
     .replace(/\(.*?\)/g, "") // (반각 괄호 안 내용) 제거
     .replace(/\uff08.*?\uff09/g, "") // （전각 괄호 안 내용） 제거
     .replace(/[^\w\s\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7A3]/g, "") // 특수문자 제거
-    .replace(/\s+/g, " ") // 연속 공백 → 공백 하나로
-    .trim()
+    .replace(/\s+/g, "") // 공백 전부 제거 (띄어쓰기 차이로 검색·중복감지 놓치는 것 방지)
     .toLowerCase();
 }
 

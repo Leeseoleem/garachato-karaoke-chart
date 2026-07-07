@@ -14,21 +14,28 @@ interface QuickQuestionsProps {
 const getRandomArtistQuestion = () => {
   const artists = Object.values(ARTIST_KO_MAP);
   const random = artists[Math.floor(Math.random() * artists.length)];
-  return `${random}의 최신곡 찾아줘`;
+  return `${random} 노래 찾아줘`;
 };
 
 const getRandomVocaloidQuestion = () => {
   const vocaloids = Object.values(VOCALOID_KO_MAP);
   const random = vocaloids[Math.floor(Math.random() * vocaloids.length)];
-  return `보컬로이드 ${random}의 노래 찾아줘`;
+  return `${random} 노래 찾아줘`;
+};
+
+const getRandomGenderQuestion = () => {
+  const gender = Math.random() < 0.5 ? "여성" : "남성";
+  return `${gender} 보컬 노래 추천해줘`;
 };
 
 export default function QuickQuestions({ onSelect }: QuickQuestionsProps) {
   const [artistQuestion] = useState(() => getRandomArtistQuestion());
   const [vocaloidQuestion] = useState(() => getRandomVocaloidQuestion());
+  const [genderQuestion] = useState(() => getRandomGenderQuestion());
 
   const questions = [
     ...STATIC_QUICK_QUESTIONS,
+    genderQuestion,
     artistQuestion,
     vocaloidQuestion,
   ];

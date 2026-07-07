@@ -3,7 +3,7 @@ id: ISSUE-08-discovery-curation
 title: 탐색/큐레이션 — 카테고리·신규곡·가수별 둘러보기
 cycle: 출시 후 (기능 강화)
 priority: P3
-status: 분석완료(미착수)
+status: 진행중
 labels: [feature, discovery, ux, curation]
 related: [EPIC-apps-in-toss-migration, ISSUE-07]
 created: 2026-07-05
@@ -47,5 +47,32 @@ created: 2026-07-05
 - **선행:** 앱인토스 마이그레이션(EPIC) 출시 + 3차(ISSUE-05 금영 → 06 → 07) 이후.
 - 데이터가 대부분 준비돼 있어 **구현 비용은 낮은 편**(주로 화면/쿼리 작업).
 
+## 6. 챗봇 추천 옵션으로 확장 (ISSUE-07 연계)
+
+> 탐색 "화면"과 별개로, **챗봇 recommend 옵션 + 퀵버튼**으로도 같은 데이터를 노출하자는 방향.
+> ISSUE-07에서 "신곡=발매/투고일"을 구현하며 파생된 아이디어. **이번 출시 브랜치 밖(다음 이슈)으로 결정.**
+
+### 개념 분리 (3개 축은 서로 다른 질문)
+- **발매/투고일** (`ai_intro`의 발매일·투고일) = 원곡이 나온 날 → **"요즘 나온 신곡"**. → **ISSUE-07에서 구현됨**(trait 최신곡, 발매일 최신순 정렬).
+- **등록일** (`songs.created_at`) = 노래방/우리 차트에 잡힌 날 → **"최근 노래방에 등록된 곡"**. (발매일과 혼용 금지 — 정렬 오염됨)
+- **순위 변동** (`rank_history.delta_status`/`delta_value`) = **"요즘 뜨는/지는 곡"**. ai_traits "바이럴" 주관 라벨보다 정확.
+
+### 실현가능성 (2026-07-06 확인)
+- 최신 차트일 `2026-07-06`. 그날 기준 **UP 27 / DOWN 34 / SAME 38 / NEW 1**, `delta_value`(이동 계단 수) 모두 채워짐.
+- `created_at`은 하루 1~5곡씩 **증분 수집**(백필 클러스터 아님) → 등록순 정렬에 적합.
+
+### 구현 스케치
+- recommend 인텐트에 모드 필드 추가(예: `chart_sort?: "recent_registered" | "rank_up" | "rank_down"`).
+- 프롬프트 규칙: "최근 노래방에 등록된/들어온 곡"→recent_registered, "순위 오른/뜨는"→rank_up, "순위 내린/지는"→rank_down.
+- 핸들러: recent_registered → `created_at DESC`; rank_up/down → `rank_history` 최신일 + `delta_status` UP/DOWN + `delta_value` 순, track→song 매핑·dedup.
+- 퀵버튼으로 노출("최근 노래방에 등록된 곡", "요즘 순위 오른 곡").
+
 ## 해결 로그
-- _(작업 시 작성)_
+
+### §6 챗봇 추천 옵션 1차 구현 (feat/chat-chart-options)
+- **조치**: recommend 인텐트에 `chart_sort`(recent_registered/rank_up/rank_down) 추가. `handleChartRecommend`로
+  등록순(`created_at DESC`)·순위 상승/하락(`rank_history` 최신일 `delta_value` 순)을 실데이터로 정렬. 프롬프트 규칙 +
+  퀵버튼("요즘 순위 오른 곡", "최근 노래방에 등록된 곡") 노출.
+- **검증**(2026-07-06, 결정론 continuation): 등록순→모시모시?(최신 등록), 순위상승→모시모시?(+10)·#2 푸르름이 사는 곳(+6),
+  순위하락→튜링 러브(-6). DB 정답과 일치. Gemini 분류(퀵버튼 문구)는 쿼터 회복 후 라이브 확인.
+- **남은 것**: 탐색 화면(브라우즈 레이어)·카테고리/가수별 큐레이션은 미착수(출시 후).

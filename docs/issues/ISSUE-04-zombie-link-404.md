@@ -3,7 +3,7 @@ id: ISSUE-04
 title: TOP100 좀비 링크 404
 cycle: 4
 priority: P1
-status: 분석완료(미착수)
+status: 해결됨
 labels: [bug, ux, query]
 created: 2026-07-02
 related: [ISSUE-01]
