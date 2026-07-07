@@ -21,6 +21,7 @@ export default function Home() {
   const [items, setItems] = useState<ChartRow[]>([]);
   const [latestDate, setLatestDate] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -33,6 +34,7 @@ export default function Home() {
         if (cancelled) return;
         setItems(res.items);
         setLatestDate(res.latestDate ?? "");
+        setHasLoaded(true);
       })
       .catch((e) => {
         if (cancelled) return;
@@ -49,7 +51,7 @@ export default function Home() {
 
   return (
     <main className="relative flex h-dvh flex-col overflow-hidden">
-      {loading ? (
+      {loading && !hasLoaded ? (
         <MainPageSkeleton />
       ) : (
         <>
@@ -73,7 +75,11 @@ export default function Home() {
               </button>
             </div>
           ) : (
-            <ChartClientWrapper items={items} latestDate={latestDate} />
+            <ChartClientWrapper
+              items={items}
+              latestDate={latestDate}
+              loading={loading}
+            />
           )}
         </>
       )}

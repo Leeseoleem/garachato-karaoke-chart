@@ -64,7 +64,8 @@ export function ChartInfoPopover() {
               className="z-50 w-52 rounded-xl border border-gray-20 bg-gray-40 p-3"
             >
               <p className="typo-label font-light leading-relaxed text-content-muted">
-                이 차트는 TJ미디어의 J-POP TOP 100 데이터를 기반으로 제공됩니다.
+                이 차트는 TJ미디어와 금영(KY)의 J-POP TOP 100 데이터를 기반으로
+                제공됩니다.
               </p>
             </motion.div>
           )}
