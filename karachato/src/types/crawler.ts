@@ -33,3 +33,13 @@ export interface TJSong {
   artist: string; // 가수명 원문 (일본어). 예: "Official髭男dism"
   imgthumb_path: string; // TJ 앨범 썸네일 URL. 예: "https://www.tjmedia.com/.../068058_thumb.jpg"
 }
+
+// 크롤러 공통 입력 타입 (processCrawledSongs 용)
+// TJSong은 그대로 호환된다. KY 등 썸네일을 제공하지 않는 provider는 imgthumb_path를 생략한다.
+export interface CrawledSong {
+  rank: number;
+  karaoke_no: string;
+  title: string;
+  artist: string;
+  imgthumb_path?: string; // 썸네일 URL (없는 provider는 undefined)
+}
