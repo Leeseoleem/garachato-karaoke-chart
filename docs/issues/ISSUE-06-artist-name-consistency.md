@@ -3,7 +3,7 @@ id: ISSUE-06
 title: 가수 번역명 일관성 / 재사용
 cycle: 6
 priority: P2
-status: 진행중
+status: 진행중 (재발 확인, feat/artist-name-consistency에서 재개)
 labels: [enhancement, ai-pipeline, data-quality]
 created: 2026-07-02
 related: [ISSUE-01, ISSUE-03]
@@ -63,3 +63,24 @@ related: [ISSUE-01, ISSUE-03]
 
 ### 관련 커밋/PR
 - 데이터 패치는 DB 직접 반영(마이그레이션 파일 없음). feat/chat-chart-options.
+
+## 7. 남은 작업 (브랜치: `feat/artist-name-consistency`)
+
+> 금영(ISSUE-05) 유입 후 재발 확인(2026-07-08). 아래를 이 브랜치에서 처리한다.
+
+### 재발 관측 (2026-07-08)
+같은 `artist_norm`인데 `artist_ko`가 갈린 케이스:
+- `yoasobi`: "YOASOBI" vs "요아소비" (원문 유지 vs 음차)
+- `creepynuts`: "크리피 너츠" vs "크리피 넛츠"
+- `ユイカ`: "『유이카』" vs "유이카"
+- (`米津玄師` "(+스다 마사키)", `みきとp` 피처링별은 실제로 다른 협업이라 정상)
+- `LiSA` 등은 KY 신곡(`残酷な夜に輝け`)이 아직 번역 대기라, 번역되면 같은 문제가 터질 수 있음.
+
+### 작업
+1. **파이프라인 재사용 로직** (`karachato/src/lib/ai/process.ts`, `processArtistKo`): 번역 전에
+   같은 `artist_norm`의 기존 `artist_ko`가 있으면 재번역 없이 그 값을 그대로 대입(해결 방안 1번).
+   - 참고: `artist_norm`은 normalize에서 이미 소문자화되어 대소문자 무관 매칭이 된다(`YOASOBI`==`yoasobi`).
+     즉 "대소문자 통일 비교"는 이미 충족돼 있고, 빠진 것은 인식 후 "기존 값 재사용" 단계다.
+2. **신규 흔들림 데이터 정리**: 위 케이스를 대표 표기로 통일(SQL, 미리보기→확인→적용).
+   예: `yoasobi` → "요아소비", `creepynuts` → "크리피 너츠", `ユイカ` → "유이카".
+3. 정리 후 유일성 재검증(같은 `artist_norm`당 `artist_ko` 1개). KY 신곡 번역이 채워질 때마다 재점검.
