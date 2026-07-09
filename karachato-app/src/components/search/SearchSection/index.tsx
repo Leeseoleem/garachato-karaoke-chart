@@ -40,9 +40,15 @@ export default function SearchSection() {
           query: searchText,
         });
         if (error || isCancelled) return;
-        const keywords: string[] = (data ?? []).map(
-          (item: { title_ko_jp: string | null; title_in_provider: string }) =>
-            item.title_ko_jp ?? item.title_in_provider,
+        // 정확 포함 결과가 있으면 그것만, 없으면 유사(퍼지) 결과를 폴백으로 제안한다
+        const rows: {
+          title_ko_jp: string | null;
+          title_in_provider: string;
+          is_exact: boolean;
+        }[] = data ?? [];
+        const exactRows = rows.filter((r) => r.is_exact);
+        const keywords: string[] = (exactRows.length > 0 ? exactRows : rows).map(
+          (item) => item.title_ko_jp ?? item.title_in_provider,
         );
         if (!isCancelled) {
           setFetchResult({
