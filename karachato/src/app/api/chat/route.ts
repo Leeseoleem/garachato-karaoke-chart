@@ -106,37 +106,50 @@ function buildSongField(
 }
 
 // 여러 검색어(원어 변환본 + 한글 원문 등)를 순서대로 search_songs 조회해 곡 id 병합(중복·제외 제거).
+// 정확 포함(is_exact) 여부로도 분류해 반환 — 한 검색어라도 정확 포함이면 exact로 승격.
 async function collectSearchIds(
   queries: (string | undefined | null)[],
   excludeIds: string[] = [],
-): Promise<string[]> {
+): Promise<{ ids: string[]; exactIds: string[]; fuzzyIds: string[] }> {
   const supabase = createServerClient();
   const seen = new Set<string>();
   const ids: string[] = [];
+  const exact = new Map<string, boolean>();
   for (const query of queries) {
     if (!query) continue;
     const { data, error } = await supabase.rpc("search_songs", { query });
     if (error) throw error;
-    for (const r of (data ?? []) as { song_id: string }[]) {
-      if (!seen.has(r.song_id) && !excludeIds.includes(r.song_id)) {
+    for (const r of (data ?? []) as { song_id: string; is_exact: boolean }[]) {
+      if (excludeIds.includes(r.song_id)) continue;
+      if (!seen.has(r.song_id)) {
         seen.add(r.song_id);
         ids.push(r.song_id);
       }
+      if (r.is_exact) exact.set(r.song_id, true);
+      else if (!exact.has(r.song_id)) exact.set(r.song_id, false);
     }
   }
-  return ids;
+  const exactIds = ids.filter((id) => exact.get(id));
+  const fuzzyIds = ids.filter((id) => !exact.get(id));
+  return { ids, exactIds, fuzzyIds };
 }
 
 // ────────────────────────────────────────────
 // 핸들러: 곡 제목 검색
 // ────────────────────────────────────────────
+// 정확 일치가 없을 때 유사 후보를 선택지로 제시할 최대 개수
+const SONG_OPTION_LIMIT = 4;
+
 async function handleSearchSong(
   keyword: string,
   excludeIds: string[] = [],
   keywordRaw?: string,
 ): Promise<Response> {
   // 원어 변환본(keyword) + 한글 원문(keywordRaw) 둘 다 검색 → 변환이 틀려도 원문 오타 매칭.
-  const ids = await collectSearchIds([keyword, keywordRaw], excludeIds);
+  const { ids, exactIds, fuzzyIds } = await collectSearchIds(
+    [keyword, keywordRaw],
+    excludeIds,
+  );
 
   if (ids.length === 0) {
     return Response.json({
@@ -149,7 +162,7 @@ async function handleSearchSong(
     } satisfies ChatMessage);
   }
 
-  // ids(유사도 순) 중 완료(done)된 첫 곡 선택 (RPC는 상태를 안 거름)
+  // 후보 곡들의 완료(done) 상태 + 트랙 메타 조회 (RPC는 상태를 안 거름)
   const supabase = createServerClient();
   const { data, error: e2 } = await supabase
     .from("songs")
@@ -166,9 +179,35 @@ async function handleSearchSong(
     .eq("ai_status", "done");
   if (e2) throw e2;
   const byId = new Map((data ?? []).map((r) => [r.id, r]));
-  const firstDone = ids.map((id) => byId.get(id)).find((r) => r != null);
 
-  if (!firstDone) {
+  // 1) 정확 포함(is_exact) 완료곡이 있으면 그 중 첫 곡을 단건 후보로 (오타 없는 확정 검색)
+  const firstExactDone = exactIds
+    .map((id) => byId.get(id))
+    .find((r) => r != null);
+  if (firstExactDone) {
+    const isInTop100 = await checkIsInTop100(firstExactDone.id);
+    const song = buildSongField(
+      firstExactDone.id,
+      firstExactDone.karaoke_tracks ?? [],
+      isInTop100,
+    );
+    return Response.json({
+      type: "song_candidate",
+      role: "model",
+      song_id: firstExactDone.id,
+      message: `"${song.titleKo ?? song.titleInProvider}" 이 곡 맞으세요?`,
+      song,
+      intent: { intent: "search_song", keyword, keyword_raw: keywordRaw },
+    } satisfies ChatMessage);
+  }
+
+  // 2) 정확 포함이 없으면 = 오타 추정. 자동 교정 대신 유사 후보를 선택지로 제시.
+  const fuzzyDone = fuzzyIds
+    .map((id) => byId.get(id))
+    .filter((r): r is NonNullable<typeof r> => r != null)
+    .slice(0, SONG_OPTION_LIMIT);
+
+  if (fuzzyDone.length === 0) {
     return Response.json({
       type: "off_topic",
       role: "model",
@@ -176,20 +215,72 @@ async function handleSearchSong(
     } satisfies ChatMessage);
   }
 
-  const isInTop100 = await checkIsInTop100(firstDone.id);
-  const song = buildSongField(
-    firstDone.id,
-    firstDone.karaoke_tracks ?? [],
-    isInTop100,
-  );
+  const options = fuzzyDone.map((r) => {
+    const t = (r.karaoke_tracks ?? [])[0];
+    const title = t?.title_ko_jp ?? t?.title_in_provider ?? "(제목 미상)";
+    const artist = t?.artist_ko ?? t?.artist_in_provider ?? "";
+    return {
+      label: artist ? `${title} (${artist})` : title,
+      intent: { intent: "pick_song", song_id: r.id } as ChatIntent,
+    };
+  });
+
+  return Response.json({
+    type: "option_prompt",
+    role: "model",
+    message: "정확히 일치하는 곡을 못 찾았어요. 혹시 이 중에 찾으시는 곡이 있나요?",
+    options,
+  } satisfies ChatMessage);
+}
+
+// ────────────────────────────────────────────
+// 핸들러: 곡 선택 (유사 후보 옵션에서 특정 곡 지정)
+// ────────────────────────────────────────────
+async function handlePickSong(songId: string): Promise<Response> {
+  // song_id는 클라가 되돌려 보낸 값 → UUID 형식만 통과(잘못된 값은 곡 없음으로 처리)
+  if (!UUID_RE.test(songId)) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message: "그 곡을 찾지 못했어요. 다른 곡이나 가수를 물어봐 주세요.",
+    } satisfies ChatMessage);
+  }
+
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("songs")
+    .select(
+      `
+      id,
+      karaoke_tracks (
+        provider, karaoke_no, title_ko_jp,
+        title_in_provider, artist_ko, artist_in_provider
+      )
+    `,
+    )
+    .eq("id", songId)
+    .eq("ai_status", "done")
+    .maybeSingle();
+  if (error) throw error;
+
+  if (!data) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message: "그 곡을 찾지 못했어요. 다른 곡이나 가수를 물어봐 주세요.",
+    } satisfies ChatMessage);
+  }
+
+  const isInTop100 = await checkIsInTop100(data.id);
+  const song = buildSongField(data.id, data.karaoke_tracks ?? [], isInTop100);
 
   return Response.json({
     type: "song_candidate",
     role: "model",
-    song_id: firstDone.id,
+    song_id: data.id,
     message: `"${song.titleKo ?? song.titleInProvider}" 이 곡 맞으세요?`,
     song,
-    intent: { intent: "search_song", keyword, keyword_raw: keywordRaw },
+    intent: { intent: "pick_song", song_id: songId },
   } satisfies ChatMessage);
 }
 
@@ -822,6 +913,8 @@ async function handleChat(req: Request): Promise<Response> {
         return handleSearchArtist(intent.keyword, exclude, intent.keyword_raw);
       case "recommend":
         return handleRecommend(intent, exclude);
+      case "pick_song":
+        return handlePickSong(intent.song_id);
       case "unknown":
       default:
         return Response.json({

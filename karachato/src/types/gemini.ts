@@ -38,6 +38,8 @@ export type ChatIntent =
       // 보컬 속성 태그 (곡의 songs.vocal_tags와 교집합 필터). 예: 여성, 보컬로이드, 파란머리, 대파
       vocal_tags?: string[];
     }
+  // 유사 후보 선택지에서 사용자가 특정 곡을 고른 경우 (클라가 옵션 intent로 되돌려 보냄)
+  | { intent: "pick_song"; song_id: string }
   | { intent: "unknown" };
 
 // 챗봇 API 응답 타입
