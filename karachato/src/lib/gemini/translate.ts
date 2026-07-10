@@ -1,4 +1,5 @@
 import { getGemini } from "./gemini";
+import { withRetry } from "./retry";
 import type { TranslateResult } from "@/types/gemini";
 
 import type { AiCategory, AiTrait } from "@/types/domain";
@@ -201,7 +202,9 @@ export const translateSong = async (
     });
 
     const prompt = buildTranslatePrompt(title, artist, provider);
-    const result = await model.generateContent(prompt);
+    const result = await withRetry(() => model.generateContent(prompt), {
+      label: `translateSong:${title}`,
+    });
     const text = result.response.text().trim();
 
     let parsed: TranslateResult;
@@ -240,7 +243,9 @@ export const translateSongBatch = async (
     });
 
     const prompt = buildBatchPrompt(songs);
-    const result = await model.generateContent(prompt);
+    const result = await withRetry(() => model.generateContent(prompt), {
+      label: `translateSongBatch(${songs.length})`,
+    });
     const text = result.response.text().trim();
 
     let parsed: (TranslateResult & { index: number })[];

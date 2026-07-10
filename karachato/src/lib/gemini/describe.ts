@@ -1,5 +1,6 @@
 import type { Tool } from "@google/generative-ai";
 import { getGemini } from "./gemini";
+import { withRetry } from "./retry";
 
 // 구글검색 그라운딩으로 "산문 소개(설명) + 구조화 사실 리스트(상세 설명)"를 함께 생성.
 // 번역/분류/점수는 translate.ts가 담당하고, 여기서는 곡 소개(description + ai_intro)만.
@@ -96,8 +97,9 @@ export const generateSongIntro = async (
       tools: [{ googleSearch: {} } as unknown as Tool],
     });
 
-    const result = await model.generateContent(
-      buildIntroPrompt(title, artist, category),
+    const result = await withRetry(
+      () => model.generateContent(buildIntroPrompt(title, artist, category)),
+      { label: `songIntro:${title}`, attempts: 2 },
     );
     const intro = parseIntro(result.response.text());
 

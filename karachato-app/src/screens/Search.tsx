@@ -13,6 +13,7 @@ type SearchRpcRow = {
   provider: string;
   title_in_provider: string;
   artist_in_provider: string;
+  is_exact: boolean;
 };
 
 // 실제 Supabase search_songs RPC (anon + RLS) 클라 검색. ?q 기반.
@@ -20,10 +21,12 @@ export default function Search() {
   const [searchParams] = useSearchParams();
   const q = (searchParams.get("q") ?? "").trim();
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [isFuzzy, setIsFuzzy] = useState(false);
 
   useEffect(() => {
     if (!q) {
       setResults([]);
+      setIsFuzzy(false);
       return;
     }
     let cancelled = false;
@@ -32,11 +35,14 @@ export default function Search() {
       if (error) {
         console.error("[Search] rpc error", error.message);
         setResults([]);
+        setIsFuzzy(false);
         return;
       }
-      // song_id 기준 그룹핑 (원본 서버 로직과 동일)
+      // song_id 기준 그룹핑하면서 곡별 정확 포함 매칭 여부(is_exact)도 수집
       const grouped = new Map<string, SearchResult>();
+      const exactIds = new Set<string>();
       for (const row of (data ?? []) as SearchRpcRow[]) {
+        if (row.is_exact) exactIds.add(row.song_id);
         if (!grouped.has(row.song_id)) {
           grouped.set(row.song_id, {
             id: row.song_id,
@@ -52,7 +58,16 @@ export default function Search() {
           artist_in_provider: row.artist_in_provider,
         });
       }
-      setResults([...grouped.values()]);
+      // 정확 포함 결과가 있으면 그것만, 없으면 유사(퍼지) 결과를 폴백으로 보여준다
+      const all = [...grouped.values()];
+      const exact = all.filter((r) => exactIds.has(r.id));
+      if (exact.length > 0) {
+        setResults(exact);
+        setIsFuzzy(false);
+      } else {
+        setResults(all.slice(0, 10));
+        setIsFuzzy(all.length > 0);
+      }
     });
     return () => {
       cancelled = true;
@@ -62,7 +77,7 @@ export default function Search() {
   return (
     <div className="flex flex-col h-dvh min-h-0">
       <SearchView initialQuery={q} />
-      <SearchResultSection results={results} query={q} />
+      <SearchResultSection results={results} query={q} isFuzzy={isFuzzy} />
     </div>
   );
 }
