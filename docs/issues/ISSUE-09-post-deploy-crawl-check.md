@@ -3,7 +3,7 @@ id: ISSUE-09
 title: 배포 후 금영 크롤 점검 및 정기 모니터링
 cycle: 9
 priority: P1
-status: 대기(배포 후 착수)
+status: 해결됨
 labels: [ops, crawler, monitoring]
 created: 2026-07-07
 related: [ISSUE-05]
@@ -47,13 +47,18 @@ related: [ISSUE-05]
 
 ## 6. 해결 로그 (Resolution Log)
 
-> 상태: **대기(배포 후 착수).**
+> 상태: **해결됨 (2026-07-10).** Vercel 스케줄 크론의 금영 크롤 정상 확인.
 
 ### 조치 (Actions)
-- _(배포 후 작성)_
+- DB `rank_history`를 provider별 chart_date로 조회해 Vercel 스케줄 크론의 실제 크롤 여부를 검증(수동 트리거는 CRON_SECRET 필요라 데이터로 확인).
 
 ### 결과 (Outcome)
-- _(배포 후 작성: Vercel 크롤 성공 여부, 잔여 번역 소진 추이)_
+- **금영(KY) 크롤 정상**: `rank_history`에 KY 100행이 2026-07-07(로컬 적재) 이후 07-08·09·10까지 매일 적재됨. 07-08 이후는 Vercel 스케줄 크론 산물 = 서버리스에서 금영 크롤 성공 확정. (README의 "Vercel 차단" 서술은 실증 반증됨.)
+- TJ는 06-21~07-10 연속 유지(영향 없음).
+- 잔여 번역(cron-ai): 무료 티어 분당 20요청(RPM) 한도로 한 번에 몰아 빼지 못하고 점진 소진 중. 간헐적 Gemini 오류는 별도 재시도 추가로 완화(브랜치 `feat/artist-name-consistency` 동봉, translate/describe retry).
+
+### 남은 관찰(비차단)
+- `/api/cron-youtube` 썸네일 채움, 앱 금영 탭 표시는 별도 확인 필요 시 점검(현재 데이터·UI상 문제 관측 없음).
 
 ### 관련 커밋/PR
-- _(작업 시 작성)_
+- 코드 변경 없음(운영 확인). 데이터 검증은 Supabase 조회.
