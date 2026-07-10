@@ -9,9 +9,11 @@ import SearchResultItem from "./SearchResultItem";
 export default function SearchResultSection({
   results,
   query,
+  isFuzzy = false,
 }: {
   results: SearchResult[];
   query: string;
+  isFuzzy?: boolean;
 }) {
   const [isTranslated, setIsTranslated] = useState(true);
 
@@ -38,6 +40,11 @@ export default function SearchResultSection({
 
   return (
     <div className="flex-1 overflow-y-auto">
+      {isFuzzy && (
+        <p className="typo-caption text-content-secondary bg-gray-40 px-5 py-3">
+          검색어와 비슷한 결과를 찾아봤어요.
+        </p>
+      )}
       <div className="flex flex-row justify-between items-center py-4 px-5">
         <p className="typo-description text-content-primary">
           {results.length}개의 결과

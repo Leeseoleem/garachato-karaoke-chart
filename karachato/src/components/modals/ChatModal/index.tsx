@@ -9,7 +9,8 @@ import QuickQuestions from "./QuickQuestions";
 import TypingIndicator from "./TypingIndicator";
 import UserInput from "./UserInput";
 // === type ===
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage, ChatTurn } from "@/types/chat";
+import type { ChatIntent } from "@/types/gemini";
 // === constant ===
 import { CHAT_WELCOME_MESSAGE } from "@/constants/chat";
 // === store ===
@@ -22,6 +23,52 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     message: CHAT_WELCOME_MESSAGE,
   },
 ];
+
+// 대화 맥락 전달용: messages를 최근 N턴 요약 turn으로 직렬화 (봇의 곡 카드는 텍스트로 요약).
+const HISTORY_LIMIT = 8;
+function buildHistory(messages: ChatMessage[]): ChatTurn[] {
+  const turns: ChatTurn[] = [];
+  for (const m of messages) {
+    if (m.type === "text") {
+      turns.push({ role: m.role, text: m.message });
+    } else if (m.type === "off_topic") {
+      turns.push({ role: "model", text: m.message });
+    } else if (m.type === "song_candidate") {
+      const title = m.song.titleKo ?? m.song.titleInProvider;
+      const artist = m.song.artistKo ?? m.song.artistInProvider;
+      turns.push({ role: "model", text: `추천곡: '${title}' - ${artist}` });
+    } else if (m.type === "confirmed") {
+      turns.push({ role: "model", text: "사용자가 곡을 확정함" });
+    } else if (m.type === "option_prompt") {
+      // 선택지 제시도 맥락에 포함 → 유저가 옵션을 직접 입력("아무거나")해도 서버가 맥락 파악
+      turns.push({
+        role: "model",
+        text: `${m.message} 선택지: ${m.options.map((o) => o.label).join(", ")}`,
+      });
+    }
+    // error 메시지는 맥락에서 제외
+  }
+  return turns.slice(-HISTORY_LIMIT);
+}
+
+// 이미 보여준(제안/확정한) 곡 id 수집 → 서버에 전달해 "다른 거" 시 제외
+function buildExcludeIds(messages: ChatMessage[]): string[] {
+  const ids = new Set<string>();
+  for (const m of messages) {
+    if (m.type === "song_candidate") ids.add(m.song.songId);
+    else if (m.type === "confirmed") ids.add(m.song_id);
+  }
+  return [...ids];
+}
+
+// 가장 최근 song_candidate가 담아 온 검색 인텐트 → 연속("다른 거") 요청에 재사용
+function buildLastIntent(messages: ChatMessage[]): ChatIntent | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.type === "song_candidate" && m.intent) return m.intent;
+  }
+  return undefined;
+}
 
 export default function ChatModal({
   initialMessages = INITIAL_MESSAGES,
@@ -38,12 +85,14 @@ export default function ChatModal({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
   const handleReset = () => {
+    abortRef.current?.abort();
     setMessages(initialMessages);
     setIsEnded(false);
     setIsLoading(false);
@@ -55,21 +104,41 @@ export default function ChatModal({
     setIsChatOpen(false);
   };
 
-  const handleSend = async (input: string) => {
-    if (!input.trim() || isLoading || isEnded) return;
+  // 서버에 요청하고 응답을 messages에 추가. showUser=true면 유저 말풍선도 함께 추가.
+  const sendToChat = async (
+    text: string,
+    showUser: boolean,
+    continuation = false,
+    overrideIntent?: ChatIntent,
+  ) => {
+    if (isLoading || isEnded) return;
 
-    setMessages((prev) => [
-      ...prev,
-      { type: "text", role: "user", message: input },
-    ]);
-    setInputValue("");
+    if (showUser) {
+      setMessages((prev) => [
+        ...prev,
+        { type: "text", role: "user", message: text },
+      ]);
+      setInputValue("");
+    }
     setIsLoading(true);
+
+    // 이전 요청이 남아 있으면 취소하고 새 컨트롤러 준비 (닫기/리셋/연속전송 시 늦은 응답 방지)
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({
+          message: text,
+          history: buildHistory(messages),
+          excludeIds: buildExcludeIds(messages),
+          lastIntent: overrideIntent ?? buildLastIntent(messages),
+          continuation: continuation || overrideIntent != null,
+        }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -81,6 +150,8 @@ export default function ChatModal({
       const data = await res.json();
       setMessages((prev) => [...prev, data as ChatMessage]);
     } catch {
+      // 취소된 요청은 조용히 무시 (사용자가 닫거나 리셋함)
+      if (controller.signal.aborted) return;
       setMessages((prev) => [
         ...prev,
         {
@@ -90,8 +161,23 @@ export default function ChatModal({
         },
       ]);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
+  };
+
+  const handleSend = (input: string) => {
+    if (!input.trim()) return;
+    void sendToChat(input, true);
+  };
+
+  // "아니에요" → 열린 질문 대신 맥락+제외목록으로 다른 곡을 바로 요청 (유저 말풍선 없이)
+  const requestAnotherSong = () => {
+    void sendToChat("다른 곡 추천해줘", false, true);
+  };
+
+  // 옵션 좁히기 버튼 클릭 → 그 옵션의 인텐트를 그대로 재사용해 요청
+  const pickOption = (option: { label: string; intent: ChatIntent }) => {
+    void sendToChat(option.label, true, true, option.intent);
   };
 
   useEffect(() => {
@@ -141,30 +227,16 @@ export default function ChatModal({
                     />
                     <ChatActionButton
                       variant="secondary"
-                      onClick={() => {
-                        if (isEnded || isLoading) return;
-                        setMessages((prev) => [
-                          ...prev,
-                          {
-                            type: "text",
-                            role: "model",
-                            message:
-                              "앗, 다시 찾아볼게요! 찾으시는 곡에 대해 더 알려주시겠어요?",
-                          },
-                        ]);
-                      }}
+                      onClick={requestAnotherSong}
                     />
                   </div>
                 </div>
               );
             }
-            /** 챗봇 완료 채팅 */
+            /** 챗봇 완료 채팅 — 마무리 멘트만 (새 채팅 버튼은 입력창 위로) */
             if (msg.type === "confirmed") {
               return (
-                <div key={idx} className="flex flex-col gap-2">
-                  <TextBubble role="model" content={msg.message} />
-                  <ChatActionButton variant="new" onClick={handleReset} />
-                </div>
+                <TextBubble key={idx} role="model" content={msg.message} />
               );
             }
             /** 맥락 이탈 / 에러 */
@@ -182,6 +254,28 @@ export default function ChatModal({
                 </div>
               );
             }
+
+            /** 옵션 좁히기 — 선택지 버튼 */
+            if (msg.type === "option_prompt") {
+              return (
+                <div key={idx} className="flex flex-col gap-2">
+                  <TextBubble role="model" content={msg.message} />
+                  <div className="flex flex-wrap gap-2">
+                    {msg.options.map((opt, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={isEnded || isLoading}
+                        onClick={() => pickOption(opt)}
+                        className="px-4 py-2 rounded-2xl border border-brand-main text-gray-white typo-caption hover:bg-gray-40 active:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
           })}
 
           {isLoading && <TypingIndicator />}
@@ -190,6 +284,18 @@ export default function ChatModal({
 
         {/* 퀵 질문 — 웰컴 메시지만 있을 때 표시 */}
         {messages.length === 1 && <QuickQuestions onSelect={handleSend} />}
+
+        {/* 곡 확정 후 — 입력창 위에 새 채팅 시작 버튼 (반투명) */}
+        {isEnded && (
+          <div className="flex justify-center px-5 pt-2">
+            <button
+              onClick={handleReset}
+              className="px-5 py-2 rounded-2xl border border-brand-main/50 bg-brand-main/10 text-gray-white typo-caption hover:bg-brand-main/20 active:bg-brand-main/30 transition-colors"
+            >
+              새 채팅 시작하기
+            </button>
+          </div>
+        )}
 
         {/* 입력창 */}
         <UserInput
