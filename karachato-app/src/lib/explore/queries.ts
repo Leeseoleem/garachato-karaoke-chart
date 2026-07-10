@@ -58,6 +58,30 @@ function toItem(r: SongRow, now: number): ExploreItem {
   };
 }
 
+// 곡 행을 검색 카드(SearchResult) 형태로 (플랫 리스트 재사용용)
+function toSearchResult(r: SongRow): SearchResult {
+  const tracks = r.karaoke_tracks ?? [];
+  const primary = tracks.find((t) => t.provider === "TJ") ?? tracks[0];
+  return {
+    id: r.id,
+    title_ko: primary?.title_ko_jp ?? primary?.title_in_provider ?? null,
+    artist_ko: primary?.artist_ko ?? r.artist_ko,
+    karaoke_tracks: tracks.map((t) => ({
+      karaoke_no: t.karaoke_no,
+      provider:
+        t.provider as SearchResult["karaoke_tracks"][number]["provider"],
+      title_in_provider: t.title_in_provider,
+      artist_in_provider: t.artist_in_provider,
+    })),
+  };
+}
+
+export interface ArtistItem {
+  artistNorm: string;
+  artistKo: string;
+  count: number;
+}
+
 // 최근 노래방에 등록된 곡 (created_at DESC). category로 좁힐 수 있음.
 export async function getRecentSongs(
   category?: AiCategory | null,
@@ -166,20 +190,55 @@ export async function getCategorySongs(
     console.error("[explore] getCategorySongs error", error.message);
     return [];
   }
-  return ((data ?? []) as unknown as SongRow[]).map((r) => {
-    const tracks = r.karaoke_tracks ?? [];
-    const primary = tracks.find((t) => t.provider === "TJ") ?? tracks[0];
-    return {
-      id: r.id,
-      title_ko: primary?.title_ko_jp ?? primary?.title_in_provider ?? null,
-      artist_ko: primary?.artist_ko ?? r.artist_ko,
-      karaoke_tracks: tracks.map((t) => ({
-        karaoke_no: t.karaoke_no,
-        provider:
-          t.provider as SearchResult["karaoke_tracks"][number]["provider"],
-        title_in_provider: t.title_in_provider,
-        artist_in_provider: t.artist_in_provider,
-      })),
-    };
-  });
+  return ((data ?? []) as unknown as SongRow[]).map(toSearchResult);
+}
+
+// 가수별 둘러보기 목록: 곡 수 많은 순 상위 가수 (artist_norm 그룹핑, artist_ko 표시).
+export async function getTopArtists(limit = 12): Promise<ArtistItem[]> {
+  const { data, error } = await supabase
+    .from("songs")
+    .select("artist_norm, artist_ko")
+    .eq("ai_status", "done")
+    .not("artist_ko", "is", null)
+    .not("artist_norm", "is", null);
+  if (error) {
+    console.error("[explore] getTopArtists error", error.message);
+    return [];
+  }
+  const map = new Map<string, { artistKo: string; count: number }>();
+  for (const r of (data ?? []) as {
+    artist_norm: string;
+    artist_ko: string;
+  }[]) {
+    const cur = map.get(r.artist_norm);
+    if (cur) cur.count += 1;
+    else map.set(r.artist_norm, { artistKo: r.artist_ko, count: 1 });
+  }
+  return [...map.entries()]
+    .map(([artistNorm, v]) => ({
+      artistNorm,
+      artistKo: v.artistKo,
+      count: v.count,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+// 특정 가수(artist_norm)의 곡 목록.
+export async function getArtistSongs(
+  artistNorm: string,
+  limit = 50,
+): Promise<SearchResult[]> {
+  const { data, error } = await supabase
+    .from("songs")
+    .select(SONG_SELECT)
+    .eq("ai_status", "done")
+    .eq("artist_norm", artistNorm)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("[explore] getArtistSongs error", error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as SongRow[]).map(toSearchResult);
 }
