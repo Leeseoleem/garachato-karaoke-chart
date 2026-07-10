@@ -3,7 +3,7 @@ id: ISSUE-06
 title: 가수 번역명 일관성 / 재사용
 cycle: 6
 priority: P2
-status: 진행중 (재발 확인, feat/artist-name-consistency에서 재개)
+status: 해결됨
 labels: [enhancement, ai-pipeline, data-quality]
 created: 2026-07-02
 related: [ISSUE-01, ISSUE-03]
@@ -84,3 +84,10 @@ related: [ISSUE-01, ISSUE-03]
 2. **신규 흔들림 데이터 정리**: 위 케이스를 대표 표기로 통일(SQL, 미리보기→확인→적용).
    예: `yoasobi` → "요아소비", `creepynuts` → "크리피 너츠", `ユイカ` → "유이카".
 3. 정리 후 유일성 재검증(같은 `artist_norm`당 `artist_ko` 1개). KY 신곡 번역이 채워질 때마다 재점검.
+
+### 완료 (2026-07-10)
+- **파이프라인 재사용 구현**: `lib/ai/process.ts`에 `buildArtistKoMap`(원문 `artist_in_provider` → 확정 번역명, 최빈값) 추가. `processPendingSongs`·`processArtistKo`가 번역 쓰기 전 기존 확정 표기가 있으면 LLM 결과 대신 그대로 대입(곡·트랙 둘 다). 신규 가수는 맵에 등록해 런 내 일관성도 유지. **피처링 변형은 원문이 달라 자연 구분**(`米津玄師` vs `米津玄師(+菅田将暉)` 보존).
+- **데이터 통일**(미리보기→확인→적용): `yoasobi`→YOASOBI, `xjapan`→X-JAPAN, `ユイカ`→유이카, `creepynuts`→크리피 너츠. `songs`·`karaoke_tracks` + `artist_ko_norm` 동시 갱신. done·비null 행만, 정상 피처링은 미변경.
+- **정책**: 영문 활동명 통일은 "한국에서 더 많이 쓰는 쪽"(예: YOASOBI 원문 유지, creepynuts는 음차).
+- **검증**: 통일 후 같은 `artist_norm` 표기 유일(정상 피처링 2건만 다중값). tsc·lint 통과.
+- 브랜치: `feat/artist-name-consistency`.
