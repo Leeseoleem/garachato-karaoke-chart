@@ -3,7 +3,7 @@ id: ISSUE-02
 title: 고아 song 레코드(트랙 0개) & 중복 삽입
 cycle: 2
 priority: P0
-status: 분석완료(미착수)
+status: 해결됨
 labels: [bug, data-integrity, crawler]
 created: 2026-07-02
 related: [ISSUE-01, ISSUE-03]

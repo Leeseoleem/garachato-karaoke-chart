@@ -3,7 +3,7 @@ id: ISSUE-01
 title: 번역 배치 인덱스 시프트 버그
 cycle: 1
 priority: P0
-status: 분석완료(미착수)
+status: 해결됨
 labels: [bug, data-integrity, ai-pipeline]
 created: 2026-07-02
 related: [ISSUE-02, ISSUE-03, ISSUE-04]
