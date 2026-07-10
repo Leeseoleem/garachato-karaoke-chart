@@ -236,13 +236,26 @@ async function handleSearchSong(
 // ────────────────────────────────────────────
 // 핸들러: 곡 선택 (유사 후보 옵션에서 특정 곡 지정)
 // ────────────────────────────────────────────
-async function handlePickSong(songId: string): Promise<Response> {
+async function handlePickSong(
+  songId: string,
+  excludeIds: string[] = [],
+): Promise<Response> {
   // song_id는 클라가 되돌려 보낸 값 → UUID 형식만 통과(잘못된 값은 곡 없음으로 처리)
   if (!UUID_RE.test(songId)) {
     return Response.json({
       type: "off_topic",
       role: "model",
       message: "그 곡을 찾지 못했어요. 다른 곡이나 가수를 물어봐 주세요.",
+    } satisfies ChatMessage);
+  }
+
+  // 이미 보여준 곡을 다시 고르는 연속 요청("다른 곡") → pick_song은 특정 곡 1개라 다음 후보가 없다.
+  // 같은 곡을 반복 출력하는 막다른 길 대신 새 검색을 유도.
+  if (excludeIds.includes(songId)) {
+    return Response.json({
+      type: "off_topic",
+      role: "model",
+      message: "찾으시는 곡이 따로 있으면 제목이나 가수를 다시 말씀해 주세요.",
     } satisfies ChatMessage);
   }
 
@@ -914,7 +927,7 @@ async function handleChat(req: Request): Promise<Response> {
       case "recommend":
         return handleRecommend(intent, exclude);
       case "pick_song":
-        return handlePickSong(intent.song_id);
+        return handlePickSong(intent.song_id, exclude);
       case "unknown":
       default:
         return Response.json({
