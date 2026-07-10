@@ -2,18 +2,38 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import type { ArtistItem } from "@/lib/explore/queries";
 
-// 가수별 둘러보기 섹션. 탭하면 그 가수 곡 목록(?artist=)으로.
-export default function ArtistList({ artists }: { artists: ArtistItem[] }) {
+const PREVIEW_COUNT = 5;
+
+// 가수별 둘러보기. 홈에선 미리보기(5개)+더보기, full이면 전체.
+export default function ArtistList({
+  artists,
+  full = false,
+}: {
+  artists: ArtistItem[];
+  full?: boolean;
+}) {
   const navigate = useNavigate();
   if (artists.length === 0) return null;
 
+  const shown = full ? artists : artists.slice(0, PREVIEW_COUNT);
+  const hasMore = !full && artists.length > PREVIEW_COUNT;
+
   return (
     <section className="mt-6">
-      <h2 className="typo-subtitle px-5 pb-2 text-gray-white">
-        가수별 둘러보기
-      </h2>
+      <div className="flex items-center justify-between px-5 pb-2">
+        <h2 className="typo-subtitle text-gray-white">가수별 둘러보기</h2>
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => navigate("/explore?view=artists")}
+            className="typo-caption text-content-secondary"
+          >
+            더보기 ›
+          </button>
+        )}
+      </div>
       <div className="px-5">
-        {artists.map((a) => (
+        {shown.map((a) => (
           <button
             key={a.artistNorm}
             type="button"
