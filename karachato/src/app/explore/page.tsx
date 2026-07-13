@@ -4,19 +4,20 @@ import ExploreCarousel from "@/components/explore/ExploreCarousel";
 import CategorySection from "@/components/explore/CategorySection";
 import ArtistList from "@/components/explore/ArtistList";
 import SongListItem from "@/components/explore/SongListItem";
-import { CATEGORIES } from "@/constants/explore";
+import FilteredSongList from "@/components/explore/FilteredSongList";
+import { CATEGORIES, VOCALOID_CHARACTERS } from "@/constants/explore";
 import {
   getRecentSongs,
   getRisingSongs,
+  getRecentRich,
+  getRisingRich,
+  getVocaloidRich,
   getCategorySongs,
   getTopArtists,
   getArtistSongs,
-  type ExploreSong,
 } from "@/lib/explore/queries";
 import type { AiCategory } from "@/types/domain";
 
-// 탐색: 큐레이션 캐러셀 + 카테고리 섹션 + 가수별 섹션.
-// ?category → 카테고리 곡, ?artist → 가수 곡, ?view=artists → 전체 가수 목록.
 export default async function ExplorePage({
   searchParams,
 }: {
@@ -30,8 +31,12 @@ export default async function ExplorePage({
     <div className="flex flex-col h-dvh min-h-0">
       <BackHeader title="탐색" />
       <div className="flex-1 overflow-y-auto pb-6">
-        {view === "artists" ? (
-          <ArtistFullView />
+        {view === "recent" ? (
+          <RecentDetail />
+        ) : view === "rising" ? (
+          <RisingDetail />
+        ) : view === "vocaloid" ? (
+          <VocaloidDetail />
         ) : artist ? (
           <ArtistSongView artistNorm={artist} />
         ) : category ? (
@@ -49,23 +54,36 @@ async function CurationHome() {
     getRecentSongs(null, 12),
     getRisingSongs(12),
     getRecentSongs("보컬로이드", 12),
-    getTopArtists(6),
+    getTopArtists(100),
   ]);
 
   return (
     <>
-      <ExploreCarousel title="최근 노래방에 등록" items={recent} />
-      <ExploreCarousel title="요즘 순위가 오르는 곡" items={rising} />
-      <ExploreCarousel title="보컬로이드 모음" items={vocaloid} />
+      <ExploreCarousel
+        title="최근 노래방에 등록"
+        items={recent}
+        moreHref="/explore?view=recent"
+      />
+      <ExploreCarousel
+        title="요즘 순위가 오르는 곡"
+        items={rising}
+        moreHref="/explore?view=rising"
+      />
+      <ExploreCarousel
+        title="보컬로이드 모음"
+        items={vocaloid}
+        moreHref="/explore?view=vocaloid"
+      />
       <CategorySection />
       <ArtistList artists={artists} />
     </>
   );
 }
 
-async function ArtistFullView() {
-  const artists = await getTopArtists(100);
-  return <ArtistList artists={artists} full />;
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <p className="typo-subtitle px-5 pb-1 pt-3 text-gray-white">{children}</p>
+  );
 }
 
 function EmptyState({ label }: { label: string }) {
@@ -77,25 +95,51 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function SongList({
-  songs,
-  title,
-  emptyLabel,
-}: {
-  songs: ExploreSong[];
-  title: string;
-  emptyLabel: string;
-}) {
+async function RecentDetail() {
+  const songs = await getRecentRich();
   return (
     <>
-      {title.trim() && (
-        <p className="typo-subtitle px-5 pb-2 pt-3 text-gray-white">{title}</p>
-      )}
-      {songs.length === 0 ? (
-        <EmptyState label={emptyLabel} />
-      ) : (
-        songs.map((song) => <SongListItem key={song.songId} song={song} />)
-      )}
+      <SectionTitle>최근 노래방에 등록</SectionTitle>
+      <FilteredSongList
+        songs={songs}
+        chips={CATEGORIES}
+        mode="category"
+        emptyLabel="해당 곡이 없어요"
+      />
+    </>
+  );
+}
+
+async function RisingDetail() {
+  const songs = await getRisingRich();
+  return (
+    <>
+      <SectionTitle>요즘 순위가 오르는 곡</SectionTitle>
+      <FilteredSongList
+        songs={songs}
+        chips={CATEGORIES}
+        mode="category"
+        emptyLabel="해당 곡이 없어요"
+      />
+    </>
+  );
+}
+
+async function VocaloidDetail() {
+  const songs = await getVocaloidRich();
+  const present = new Set(songs.flatMap((s) => s.characters ?? []));
+  const chips = VOCALOID_CHARACTERS.map((c) => c.ko).filter((ko) =>
+    present.has(ko),
+  );
+  return (
+    <>
+      <SectionTitle>보컬로이드 모음</SectionTitle>
+      <FilteredSongList
+        songs={songs}
+        chips={chips}
+        mode="character"
+        emptyLabel="해당 캐릭터 곡이 없어요"
+      />
     </>
   );
 }
@@ -103,11 +147,14 @@ function SongList({
 async function CategorySongView({ category }: { category: AiCategory }) {
   const songs = await getCategorySongs(category);
   return (
-    <SongList
-      songs={songs}
-      title={category}
-      emptyLabel="이 카테고리엔 아직 등록된 곡이 없어요"
-    />
+    <>
+      <SectionTitle>{category}</SectionTitle>
+      {songs.length === 0 ? (
+        <EmptyState label="이 카테고리엔 아직 등록된 곡이 없어요" />
+      ) : (
+        songs.map((song) => <SongListItem key={song.songId} song={song} />)
+      )}
+    </>
   );
 }
 
@@ -115,10 +162,13 @@ async function ArtistSongView({ artistNorm }: { artistNorm: string }) {
   const songs = await getArtistSongs(artistNorm);
   const name = songs[0]?.artist ?? "";
   return (
-    <SongList
-      songs={songs}
-      title={name ? `${name}의 곡` : " "}
-      emptyLabel="곡을 찾을 수 없어요"
-    />
+    <>
+      {name && <SectionTitle>{`${name}의 곡`}</SectionTitle>}
+      {songs.length === 0 ? (
+        <EmptyState label="곡을 찾을 수 없어요" />
+      ) : (
+        songs.map((song) => <SongListItem key={song.songId} song={song} />)
+      )}
+    </>
   );
 }

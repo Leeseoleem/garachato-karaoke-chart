@@ -1,37 +1,24 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import type { ArtistItem } from "@/lib/explore/queries";
 
-const PREVIEW_COUNT = 5;
+const STEP = 5;
 
-// 가수별 둘러보기. 홈에선 미리보기(5개)+더보기, full이면 전체.
-export default function ArtistList({
-  artists,
-  full = false,
-}: {
-  artists: ArtistItem[];
-  full?: boolean;
-}) {
+// 가수별 둘러보기. 5개부터 "5개 더보기"로 인라인 확장(계속). 언마운트(이탈)되면 5로 초기화.
+export default function ArtistList({ artists }: { artists: ArtistItem[] }) {
   const navigate = useNavigate();
+  const [visible, setVisible] = useState(STEP);
   if (artists.length === 0) return null;
 
-  const shown = full ? artists : artists.slice(0, PREVIEW_COUNT);
-  const hasMore = !full && artists.length > PREVIEW_COUNT;
+  const shown = artists.slice(0, visible);
+  const hasMore = visible < artists.length;
 
   return (
     <section className="mt-6">
-      <div className="flex items-center justify-between px-5 pb-2">
-        <h2 className="typo-subtitle text-gray-white">가수별 둘러보기</h2>
-        {hasMore && (
-          <button
-            type="button"
-            onClick={() => navigate("/explore?view=artists")}
-            className="typo-caption text-content-secondary"
-          >
-            더보기 ›
-          </button>
-        )}
-      </div>
+      <h2 className="typo-subtitle px-5 pb-2 text-gray-white">
+        가수별 둘러보기
+      </h2>
       <div className="px-5">
         {shown.map((a) => (
           <button
@@ -55,6 +42,15 @@ export default function ArtistList({
           </button>
         ))}
       </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setVisible((v) => v + STEP)}
+          className="typo-caption mt-3 w-full text-center text-content-secondary"
+        >
+          {STEP}개 더보기 ›
+        </button>
+      )}
     </section>
   );
 }

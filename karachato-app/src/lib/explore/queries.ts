@@ -1,24 +1,27 @@
 import { supabase } from "@/lib/supabase/client";
+import { VOCALOID_CHARACTERS } from "@/constants/explore";
 import type { AiCategory, KaraokeProvider } from "@/types/domain";
 
-// 탐색 캐러셀 카드 1개 (곡 단위, 컴팩트)
+// 캐러셀 카드 (컴팩트)
 export interface ExploreItem {
   songId: string;
   title: string;
   artist: string;
   providers: KaraokeProvider[];
-  meta?: string; // "2일 전 등록" 등
+  meta?: string;
   isNew?: boolean;
-  delta?: number; // 순위 상승폭(▲)
+  delta?: number;
 }
 
-// 드릴다운 리스트용 리치 곡 (썸네일 + 설명)
+// 드릴다운/상세 리스트용 리치 곡 (썸네일 + 설명 + 필터키)
 export interface ExploreSong {
   songId: string;
   title: string;
   artist: string;
   description: string | null;
   thumbnailUrl: string | null;
+  category: AiCategory | null; // 카테고리 칩 필터용
+  characters?: string[]; // 보컬로이드 캐릭터 칩 필터용
   tracks: { provider: KaraokeProvider; karaokeNo: string }[];
 }
 
@@ -34,6 +37,7 @@ type SongRow = {
   created_at: string;
   description: string | null;
   thumbnail_url: string | null;
+  ai_category: AiCategory | null;
   karaoke_tracks: {
     karaoke_no: string;
     provider: string;
@@ -45,7 +49,7 @@ type SongRow = {
 };
 
 const SONG_SELECT = `
-  id, artist_ko, created_at, description, thumbnail_url,
+  id, artist_ko, created_at, description, thumbnail_url, ai_category,
   karaoke_tracks!inner (
     karaoke_no, provider, title_ko_jp,
     title_in_provider, artist_ko, artist_in_provider
@@ -90,6 +94,7 @@ function toExploreSong(r: SongRow): ExploreSong {
       primary?.artist_ko ?? r.artist_ko ?? primary?.artist_in_provider ?? "",
     description: r.description,
     thumbnailUrl: r.thumbnail_url,
+    category: r.ai_category,
     tracks: tracks.map((t) => ({
       provider: t.provider as KaraokeProvider,
       karaokeNo: t.karaoke_no,
@@ -97,7 +102,17 @@ function toExploreSong(r: SongRow): ExploreSong {
   };
 }
 
-// 최근 노래방에 등록된 곡 (created_at DESC). category로 좁힐 수 있음. (캐러셀용)
+// 곡의 트랙 아티스트 표기에서 보컬로이드 캐릭터(한글명) 매칭
+function matchCharacters(r: SongRow): string[] {
+  const found = new Set<string>();
+  for (const t of r.karaoke_tracks ?? [])
+    for (const c of VOCALOID_CHARACTERS)
+      if (c.match.test(t.artist_in_provider)) found.add(c.ko);
+  return [...found];
+}
+
+// ── 캐러셀용 (컴팩트) ──
+
 export async function getRecentSongs(
   category?: AiCategory | null,
   limit = 20,
@@ -109,7 +124,6 @@ export async function getRecentSongs(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (category) q = q.eq("ai_category", category);
-
   const { data, error } = await q;
   if (error) {
     console.error("[explore] getRecentSongs error", error.message);
@@ -119,7 +133,6 @@ export async function getRecentSongs(
   return ((data ?? []) as unknown as SongRow[]).map((r) => toItem(r, now));
 }
 
-// 요즘 순위가 오르는 곡 (최신 차트일, delta_status=UP, 상승폭 순). 곡 단위 dedup. (캐러셀용)
 export async function getRisingSongs(limit = 12): Promise<ExploreItem[]> {
   const { data: latest } = await supabase
     .from("rank_history")
@@ -191,10 +204,67 @@ export async function getRisingSongs(limit = 12): Promise<ExploreItem[]> {
   return items;
 }
 
-// 카테고리별 곡 (리치 리스트용)
+// ── 상세 리스트용 (리치) ──
+
+async function fetchRichByIds(ids: string[]): Promise<ExploreSong[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("songs")
+    .select(SONG_SELECT)
+    .in("id", ids);
+  if (error) {
+    console.error("[explore] fetchRichByIds error", error.message);
+    return [];
+  }
+  const byId = new Map(
+    ((data ?? []) as unknown as SongRow[]).map((r) => [r.id, toExploreSong(r)]),
+  );
+  return ids.map((id) => byId.get(id)).filter((s): s is ExploreSong => !!s);
+}
+
+// 최근 등록(리치, 전체). 카테고리 칩은 클라에서 category로 필터.
+export async function getRecentRich(limit = 200): Promise<ExploreSong[]> {
+  const { data, error } = await supabase
+    .from("songs")
+    .select(SONG_SELECT)
+    .eq("ai_status", "done")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("[explore] getRecentRich error", error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as SongRow[]).map(toExploreSong);
+}
+
+// 순위 상승(리치). 상승폭 순 유지.
+export async function getRisingRich(limit = 60): Promise<ExploreSong[]> {
+  const rising = await getRisingSongs(limit);
+  return fetchRichByIds(rising.map((r) => r.songId));
+}
+
+// 보컬로이드(리치 + 캐릭터). 캐릭터 칩은 클라에서 characters로 필터.
+export async function getVocaloidRich(): Promise<ExploreSong[]> {
+  const { data, error } = await supabase
+    .from("songs")
+    .select(SONG_SELECT)
+    .eq("ai_status", "done")
+    .eq("ai_category", "보컬로이드")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("[explore] getVocaloidRich error", error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as SongRow[]).map((r) => ({
+    ...toExploreSong(r),
+    characters: matchCharacters(r),
+  }));
+}
+
+// 카테고리별 곡 (카테고리 섹션 드릴)
 export async function getCategorySongs(
   category: AiCategory,
-  limit = 50,
+  limit = 100,
 ): Promise<ExploreSong[]> {
   const { data, error } = await supabase
     .from("songs")
@@ -210,8 +280,27 @@ export async function getCategorySongs(
   return ((data ?? []) as unknown as SongRow[]).map(toExploreSong);
 }
 
-// 가수별 둘러보기 목록: 곡 수 많은 순 상위 가수 (artist_norm 그룹핑, artist_ko 표시).
-export async function getTopArtists(limit = 12): Promise<ArtistItem[]> {
+// 특정 가수의 곡
+export async function getArtistSongs(
+  artistNorm: string,
+  limit = 100,
+): Promise<ExploreSong[]> {
+  const { data, error } = await supabase
+    .from("songs")
+    .select(SONG_SELECT)
+    .eq("ai_status", "done")
+    .eq("artist_norm", artistNorm)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("[explore] getArtistSongs error", error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as SongRow[]).map(toExploreSong);
+}
+
+// 가수별 둘러보기 목록 (곡 수 순)
+export async function getTopArtists(limit = 100): Promise<ArtistItem[]> {
   const { data, error } = await supabase
     .from("songs")
     .select("artist_norm, artist_ko")
@@ -239,23 +328,4 @@ export async function getTopArtists(limit = 12): Promise<ArtistItem[]> {
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
-}
-
-// 특정 가수(artist_norm)의 곡 (리치 리스트용)
-export async function getArtistSongs(
-  artistNorm: string,
-  limit = 50,
-): Promise<ExploreSong[]> {
-  const { data, error } = await supabase
-    .from("songs")
-    .select(SONG_SELECT)
-    .eq("ai_status", "done")
-    .eq("artist_norm", artistNorm)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) {
-    console.error("[explore] getArtistSongs error", error.message);
-    return [];
-  }
-  return ((data ?? []) as unknown as SongRow[]).map(toExploreSong);
 }
