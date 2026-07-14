@@ -53,7 +53,7 @@ export default async function ExplorePage({
         </Suspense>
       ) : view === "vocaloid" ? (
         <Suspense
-          fallback={<DetailListSkeleton title="보컬로이드 모음" chips />}
+          fallback={<DetailListSkeleton title="보컬로이드 곡만 모았어요" chips />}
         >
           <VocaloidDetail />
         </Suspense>
@@ -106,7 +106,7 @@ async function CurationHome() {
         moreHref="/explore?view=rising"
       />
       <ExploreCarousel
-        title="보컬로이드 모음"
+        title="보컬로이드 곡만 모았어요"
         items={vocaloid}
         moreHref="/explore?view=vocaloid"
       />
@@ -173,7 +173,7 @@ async function VocaloidDetail() {
   );
   return (
     <FilteredSongList
-      title="보컬로이드 모음"
+      title="보컬로이드 곡만 모았어요"
       songs={songs}
       chips={chips}
       mode="character"

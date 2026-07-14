@@ -199,7 +199,7 @@ function CurationHome() {
         onMore={() => navigate("/explore?view=rising")}
       />
       <ExploreCarousel
-        title="보컬로이드 모음"
+        title="보컬로이드 곡만 모았어요"
         items={vocaloid}
         onMore={() => navigate("/explore?view=vocaloid")}
       />
@@ -250,10 +250,10 @@ function VocaloidDetail() {
   const chips = VOCALOID_CHARACTERS.map((c) => c.ko).filter((ko) =>
     present.has(ko),
   );
-  if (loading) return <DetailListSkeleton title="보컬로이드 모음" chips />;
+  if (loading) return <DetailListSkeleton title="보컬로이드 곡만 모았어요" chips />;
   return (
     <FilteredSongList
-      title="보컬로이드 모음"
+      title="보컬로이드 곡만 모았어요"
       songs={songs}
       chips={chips}
       mode="character"
