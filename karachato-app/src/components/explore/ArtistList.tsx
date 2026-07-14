@@ -1,11 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, Music2 } from "lucide-react";
 import type { ArtistItem } from "@/lib/explore/queries";
+import { highlight } from "@/utils/highlight";
 
 const PREVIEW = 5;
 
 // 가수 한 줄. 음표 그라데이션 원형 아바타 + 이름 + 곡 수. 클릭 시 해당 가수 곡 목록으로.
-export function ArtistRow({ artist }: { artist: ArtistItem }) {
+// query가 있으면 이름에서 매칭 부분을 하이라이트.
+export function ArtistRow({
+  artist,
+  query,
+}: {
+  artist: ArtistItem;
+  query?: string;
+}) {
   const navigate = useNavigate();
   return (
     <button
@@ -13,13 +21,13 @@ export function ArtistRow({ artist }: { artist: ArtistItem }) {
       onClick={() =>
         navigate(`/explore?artist=${encodeURIComponent(artist.artistNorm)}`)
       }
-      className="flex w-full items-center gap-3 border-b border-white/[0.07] py-3 text-left transition-colors active:bg-gray-40"
+      className="flex w-full items-center gap-3 border-b border-white/[0.07] py-4 text-left transition-colors active:bg-gray-40"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-accent to-brand-main">
         <Music2 size={18} strokeWidth={1.8} className="text-white" />
       </span>
       <span className="typo-body flex-1 truncate text-content-primary">
-        {artist.artistKo}
+        {query ? highlight(artist.artistKo, query) : artist.artistKo}
       </span>
       <span className="typo-caption text-content-secondary">
         {artist.count}곡
