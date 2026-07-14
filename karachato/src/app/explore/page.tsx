@@ -1,5 +1,6 @@
 import { Compass } from "lucide-react";
 import BackHeader from "@/components/common/headers/BackHeader";
+import ExploreHomeShell from "@/components/explore/ExploreHomeShell";
 import ExploreCarousel from "@/components/explore/ExploreCarousel";
 import CategorySection from "@/components/explore/CategorySection";
 import ArtistList, { ArtistRow } from "@/components/explore/ArtistList";
@@ -26,6 +27,9 @@ export default async function ExplorePage({
   const { category: categoryParam, artist, view } = await searchParams;
   const category: AiCategory | null =
     CATEGORIES.find((c) => c === categoryParam) ?? null;
+
+  // 탐색 홈은 별개 탭이라 뒤로가기 없이 홈과 같은 검색 헤더 + 플로팅바를 공유한다.
+  if (!view && !artist && !category) return <CurationHome />;
 
   const headerTitle =
     view === "recent"
@@ -56,9 +60,7 @@ export default async function ExplorePage({
           <ArtistSongView artistNorm={artist} />
         ) : category ? (
           <CategorySongView category={category} />
-        ) : (
-          <CurationHome />
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -73,7 +75,7 @@ async function CurationHome() {
   ]);
 
   return (
-    <>
+    <ExploreHomeShell>
       <ExploreCarousel
         title="최근 노래방에 등록"
         items={recent}
@@ -91,7 +93,7 @@ async function CurationHome() {
       />
       <CategorySection />
       <ArtistList artists={artists} />
-    </>
+    </ExploreHomeShell>
   );
 }
 

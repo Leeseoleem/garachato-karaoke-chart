@@ -2,11 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Compass } from "lucide-react";
 import DetailHeader from "@/components/common/headers/DetailHeader";
+import SearchSection from "@/components/search/SearchSection";
+import ChatModal from "@/components/modals/ChatModal";
 import ExploreCarousel from "@/components/explore/ExploreCarousel";
+import ExploreFloatingBar from "@/components/explore/ExploreFloatingBar";
 import CategorySection from "@/components/explore/CategorySection";
 import ArtistList, { ArtistRow } from "@/components/explore/ArtistList";
 import SongListItem from "@/components/explore/SongListItem";
 import FilteredSongList from "@/components/explore/FilteredSongList";
+import { useScrollTop } from "@/hooks/useScrollTop";
 import { CATEGORIES, VOCALOID_CHARACTERS } from "@/constants/explore";
 import {
   getRecentSongs,
@@ -30,6 +34,9 @@ export default function Explore() {
   const categoryParam = searchParams.get("category");
   const category: AiCategory | null =
     CATEGORIES.find((c) => c === categoryParam) ?? null;
+
+  // 탐색 홈은 별개 탭이라 뒤로가기 없이 홈과 같은 검색 헤더 + 플로팅바를 공유한다.
+  if (!view && !artistNorm && !category) return <ExploreHome />;
 
   const headerTitle =
     view === "recent"
@@ -60,10 +67,33 @@ export default function Explore() {
           <ArtistSongView artistNorm={artistNorm} />
         ) : category ? (
           <CategorySongView category={category} />
-        ) : (
-          <CurationHome />
-        )}
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+// 탐색 홈 쉘: 검색 헤더 공유 + 스크롤 + 홈 이동 플로팅바.
+function ExploreHome() {
+  const navigate = useNavigate();
+  const { scrollRef, isScrolled } = useScrollTop();
+  return (
+    <div className="relative flex h-dvh min-h-0 flex-col overflow-hidden">
+      <SearchSection />
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto pb-[calc(6rem+var(--safe-bottom,0px))]"
+      >
+        <CurationHome />
+      </div>
+      <ExploreFloatingBar
+        isScrolled={isScrolled}
+        onScrollToTop={() =>
+          scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+        }
+        onHome={() => navigate("/")}
+      />
+      <ChatModal />
     </div>
   );
 }
