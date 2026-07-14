@@ -1,27 +1,21 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
-
-// === component ===
-import DisplayModeToggle from "./DisplayModeToggle";
-import SettingsButton from "@/components/common/buttons/SettingsButton";
+import { House } from "lucide-react";
+import IconButton from "@/components/common/buttons/IconButton";
 import ScrollToTopButton from "@/components/common/buttons/ScrollToTopButton";
-import ExploreButton from "@/components/common/buttons/ExploreButton";
 
-// === function ===
-import { useChartStore } from "@/store/chartStore";
-
-interface FloatingBarProps {
+interface ExploreFloatingBarProps {
   isScrolled: boolean;
   onScrollToTop: () => void;
+  onHome: () => void;
 }
 
-export default function FloatingBar({
+// 탐색 홈 전용 플로팅바. 차트(홈)로 이동 + 스크롤 시 맨 위로.
+export default function ExploreFloatingBar({
   isScrolled,
   onScrollToTop,
-}: FloatingBarProps) {
-  const { setIsSettingsOpen } = useChartStore();
-  const router = useRouter();
+  onHome,
+}: ExploreFloatingBarProps) {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
       <motion.div
@@ -29,9 +23,12 @@ export default function FloatingBar({
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         className="flex flex-row w-fit gap-1 p-1 rounded-full glass-static"
       >
-        <ExploreButton onClick={() => router.push("/explore")} />
-        <DisplayModeToggle />
-        <SettingsButton onClick={() => setIsSettingsOpen(true)} />
+        <IconButton
+          size="large"
+          icon={<House size={20} color="#ffffff" />}
+          onClick={onHome}
+          ariaLabel="차트로"
+        />
         <AnimatePresence mode="popLayout">
           {isScrolled && (
             <motion.div

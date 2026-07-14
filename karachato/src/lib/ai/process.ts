@@ -31,6 +31,41 @@ function aiGenderToTags(g: string | undefined | null): string[] {
   return [];
 }
 
+// 같은 원문 가수명(artist_in_provider)에 이미 확정된 번역명이 있으면 재사용해 표기 흔들림을 막는다.
+// 피처링 변형은 원문 자체가 달라(예: "米津玄師" vs "米津玄師(+菅田将暉)") 자연히 구분된다.
+// LLM이 매번 새로 번역해 흔들리던 것을 결정적으로 고정(ISSUE-06).
+async function buildArtistKoMap(
+  supabase: ReturnType<typeof createServerClient>,
+): Promise<Map<string, string>> {
+  const { data } = await supabase
+    .from("karaoke_tracks")
+    .select("artist_in_provider, artist_ko")
+    .not("artist_ko", "is", null);
+  // 원문별 번역명 빈도 집계 → 최빈값 채택(데이터 정리 후엔 유일값이라 그대로 확정됨)
+  const tally = new Map<string, Map<string, number>>();
+  for (const r of (data ?? []) as {
+    artist_in_provider: string;
+    artist_ko: string | null;
+  }[]) {
+    if (!r.artist_in_provider || !r.artist_ko) continue;
+    const counts = tally.get(r.artist_in_provider) ?? new Map<string, number>();
+    counts.set(r.artist_ko, (counts.get(r.artist_ko) ?? 0) + 1);
+    tally.set(r.artist_in_provider, counts);
+  }
+  const map = new Map<string, string>();
+  for (const [prov, counts] of tally) {
+    let best = "";
+    let bestN = -1;
+    for (const [ko, n] of counts)
+      if (n > bestN) {
+        best = ko;
+        bestN = n;
+      }
+    if (best) map.set(prov, best);
+  }
+  return map;
+}
+
 export const processPendingSongs = async (
   deadline?: number,
 ): Promise<void> => {
@@ -52,6 +87,9 @@ export const processPendingSongs = async (
   }
 
   console.log(`[processPendingSongs] 처리 시작 - 총 ${pendingSongs.length}곡`);
+
+  // 기존 확정 가수명 재사용 맵(원문 → 번역명). 신규 곡은 아래에서 채워 런 내 일관성도 유지.
+  const artistKoMap = await buildArtistKoMap(supabase);
 
   for (let i = 0; i < pendingSongs.length; i += 10) {
     // 시간 예산 초과 시 진행분만 커밋된 상태로 종료 (나머지 pending은 다음 실행이 이어받음)
@@ -186,12 +224,17 @@ export const processPendingSongs = async (
           continue;
         }
 
+        // 기존 확정 표기가 있으면 그대로, 없으면 신규 번역을 확정값으로 등록(런 내 후속 곡도 동일)
+        const trackArtistKo =
+          artistKoMap.get(track.artist_in_provider) ?? trackResult.artist_ko;
+        artistKoMap.set(track.artist_in_provider, trackArtistKo);
+
         const { error: trackUpdateError } = await supabase
           .from("karaoke_tracks")
           .update({
             title_ko_jp: trackResult.title_ko_jp,
             title_ko_full: trackResult.title_ko_full,
-            artist_ko: trackResult.artist_ko,
+            artist_ko: trackArtistKo,
           })
           .eq("id", track.id);
 
@@ -231,13 +274,16 @@ export const processPendingSongs = async (
             : aiGenderToTags(result.vocal_gender);
       const vocalTags = [...new Set([...vocaloidTags, ...genderTags])];
 
+      // 곡의 대표 가수명도 트랙과 동일 확정값 사용(위 트랙 루프에서 primary 원문이 맵에 등록됨)
+      const songArtistKo = artistKoMap.get(input.artist) ?? result.artist_ko;
+
       const { error: songUpdateError } = await supabase
         .from("songs")
         .update({
           title_ko: result.title_ko,
           title_ko_norm: normalize(result.title_ko),
-          artist_ko: result.artist_ko,
-          artist_ko_norm: normalize(result.artist_ko),
+          artist_ko: songArtistKo,
+          artist_ko_norm: normalize(songArtistKo),
           description: intro?.description ?? result.description,
           ai_intro: intro?.facts ?? null,
           vocal_tags: vocalTags.length > 0 ? vocalTags : null,
@@ -301,6 +347,9 @@ export const processArtistKo = async (
   }
 
   console.log(`[processArtistKo] 처리 시작 - 총 ${songs.length}곡`);
+
+  // 기존 확정 가수명 재사용 맵(원문 → 번역명)
+  const artistKoMap = await buildArtistKoMap(supabase);
 
   for (let i = 0; i < songs.length; i += 10) {
     if (deadline !== undefined && Date.now() >= deadline) {
@@ -427,9 +476,13 @@ export const processArtistKo = async (
           continue;
         }
 
+        const trackArtistKo =
+          artistKoMap.get(track.artist_in_provider) ?? trackResult.artist_ko;
+        artistKoMap.set(track.artist_in_provider, trackArtistKo);
+
         const { error: trackUpdateError } = await supabase
           .from("karaoke_tracks")
-          .update({ artist_ko: trackResult.artist_ko })
+          .update({ artist_ko: trackArtistKo })
           .eq("id", track.id);
 
         if (trackUpdateError) {
@@ -448,11 +501,13 @@ export const processArtistKo = async (
         continue;
       }
 
+      const songArtistKo = artistKoMap.get(input.artist) ?? result.artist_ko;
+
       const { error: songUpdateError } = await supabase
         .from("songs")
         .update({
-          artist_ko: result.artist_ko,
-          artist_ko_norm: normalize(result.artist_ko),
+          artist_ko: songArtistKo,
+          artist_ko_norm: normalize(songArtistKo),
         })
         .eq("id", input.songId);
 

@@ -4,6 +4,7 @@ import { SafeAreaInsets } from "@apps-in-toss/web-framework";
 import Home from "./screens/Home";
 import Search from "./screens/Search";
 import SongDetail from "./screens/SongDetail";
+import Explore from "./screens/Explore";
 
 export default function App() {
   // 토스 웹뷰 safe-area를 CSS 변수(--safe-top/--safe-bottom)로 노출.
@@ -33,6 +34,7 @@ export default function App() {
     <div className="mx-auto w-full max-w-page">
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/explore" element={<Explore />} />
         <Route path="/search" element={<Search />} />
         <Route path="/song/:id" element={<SongDetail />} />
       </Routes>

@@ -3,7 +3,7 @@ id: ISSUE-03
 title: 오염 번역 데이터 복구
 cycle: 3
 priority: P0
-status: 분석완료(미착수)
+status: 해결됨
 labels: [data-integrity, recovery, ai-pipeline]
 created: 2026-07-02
 related: [ISSUE-01, ISSUE-02]
