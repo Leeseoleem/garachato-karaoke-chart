@@ -92,11 +92,11 @@ export function DetailListSkeleton({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {title ? (
-        <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
+        <h2 className="shrink-0 px-5 pb-2 pt-6 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
           {title}
         </h2>
       ) : (
-        <div className="shrink-0 px-5 pb-2 pt-4">
+        <div className="shrink-0 px-5 pb-2 pt-6">
           <SkeletonText className="h-7 w-44" />
         </div>
       )}

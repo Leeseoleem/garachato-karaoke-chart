@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
 import clsx from "clsx";
+import BackHeader from "@/components/common/headers/BackHeader";
 import HScroll from "@/components/common/HScroll";
 import SongListItem from "./SongListItem";
 import type { ExploreSong } from "@/lib/explore/queries";
 
-// 칩 필터 + 리치 곡 리스트. 타이틀·칩은 상단 고정, 리스트만 스크롤.
+// 칩 필터 + 리치 곡 리스트. 헤더(뒤로가기+타이틀)·칩은 상단 고정, 리스트만 스크롤.
 export default function FilteredSongList({
   title,
   songs,
@@ -32,9 +33,7 @@ export default function FilteredSongList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
-        {title}
-      </h2>
+      <BackHeader title={title} />
       <HScroll className="flex shrink-0 gap-2 overflow-x-auto px-5 py-3 [&::-webkit-scrollbar]:hidden">
         <Chip
           label="전체"

@@ -5,7 +5,8 @@ import ExploreHomeShell from "@/components/explore/ExploreHomeShell";
 import { DetailListSkeleton } from "@/components/skeletons/pages/ExplorePageSkeleton";
 import ExploreCarousel from "@/components/explore/ExploreCarousel";
 import CategorySection from "@/components/explore/CategorySection";
-import ArtistList, { ArtistRow } from "@/components/explore/ArtistList";
+import ArtistList from "@/components/explore/ArtistList";
+import ArtistSearchList from "@/components/explore/ArtistSearchList";
 import SongListItem from "@/components/explore/SongListItem";
 import FilteredSongList from "@/components/explore/FilteredSongList";
 import { CATEGORIES, VOCALOID_CHARACTERS } from "@/constants/explore";
@@ -42,26 +43,19 @@ export default async function ExplorePage({
     category != null;
   if (!isDetail) return <CurationHome />;
 
-  // 상세는 뒤로가기 헤더는 "탐색"으로 두고, 본문 상단에 큰 타이틀·칩을 고정하고 리스트만 스크롤한다.
+  // 상세는 별도 헤더 없이 본문 상단에 담백한 타이틀(+칩)을 고정하고 리스트만 스크롤한다.
   return (
     <div className="flex flex-col h-dvh min-h-0">
-      <BackHeader title="탐색" />
       {view === "recent" ? (
-        <Suspense
-          fallback={<DetailListSkeleton title="최근에 등록됐어요" chips />}
-        >
+        <Suspense fallback={<DetailListSkeleton title="최근 등록된 곡" chips />}>
           <RecentDetail />
         </Suspense>
       ) : view === "rising" ? (
-        <Suspense
-          fallback={<DetailListSkeleton title="순위 상승 중이에요" chips />}
-        >
+        <Suspense fallback={<DetailListSkeleton title="순위 상승된 곡" chips />}>
           <RisingDetail />
         </Suspense>
       ) : view === "vocaloid" ? (
-        <Suspense
-          fallback={<DetailListSkeleton title="보컬로이드 곡만 모았어요" chips />}
-        >
+        <Suspense fallback={<DetailListSkeleton title="보컬로이드" chips />}>
           <VocaloidDetail />
         </Suspense>
       ) : view === "artists" ? (
@@ -69,7 +63,7 @@ export default async function ExplorePage({
           <ArtistFullView />
         </Suspense>
       ) : artist ? (
-        <Suspense fallback={<DetailListSkeleton />}>
+        <Suspense fallback={<DetailListSkeleton title="가수" />}>
           <ArtistSongView artistNorm={artist} />
         </Suspense>
       ) : category ? (
@@ -81,11 +75,11 @@ export default async function ExplorePage({
   );
 }
 
-// 상세 공통 레이아웃: 타이틀 고정 + 리스트 영역만 스크롤.
+// 상세 공통 레이아웃: 헤더(뒤로가기+타이틀) 고정 + 리스트 영역만 스크롤.
 function DetailView({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ViewHeader title={title} />
+      <BackHeader title={title} />
       <div className="flex-1 overflow-y-auto pb-6">{children}</div>
     </div>
   );
@@ -128,15 +122,6 @@ function presentCategories(songs: ExploreSong[]): AiCategory[] {
   return CATEGORIES.filter((c) => songs.some((s) => s.category === c));
 }
 
-// 드릴다운 화면의 얇은 큰 제목 (헤더에 담기 어려운 비동기 제목용).
-function ViewHeader({ title }: { title: string }) {
-  return (
-    <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
-      {title}
-    </h2>
-  );
-}
-
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 pt-24">
@@ -150,7 +135,7 @@ async function RecentDetail() {
   const songs = await getRecentRich();
   return (
     <FilteredSongList
-      title="최근에 등록됐어요"
+      title="최근 등록된 곡"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"
@@ -163,7 +148,7 @@ async function RisingDetail() {
   const songs = await getRisingRich();
   return (
     <FilteredSongList
-      title="순위 상승 중이에요"
+      title="순위 상승된 곡"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"
@@ -180,7 +165,7 @@ async function VocaloidDetail() {
   );
   return (
     <FilteredSongList
-      title="보컬로이드 곡만 모았어요"
+      title="보컬로이드"
       songs={songs}
       chips={chips}
       mode="character"
@@ -218,17 +203,11 @@ async function ArtistSongView({ artistNorm }: { artistNorm: string }) {
 
 async function ArtistFullView() {
   const artists = await getTopArtists(100);
-  return (
-    <DetailView title="가수별 둘러보기">
-      {artists.length === 0 ? (
+  if (artists.length === 0)
+    return (
+      <DetailView title="가수별 둘러보기">
         <EmptyState label="가수를 찾을 수 없어요" />
-      ) : (
-        <div className="px-5 pt-2">
-          {artists.map((a) => (
-            <ArtistRow key={a.artistNorm} artist={a} />
-          ))}
-        </div>
-      )}
-    </DetailView>
-  );
+      </DetailView>
+    );
+  return <ArtistSearchList title="가수별 둘러보기" artists={artists} />;
 }
