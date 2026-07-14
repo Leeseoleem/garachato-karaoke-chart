@@ -31,7 +31,7 @@ export default function FilteredSongList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
+      <h2 className="shrink-0 px-5 pb-2 pt-6 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
         {title}
       </h2>
       <HScroll className="flex shrink-0 gap-2 overflow-x-auto px-5 py-3 [&::-webkit-scrollbar]:hidden">

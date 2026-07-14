@@ -1,4 +1,5 @@
 import { AudioLines } from "lucide-react";
+import BackHeader from "@/components/common/headers/BackHeader";
 import { SkeletonBox } from "../SkeletonBox";
 import { SkeletonText } from "../SkeletonText";
 
@@ -81,7 +82,7 @@ function RowSkeleton() {
   );
 }
 
-// 상세 리스트(최근·상승·보컬로이드·카테고리·가수) 전용 스켈레톤. 타이틀·칩 고정 + 곡 행.
+// 상세 리스트(최근·상승·보컬로이드·카테고리·가수) 전용 스켈레톤. 헤더(뒤로가기+타이틀)·칩 고정 + 곡 행.
 export function DetailListSkeleton({
   title,
   chips = false,
@@ -91,15 +92,7 @@ export function DetailListSkeleton({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {title ? (
-        <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
-          {title}
-        </h2>
-      ) : (
-        <div className="shrink-0 px-5 pb-2 pt-4">
-          <SkeletonText className="h-7 w-44" />
-        </div>
-      )}
+      <BackHeader title={title} />
       {chips && (
         <div className="flex shrink-0 gap-2 px-5 py-3">
           {["w-14", "w-20", "w-24", "w-16"].map((w) => (

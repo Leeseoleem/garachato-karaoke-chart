@@ -1,13 +1,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Compass } from "lucide-react";
-import DetailHeader from "@/components/common/headers/DetailHeader";
 import SearchSection from "@/components/search/SearchSection";
 import ChatModal from "@/components/modals/ChatModal";
 import ExploreCarousel from "@/components/explore/ExploreCarousel";
 import ExploreFloatingBar from "@/components/explore/ExploreFloatingBar";
 import CategorySection from "@/components/explore/CategorySection";
-import ArtistList, { ArtistRow } from "@/components/explore/ArtistList";
+import ArtistList from "@/components/explore/ArtistList";
+import ArtistSearchList from "@/components/explore/ArtistSearchList";
 import SongListItem from "@/components/explore/SongListItem";
 import FilteredSongList from "@/components/explore/FilteredSongList";
 import {
@@ -50,10 +50,10 @@ export default function Explore() {
     category != null;
   if (!isDetail) return <ExploreHome />;
 
-  // 상세는 뒤로가기 헤더는 "탐색"으로 두고, 본문 상단에 큰 타이틀·칩을 고정하고 리스트만 스크롤한다.
+  // 상세는 별도 헤더 없이 본문 상단에 담백한 타이틀(+칩)을 고정하고 리스트만 스크롤한다.
+  // (앱은 토스 호스트 네비바가 뒤로가기를 제공)
   return (
     <div className="flex h-dvh min-h-0 flex-col">
-      <DetailHeader title="탐색" />
       {view === "recent" ? (
         <RecentDetail />
       ) : view === "rising" ? (
@@ -141,7 +141,7 @@ function useRich(loader: () => Promise<ExploreSong[]>, depKey: string) {
 // 드릴다운 화면의 얇은 큰 제목 (상단 고정).
 function ViewHeader({ title }: { title: string }) {
   return (
-    <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
+    <h2 className="shrink-0 px-5 pb-2 pt-6 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
       {title}
     </h2>
   );
@@ -200,7 +200,7 @@ function CurationHome() {
   return (
     <>
       <ExploreCarousel
-        title="최근에 등록됐어요"
+        title="차트에 새로 진입했어요"
         items={recent}
         onMore={() => navigate("/explore?view=recent")}
       />
@@ -227,11 +227,10 @@ function presentCategories(songs: ExploreSong[]): AiCategory[] {
 
 function RecentDetail() {
   const { songs, loading } = useRich(() => getRecentRich(), "recent");
-  if (loading)
-    return <DetailListSkeleton title="최근에 등록됐어요" chips />;
+  if (loading) return <DetailListSkeleton title="최근 진입한 곡" chips />;
   return (
     <FilteredSongList
-      title="최근에 등록됐어요"
+      title="최근 진입한 곡"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"
@@ -242,11 +241,10 @@ function RecentDetail() {
 
 function RisingDetail() {
   const { songs, loading } = useRich(() => getRisingRich(), "rising");
-  if (loading)
-    return <DetailListSkeleton title="순위 상승 중이에요" chips />;
+  if (loading) return <DetailListSkeleton title="순위 상승된 곡" chips />;
   return (
     <FilteredSongList
-      title="순위 상승 중이에요"
+      title="순위 상승된 곡"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"
@@ -261,10 +259,10 @@ function VocaloidDetail() {
   const chips = VOCALOID_CHARACTERS.map((c) => c.ko).filter((ko) =>
     present.has(ko),
   );
-  if (loading) return <DetailListSkeleton title="보컬로이드 곡만 모았어요" chips />;
+  if (loading) return <DetailListSkeleton title="보컬로이드" chips />;
   return (
     <FilteredSongList
-      title="보컬로이드 곡만 모았어요"
+      title="보컬로이드"
       songs={songs}
       chips={chips}
       mode="character"
@@ -324,23 +322,11 @@ function ArtistFullView() {
   }, []);
 
   if (loading) return <DetailListSkeleton title="가수별 둘러보기" />;
-  return (
-    <DetailView title="가수별 둘러보기">
-      {artists.length === 0 ? (
+  if (artists.length === 0)
+    return (
+      <DetailView title="가수별 둘러보기">
         <EmptyState label="가수를 찾을 수 없어요" />
-      ) : (
-        <ArtistFullList artists={artists} />
-      )}
-    </DetailView>
-  );
-}
-
-function ArtistFullList({ artists }: { artists: ArtistItem[] }) {
-  return (
-    <div className="px-5 pt-2">
-      {artists.map((a) => (
-        <ArtistRow key={a.artistNorm} artist={a} />
-      ))}
-    </div>
-  );
+      </DetailView>
+    );
+  return <ArtistSearchList title="가수별 둘러보기" artists={artists} />;
 }
