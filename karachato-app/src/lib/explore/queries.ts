@@ -318,44 +318,31 @@ export async function getArtistSongs(
   return ((data ?? []) as unknown as SongRow[]).map(toExploreSong);
 }
 
-// 가수별 둘러보기 목록 (곡 수 순)
+// 가수별 둘러보기 목록 (곡 수 순). DB 집계 RPC로 처리(1000행 캡 회피).
 export async function getTopArtists(limit = 100): Promise<ArtistItem[]> {
-  const { data, error } = await supabase
-    .from("songs")
-    .select("artist_norm, artist_ko")
-    .eq("ai_status", "done")
-    .not("artist_ko", "is", null)
-    .not("artist_norm", "is", null);
+  const { data, error } = await supabase.rpc("explore_top_artists", {
+    limit_count: limit,
+  });
   if (error) {
     console.error("[explore] getTopArtists error", error.message);
     return [];
   }
-  const map = new Map<string, { artistKo: string; count: number }>();
-  for (const r of (data ?? []) as {
-    artist_norm: string;
-    artist_ko: string;
-  }[]) {
-    const cur = map.get(r.artist_norm);
-    if (cur) cur.count += 1;
-    else map.set(r.artist_norm, { artistKo: r.artist_ko, count: 1 });
-  }
-  return [...map.entries()]
-    .map(([artistNorm, v]) => ({
-      artistNorm,
-      artistKo: v.artistKo,
-      count: v.count,
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
+  return (
+    (data ?? []) as {
+      artist_norm: string;
+      artist_ko: string;
+      song_count: number;
+    }[]
+  ).map((r) => ({
+    artistNorm: r.artist_norm,
+    artistKo: r.artist_ko,
+    count: Number(r.song_count),
+  }));
 }
 
 // 실제로 곡이 하나 이상 있는 카테고리만 (CATEGORIES 순서 유지). 빈 카테고리는 숨긴다.
 export async function getAvailableCategories(): Promise<AiCategory[]> {
-  const { data, error } = await supabase
-    .from("songs")
-    .select("ai_category")
-    .eq("ai_status", "done")
-    .not("ai_category", "is", null);
+  const { data, error } = await supabase.rpc("explore_category_counts");
   if (error) {
     console.error("[explore] getAvailableCategories error", error.message);
     return [];
