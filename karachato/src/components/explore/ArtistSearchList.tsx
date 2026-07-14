@@ -36,7 +36,7 @@ export default function ArtistSearchList({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="가수 이름 검색"
-            className="typo-body w-full rounded-full border border-white/[0.07] bg-gray-40 py-3 pl-10 pr-4 text-gray-white outline-none placeholder:text-gray-10 focus:border-brand-main/50"
+            className="typo-body w-full rounded-full border border-white/[0.07] bg-gray-40 py-3 pl-10 pr-4 text-gray-white outline-hidden placeholder:text-gray-10 focus:border-brand-main/50"
           />
         </div>
       </div>
