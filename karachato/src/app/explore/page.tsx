@@ -41,13 +41,13 @@ export default async function ExplorePage({
       <BackHeader title="탐색" />
       {view === "recent" ? (
         <Suspense
-          fallback={<DetailListSkeleton title="최근 노래방에 등록" chips />}
+          fallback={<DetailListSkeleton title="최근에 등록됐어요" chips />}
         >
           <RecentDetail />
         </Suspense>
       ) : view === "rising" ? (
         <Suspense
-          fallback={<DetailListSkeleton title="요즘 순위가 오르는 곡" chips />}
+          fallback={<DetailListSkeleton title="순위 상승 중이에요" chips />}
         >
           <RisingDetail />
         </Suspense>
@@ -96,12 +96,12 @@ async function CurationHome() {
   return (
     <ExploreHomeShell>
       <ExploreCarousel
-        title="최근 노래방에 등록"
+        title="최근에 등록됐어요"
         items={recent}
         moreHref="/explore?view=recent"
       />
       <ExploreCarousel
-        title="요즘 순위가 오르는 곡"
+        title="순위 상승 중이에요"
         items={rising}
         moreHref="/explore?view=rising"
       />
@@ -143,7 +143,7 @@ async function RecentDetail() {
   const songs = await getRecentRich();
   return (
     <FilteredSongList
-      title="최근 노래방에 등록"
+      title="최근에 등록됐어요"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"
@@ -156,7 +156,7 @@ async function RisingDetail() {
   const songs = await getRisingRich();
   return (
     <FilteredSongList
-      title="요즘 순위가 오르는 곡"
+      title="순위 상승 중이에요"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"
