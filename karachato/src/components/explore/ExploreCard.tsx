@@ -18,7 +18,7 @@ export default function ExploreCard({ item }: { item: ExploreItem }) {
   return (
     <Link
       href={`/song/${item.songId}`}
-      className="flex w-44 shrink-0 flex-col overflow-hidden rounded-[18px] border border-white/[0.07] bg-gray-30 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition active:brightness-125 sm:w-52 md:w-60"
+      className="flex w-44 shrink-0 flex-col overflow-hidden rounded-xl border gradient-border transition active:brightness-125 sm:w-52 md:w-60"
     >
       <div className="relative aspect-[16/9] bg-linear-to-br from-brand-dark to-gray-50">
         {item.thumbnailUrl ? (
@@ -42,19 +42,19 @@ export default function ExploreCard({ item }: { item: ExploreItem }) {
         )}
         <span className="absolute right-2 top-2">
           {isRising ? (
-            <span className="typo-tag rounded-full bg-black/50 px-2 py-0.5 font-bold text-status-up">
+            <span className="typo-tag rounded-full bg-black/50 px-2 py-1 font-bold text-status-up">
               ▲ {item.delta}
             </span>
           ) : item.isNew ? (
-            <span className="typo-tag rounded-full bg-black/50 px-2 py-0.5 font-bold text-brand-accent">
+            <span className="typo-tag rounded-full bg-black/50 px-2 py-1 font-bold text-brand-accent">
               NEW
             </span>
           ) : null}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col justify-between gap-3 px-4 pb-4 pt-3.5 sm:px-5 sm:pb-5 sm:pt-4">
-        <div className="flex flex-col gap-1 sm:gap-1.5">
+      <div className="flex flex-1 flex-col justify-between gap-3 p-4 sm:gap-4 sm:p-5">
+        <div className="flex flex-col gap-1 sm:gap-2">
           <p className="typo-subtitle line-clamp-2 leading-snug text-gray-white sm:text-[15px]">
             {item.title}
           </p>
@@ -74,7 +74,7 @@ function ProviderPill({ provider }: { provider: KaraokeProvider }) {
   return (
     <span
       className={clsx(
-        "typo-tag rounded-full border bg-brand-dark px-2 py-0.5 font-bold",
+        "typo-tag rounded-full border bg-brand-dark px-2 py-1 font-bold",
         provider === "TJ"
           ? "border-brand-accent/50 text-brand-accent"
           : "border-brand-light/50 text-brand-light",

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ExploreItem } from "@/lib/explore/queries";
+import HScroll from "@/components/common/HScroll";
 import ExploreCard from "./ExploreCard";
 
 // 가로 스크롤 큐레이션 섹션. moreHref가 있으면 "더보기 ›" 노출.
@@ -16,7 +17,7 @@ export default function ExploreCarousel({
 
   return (
     <section className="mt-9">
-      <div className="flex items-baseline justify-between px-5 pb-3.5">
+      <div className="flex items-baseline justify-between px-5 pb-4">
         <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-content-primary">
           {title}
         </h2>
@@ -29,11 +30,14 @@ export default function ExploreCarousel({
           </Link>
         )}
       </div>
-      <div className="flex gap-4 overflow-x-auto px-5 pb-1 [&::-webkit-scrollbar]:hidden sm:gap-5">
+      <HScroll
+        arrows
+        className="flex gap-4 overflow-x-auto px-5 pb-1 [&::-webkit-scrollbar]:hidden sm:gap-5"
+      >
         {items.map((item) => (
           <ExploreCard key={item.songId} item={item} />
         ))}
-      </div>
+      </HScroll>
     </section>
   );
 }
