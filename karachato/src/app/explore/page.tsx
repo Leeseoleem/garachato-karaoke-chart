@@ -47,7 +47,7 @@ export default async function ExplorePage({
   return (
     <div className="flex flex-col h-dvh min-h-0">
       {view === "recent" ? (
-        <Suspense fallback={<DetailListSkeleton title="최근 등록된 곡" chips />}>
+        <Suspense fallback={<DetailListSkeleton title="최근 진입한 곡" chips />}>
           <RecentDetail />
         </Suspense>
       ) : view === "rising" ? (
@@ -97,7 +97,7 @@ async function CurationHome() {
   return (
     <ExploreHomeShell>
       <ExploreCarousel
-        title="최근에 등록됐어요"
+        title="차트에 새로 진입했어요"
         items={recent}
         moreHref="/explore?view=recent"
       />
@@ -135,7 +135,7 @@ async function RecentDetail() {
   const songs = await getRecentRich();
   return (
     <FilteredSongList
-      title="최근 등록된 곡"
+      title="최근 진입한 곡"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"

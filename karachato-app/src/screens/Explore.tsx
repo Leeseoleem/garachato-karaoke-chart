@@ -200,7 +200,7 @@ function CurationHome() {
   return (
     <>
       <ExploreCarousel
-        title="최근에 등록됐어요"
+        title="차트에 새로 진입했어요"
         items={recent}
         onMore={() => navigate("/explore?view=recent")}
       />
@@ -227,10 +227,10 @@ function presentCategories(songs: ExploreSong[]): AiCategory[] {
 
 function RecentDetail() {
   const { songs, loading } = useRich(() => getRecentRich(), "recent");
-  if (loading) return <DetailListSkeleton title="최근 등록된 곡" chips />;
+  if (loading) return <DetailListSkeleton title="최근 진입한 곡" chips />;
   return (
     <FilteredSongList
-      title="최근 등록된 곡"
+      title="최근 진입한 곡"
       songs={songs}
       chips={presentCategories(songs)}
       mode="category"
