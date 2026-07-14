@@ -51,13 +51,15 @@ export default function ExploreCard({ item }: { item: ExploreItem }) {
         </span>
       </div>
 
-      <div className="flex flex-col gap-1.5 px-4 pb-4 pt-3.5 sm:gap-2 sm:px-5 sm:pb-5 sm:pt-4">
-        <p className="typo-subtitle line-clamp-2 leading-snug text-gray-white sm:text-[15px]">
-          {item.title}
-        </p>
-        <p className="typo-caption truncate text-content-secondary sm:text-[13px]">
-          {item.artist}
-        </p>
+      <div className="flex flex-1 flex-col justify-between gap-3 px-4 pb-4 pt-3.5 sm:px-5 sm:pb-5 sm:pt-4">
+        <div className="flex flex-col gap-1 sm:gap-1.5">
+          <p className="typo-subtitle line-clamp-2 leading-snug text-gray-white sm:text-[15px]">
+            {item.title}
+          </p>
+          <p className="typo-caption truncate text-content-secondary sm:text-[13px]">
+            {item.artist}
+          </p>
+        </div>
         {meta && (
           <p className="typo-tag text-gray-10 sm:text-[11px]">{meta}</p>
         )}
