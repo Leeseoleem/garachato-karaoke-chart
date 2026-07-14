@@ -2,15 +2,17 @@ import { createServerClient } from "@/lib/supabase/server";
 import { VOCALOID_CHARACTERS } from "@/constants/explore";
 import type { AiCategory, KaraokeProvider } from "@/types/domain";
 
-// 캐러셀 카드 (컴팩트)
+// 캐러셀 카드 (썸네일 미디어 카드)
 export interface ExploreItem {
   songId: string;
   title: string;
   artist: string;
   providers: KaraokeProvider[];
+  thumbnailUrl: string | null;
   meta?: string;
   isNew?: boolean;
   delta?: number;
+  rank?: number;
 }
 
 // 드릴다운/상세 리스트용 리치 곡 (썸네일 + 설명 + 필터키)
@@ -64,6 +66,11 @@ function primaryOf(r: SongRow) {
   };
 }
 
+// 유튜브 hqdefault(4:3, 검은 여백) → mqdefault(16:9, 여백 없음)로 표시용 변환
+function toThumb(url: string | null): string | null {
+  return url ? url.replace("/hqdefault.jpg", "/mqdefault.jpg") : null;
+}
+
 function daysAgoLabel(createdAt: string, now: number): string {
   const diff = Math.floor((now - new Date(createdAt).getTime()) / 86_400_000);
   return diff <= 0 ? "오늘 등록" : `${diff}일 전 등록`;
@@ -80,6 +87,7 @@ function toItem(r: SongRow, now: number): ExploreItem {
     artist:
       primary?.artist_ko ?? r.artist_ko ?? primary?.artist_in_provider ?? "",
     providers: tracks.map((t) => t.provider as KaraokeProvider),
+    thumbnailUrl: toThumb(r.thumbnail_url),
     meta: daysAgoLabel(r.created_at, now),
     isNew: diffDays <= 3,
   };
@@ -93,7 +101,7 @@ function toExploreSong(r: SongRow): ExploreSong {
     artist:
       primary?.artist_ko ?? r.artist_ko ?? primary?.artist_in_provider ?? "",
     description: r.description,
-    thumbnailUrl: r.thumbnail_url,
+    thumbnailUrl: toThumb(r.thumbnail_url),
     category: r.ai_category,
     tracks: tracks.map((t) => ({
       provider: t.provider as KaraokeProvider,
@@ -148,10 +156,10 @@ export async function getRisingSongs(limit = 12): Promise<ExploreItem[]> {
     .from("rank_history")
     .select(
       `
-      delta_value,
+      rank, delta_value,
       karaoke_tracks!inner (
         songs!inner (
-          id, artist_ko,
+          id, artist_ko, thumbnail_url,
           karaoke_tracks ( provider, title_ko_jp, title_in_provider, artist_ko, artist_in_provider )
         )
       )
@@ -169,11 +177,13 @@ export async function getRisingSongs(limit = 12): Promise<ExploreItem[]> {
   const seen = new Set<string>();
   const items: ExploreItem[] = [];
   for (const row of (data ?? []) as unknown as {
+    rank: number;
     delta_value: number;
     karaoke_tracks: {
       songs: {
         id: string;
         artist_ko: string | null;
+        thumbnail_url: string | null;
         karaoke_tracks: {
           provider: string;
           title_ko_jp: string | null;
@@ -198,7 +208,9 @@ export async function getRisingSongs(limit = 12): Promise<ExploreItem[]> {
         primary?.artist_in_provider ??
         "",
       providers: tracks.map((t) => t.provider as KaraokeProvider),
+      thumbnailUrl: toThumb(song.thumbnail_url),
       delta: row.delta_value,
+      rank: row.rank,
     });
     if (items.length >= limit) break;
   }

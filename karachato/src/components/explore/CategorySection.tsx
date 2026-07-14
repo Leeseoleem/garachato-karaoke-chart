@@ -4,8 +4,10 @@ import { CATEGORIES } from "@/constants/explore";
 // 카테고리 섹션. 탭하면 그 카테고리 곡 리스트(?category=)로.
 export default function CategorySection() {
   return (
-    <section className="mt-6">
-      <h2 className="typo-subtitle px-5 pb-3 text-gray-white">카테고리</h2>
+    <section className="mt-9">
+      <h2 className="px-5 pb-3 text-[15px] font-semibold tracking-[-0.01em] text-content-primary">
+        카테고리
+      </h2>
       <div className="flex flex-wrap gap-2 px-5">
         {CATEGORIES.map((category) => (
           <Link
