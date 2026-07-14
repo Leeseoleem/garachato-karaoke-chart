@@ -1,12 +1,12 @@
 import type { AiCategory } from "@/types/domain";
 
-// 탐색 카테고리 필터 (순서: 사용자 직관 우선 — 보컬로이드·애니 먼저)
+// 탐색 카테고리 필터 (순서: 사용자 직관 우선 — 보컬로이드·애니 먼저).
+// J-POP은 제외(앱 전체가 J-POP이라 카테고리로서 무의미). 게임 OST는 곡이 생기면 자동 노출.
 export const CATEGORIES: AiCategory[] = [
   "보컬로이드",
   "애니메이션 OST",
   "극장판 OST",
   "게임 OST",
-  "J-POP",
 ];
 
 // 보컬로이드 캐릭터 (칩 필터용). artist_in_provider에서 매칭해 한글명으로 표시.
