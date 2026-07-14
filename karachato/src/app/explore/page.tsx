@@ -43,7 +43,7 @@ export default async function ExplorePage({
     category != null;
   if (!isDetail) return <CurationHome />;
 
-  // 상세는 별도 헤더 없이 본문 상단에 담백한 타이틀(+칩)을 고정하고 리스트만 스크롤한다.
+  // 상세는 공통 헤더(뒤로가기+타이틀)를 고정하고 리스트만 스크롤한다.
   return (
     <div className="flex flex-col h-dvh min-h-0">
       {view === "recent" ? (
