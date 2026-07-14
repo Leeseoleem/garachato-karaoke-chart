@@ -1,52 +1,56 @@
-"use client";
-import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Music2 } from "lucide-react";
 import type { ArtistItem } from "@/lib/explore/queries";
 
-const STEP = 5;
+const PREVIEW = 5;
 
-// 가수별 둘러보기. 5개부터 "5개 더보기"로 인라인 확장(계속). 이탈(언마운트)하면 5로 초기화.
+// 가수 한 줄. 음표 그라데이션 원형 아바타 + 이름 + 곡 수. 클릭 시 해당 가수 곡 목록으로.
+export function ArtistRow({ artist }: { artist: ArtistItem }) {
+  return (
+    <Link
+      href={`/explore?artist=${encodeURIComponent(artist.artistNorm)}`}
+      className="flex w-full items-center gap-3 border-b border-white/[0.07] py-3 transition-colors active:bg-gray-40"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-accent to-brand-main">
+        <Music2 size={18} strokeWidth={1.8} className="text-white" />
+      </span>
+      <span className="typo-body flex-1 truncate text-content-primary">
+        {artist.artistKo}
+      </span>
+      <span className="typo-caption text-content-secondary">
+        {artist.count}곡
+      </span>
+      <ChevronRight size={18} className="text-gray-10" />
+    </Link>
+  );
+}
+
+// 가수별 둘러보기. 미리보기 5명 + "가수 전체보기"로 전체 목록(?view=artists) 이동.
 export default function ArtistList({ artists }: { artists: ArtistItem[] }) {
-  const [visible, setVisible] = useState(STEP);
   if (artists.length === 0) return null;
 
-  const shown = artists.slice(0, visible);
-  const hasMore = visible < artists.length;
+  const shown = artists.slice(0, PREVIEW);
+  const hasMore = artists.length > PREVIEW;
 
   return (
-    <section className="mt-6">
-      <h2 className="typo-subtitle px-5 pb-2 text-gray-white">
+    <section className="mb-6 mt-9">
+      <h2 className="px-5 pb-2 text-[15px] font-semibold tracking-[-0.01em] text-content-primary">
         가수별 둘러보기
       </h2>
       <div className="px-5">
         {shown.map((a) => (
-          <Link
-            key={a.artistNorm}
-            href={`/explore?artist=${encodeURIComponent(a.artistNorm)}`}
-            className="flex w-full items-center gap-3 border-b border-gray-30 py-3 transition-colors active:bg-gray-40"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-main to-brand-dark typo-subtitle text-gray-white">
-              {a.artistKo.charAt(0)}
-            </span>
-            <span className="typo-body flex-1 truncate text-content-primary">
-              {a.artistKo}
-            </span>
-            <span className="typo-caption text-content-secondary">
-              {a.count}곡
-            </span>
-            <ChevronRight size={18} className="text-gray-10" />
-          </Link>
+          <ArtistRow key={a.artistNorm} artist={a} />
         ))}
       </div>
       {hasMore && (
-        <button
-          type="button"
-          onClick={() => setVisible((v) => v + STEP)}
-          className="typo-caption mt-3 w-full text-center text-content-secondary"
-        >
-          {STEP}개 더보기 ›
-        </button>
+        <div className="px-5 pt-3.5">
+          <Link
+            href="/explore?view=artists"
+            className="block w-full rounded-[14px] border border-white/[0.07] py-2.5 text-center text-[13px] font-medium text-content-secondary transition active:bg-gray-40"
+          >
+            가수 전체보기
+          </Link>
+        </div>
       )}
     </section>
   );
