@@ -64,6 +64,58 @@ export function ExploreContentSkeleton() {
   );
 }
 
+function RowSkeleton() {
+  return (
+    <div className="flex gap-4 border-b border-gray-30 px-5 py-5">
+      <SkeletonBox className="h-16 w-16 shrink-0 rounded-lg" />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <SkeletonText className="h-4 w-1/2" />
+        <SkeletonText className="h-3 w-1/3" />
+        <SkeletonText className="h-3 w-11/12" />
+        <div className="flex gap-2 pt-1">
+          <SkeletonBox className="h-5 w-9 rounded-lg" />
+          <SkeletonBox className="h-5 w-9 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 상세 리스트(최근·상승·보컬로이드·카테고리·가수) 전용 스켈레톤. 타이틀·칩 고정 + 곡 행.
+export function DetailListSkeleton({
+  title,
+  chips = false,
+}: {
+  title?: string;
+  chips?: boolean;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {title ? (
+        <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
+          {title}
+        </h2>
+      ) : (
+        <div className="shrink-0 px-5 pb-2 pt-4">
+          <SkeletonText className="h-7 w-44" />
+        </div>
+      )}
+      {chips && (
+        <div className="flex shrink-0 gap-2 px-5 py-3">
+          {["w-14", "w-20", "w-24", "w-16"].map((w) => (
+            <SkeletonBox key={w} className={`h-9 rounded-full ${w}`} />
+          ))}
+        </div>
+      )}
+      <div className="flex-1 overflow-hidden">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <RowSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // 검색 헤더까지 포함한 전체 페이지 스켈레톤.
 export function ExplorePageSkeleton() {
   return (

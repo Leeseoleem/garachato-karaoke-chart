@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Compass } from "lucide-react";
 import BackHeader from "@/components/common/headers/BackHeader";
 import ExploreHomeShell from "@/components/explore/ExploreHomeShell";
+import { DetailListSkeleton } from "@/components/skeletons/pages/ExplorePageSkeleton";
 import ExploreCarousel from "@/components/explore/ExploreCarousel";
 import CategorySection from "@/components/explore/CategorySection";
 import ArtistList, { ArtistRow } from "@/components/explore/ArtistList";
@@ -39,17 +40,35 @@ export default async function ExplorePage({
     <div className="flex flex-col h-dvh min-h-0">
       <BackHeader title="탐색" />
       {view === "recent" ? (
-        <RecentDetail />
+        <Suspense
+          fallback={<DetailListSkeleton title="최근 노래방에 등록" chips />}
+        >
+          <RecentDetail />
+        </Suspense>
       ) : view === "rising" ? (
-        <RisingDetail />
+        <Suspense
+          fallback={<DetailListSkeleton title="요즘 순위가 오르는 곡" chips />}
+        >
+          <RisingDetail />
+        </Suspense>
       ) : view === "vocaloid" ? (
-        <VocaloidDetail />
+        <Suspense
+          fallback={<DetailListSkeleton title="보컬로이드 모음" chips />}
+        >
+          <VocaloidDetail />
+        </Suspense>
       ) : view === "artists" ? (
-        <ArtistFullView />
+        <Suspense fallback={<DetailListSkeleton title="가수별 둘러보기" />}>
+          <ArtistFullView />
+        </Suspense>
       ) : artist ? (
-        <ArtistSongView artistNorm={artist} />
+        <Suspense fallback={<DetailListSkeleton />}>
+          <ArtistSongView artistNorm={artist} />
+        </Suspense>
       ) : category ? (
-        <CategorySongView category={category} />
+        <Suspense fallback={<DetailListSkeleton title={category} />}>
+          <CategorySongView category={category} />
+        </Suspense>
       ) : null}
     </div>
   );

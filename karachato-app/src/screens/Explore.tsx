@@ -10,7 +10,10 @@ import CategorySection from "@/components/explore/CategorySection";
 import ArtistList, { ArtistRow } from "@/components/explore/ArtistList";
 import SongListItem from "@/components/explore/SongListItem";
 import FilteredSongList from "@/components/explore/FilteredSongList";
-import { ExploreContentSkeleton } from "@/components/skeletons/pages/ExplorePageSkeleton";
+import {
+  ExploreContentSkeleton,
+  DetailListSkeleton,
+} from "@/components/skeletons/pages/ExplorePageSkeleton";
 import { useScrollTop } from "@/hooks/useScrollTop";
 import { CATEGORIES, VOCALOID_CHARACTERS } from "@/constants/explore";
 import {
@@ -213,7 +216,8 @@ function presentCategories(songs: ExploreSong[]): AiCategory[] {
 
 function RecentDetail() {
   const { songs, loading } = useRich(() => getRecentRich(), "recent");
-  if (loading) return null;
+  if (loading)
+    return <DetailListSkeleton title="최근 노래방에 등록" chips />;
   return (
     <FilteredSongList
       title="최근 노래방에 등록"
@@ -227,7 +231,8 @@ function RecentDetail() {
 
 function RisingDetail() {
   const { songs, loading } = useRich(() => getRisingRich(), "rising");
-  if (loading) return null;
+  if (loading)
+    return <DetailListSkeleton title="요즘 순위가 오르는 곡" chips />;
   return (
     <FilteredSongList
       title="요즘 순위가 오르는 곡"
@@ -245,7 +250,7 @@ function VocaloidDetail() {
   const chips = VOCALOID_CHARACTERS.map((c) => c.ko).filter((ko) =>
     present.has(ko),
   );
-  if (loading) return null;
+  if (loading) return <DetailListSkeleton title="보컬로이드 모음" chips />;
   return (
     <FilteredSongList
       title="보컬로이드 모음"
@@ -259,7 +264,7 @@ function VocaloidDetail() {
 
 function CategorySongView({ category }: { category: AiCategory }) {
   const { songs, loading } = useRich(() => getCategorySongs(category), category);
-  if (loading) return null;
+  if (loading) return <DetailListSkeleton title={category} />;
   return (
     <DetailView title={category}>
       {songs.length === 0 ? (
@@ -276,7 +281,7 @@ function ArtistSongView({ artistNorm }: { artistNorm: string }) {
     () => getArtistSongs(artistNorm),
     artistNorm,
   );
-  if (loading) return null;
+  if (loading) return <DetailListSkeleton />;
   const name = songs[0]?.artist ?? "";
   return (
     <DetailView title={name ? `${name}의 곡` : "가수"}>
@@ -307,7 +312,7 @@ function ArtistFullView() {
     };
   }, []);
 
-  if (loading) return null;
+  if (loading) return <DetailListSkeleton title="가수별 둘러보기" />;
   return (
     <DetailView title="가수별 둘러보기">
       {artists.length === 0 ? (
