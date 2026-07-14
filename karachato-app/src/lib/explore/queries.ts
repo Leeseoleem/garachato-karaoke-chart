@@ -142,12 +142,19 @@ export async function getRecentSongs(
 }
 
 export async function getRisingSongs(limit = 12): Promise<ExploreItem[]> {
-  const { data: latest } = await supabase
+  const { data: latest, error: latestError } = await supabase
     .from("rank_history")
     .select("chart_date")
     .order("chart_date", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (latestError) {
+    console.error(
+      "[explore] getRisingSongs latest date error",
+      latestError.message,
+    );
+    return [];
+  }
   const latestDate = latest?.chart_date;
   if (!latestDate) return [];
 
