@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Compass } from "lucide-react";
 import DetailHeader from "@/components/common/headers/DetailHeader";
@@ -10,6 +10,7 @@ import CategorySection from "@/components/explore/CategorySection";
 import ArtistList, { ArtistRow } from "@/components/explore/ArtistList";
 import SongListItem from "@/components/explore/SongListItem";
 import FilteredSongList from "@/components/explore/FilteredSongList";
+import { ExploreContentSkeleton } from "@/components/skeletons/pages/ExplorePageSkeleton";
 import { useScrollTop } from "@/hooks/useScrollTop";
 import { CATEGORIES, VOCALOID_CHARACTERS } from "@/constants/explore";
 import {
@@ -21,6 +22,7 @@ import {
   getCategorySongs,
   getTopArtists,
   getArtistSongs,
+  getAvailableCategories,
   type ExploreItem,
   type ExploreSong,
   type ArtistItem,
@@ -38,37 +40,39 @@ export default function Explore() {
   // 탐색 홈은 별개 탭이라 뒤로가기 없이 홈과 같은 검색 헤더 + 플로팅바를 공유한다.
   if (!view && !artistNorm && !category) return <ExploreHome />;
 
-  const headerTitle =
-    view === "recent"
-      ? "최근 노래방에 등록"
-      : view === "rising"
-        ? "요즘 순위가 오르는 곡"
-        : view === "vocaloid"
-          ? "보컬로이드 모음"
-          : view === "artists"
-            ? "가수별 둘러보기"
-            : category
-              ? category
-              : "탐색";
-
+  // 상세는 뒤로가기 헤더는 "탐색"으로 두고, 본문 상단에 큰 타이틀·칩을 고정하고 리스트만 스크롤한다.
   return (
     <div className="flex h-dvh min-h-0 flex-col">
-      <DetailHeader title={headerTitle} />
-      <div className="flex-1 overflow-y-auto pb-6">
-        {view === "recent" ? (
-          <RecentDetail />
-        ) : view === "rising" ? (
-          <RisingDetail />
-        ) : view === "vocaloid" ? (
-          <VocaloidDetail />
-        ) : view === "artists" ? (
-          <ArtistFullView />
-        ) : artistNorm ? (
-          <ArtistSongView artistNorm={artistNorm} />
-        ) : category ? (
-          <CategorySongView category={category} />
-        ) : null}
-      </div>
+      <DetailHeader title="탐색" />
+      {view === "recent" ? (
+        <RecentDetail />
+      ) : view === "rising" ? (
+        <RisingDetail />
+      ) : view === "vocaloid" ? (
+        <VocaloidDetail />
+      ) : view === "artists" ? (
+        <ArtistFullView />
+      ) : artistNorm ? (
+        <ArtistSongView artistNorm={artistNorm} />
+      ) : category ? (
+        <CategorySongView category={category} />
+      ) : null}
+    </div>
+  );
+}
+
+// 상세 공통 레이아웃: 타이틀 고정 + 리스트 영역만 스크롤.
+function DetailView({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <ViewHeader title={title} />
+      <div className="flex-1 overflow-y-auto pb-6">{children}</div>
     </div>
   );
 }
@@ -124,10 +128,10 @@ function useRich(loader: () => Promise<ExploreSong[]>, depKey: string) {
   return { songs, loading };
 }
 
-// 드릴다운 화면의 얇은 큰 제목 (헤더에 담기 어려운 비동기 제목용).
+// 드릴다운 화면의 얇은 큰 제목 (상단 고정).
 function ViewHeader({ title }: { title: string }) {
   return (
-    <h2 className="px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
+    <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
       {title}
     </h2>
   );
@@ -148,6 +152,8 @@ function CurationHome() {
   const [rising, setRising] = useState<ExploreItem[]>([]);
   const [vocaloid, setVocaloid] = useState<ExploreItem[]>([]);
   const [artists, setArtists] = useState<ArtistItem[]>([]);
+  const [categories, setCategories] = useState<AiCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,19 +162,26 @@ function CurationHome() {
       getRisingSongs(12),
       getRecentSongs("보컬로이드", 12),
       getTopArtists(100),
+      getAvailableCategories(),
     ])
-      .then(([r, u, v, a]) => {
+      .then(([r, u, v, a, c]) => {
         if (cancelled) return;
         setRecent(r);
         setRising(u);
         setVocaloid(v);
         setArtists(a);
+        setCategories(c);
       })
-      .catch((e) => console.error("[Explore] 큐레이션 로드 실패", e));
+      .catch((e) => console.error("[Explore] 큐레이션 로드 실패", e))
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  if (loading) return <ExploreContentSkeleton />;
 
   return (
     <>
@@ -187,10 +200,15 @@ function CurationHome() {
         items={vocaloid}
         onMore={() => navigate("/explore?view=vocaloid")}
       />
-      <CategorySection />
+      <CategorySection categories={categories} />
       <ArtistList artists={artists} />
     </>
   );
+}
+
+// 로드된 곡에 실제로 존재하는 카테고리만 칩으로 (빈 카테고리 숨김).
+function presentCategories(songs: ExploreSong[]): AiCategory[] {
+  return CATEGORIES.filter((c) => songs.some((s) => s.category === c));
 }
 
 function RecentDetail() {
@@ -198,8 +216,9 @@ function RecentDetail() {
   if (loading) return null;
   return (
     <FilteredSongList
+      title="최근 노래방에 등록"
       songs={songs}
-      chips={CATEGORIES}
+      chips={presentCategories(songs)}
       mode="category"
       emptyLabel="해당 곡이 없어요"
     />
@@ -211,8 +230,9 @@ function RisingDetail() {
   if (loading) return null;
   return (
     <FilteredSongList
+      title="요즘 순위가 오르는 곡"
       songs={songs}
-      chips={CATEGORIES}
+      chips={presentCategories(songs)}
       mode="category"
       emptyLabel="해당 곡이 없어요"
     />
@@ -228,6 +248,7 @@ function VocaloidDetail() {
   if (loading) return null;
   return (
     <FilteredSongList
+      title="보컬로이드 모음"
       songs={songs}
       chips={chips}
       mode="character"
@@ -238,15 +259,15 @@ function VocaloidDetail() {
 
 function CategorySongView({ category }: { category: AiCategory }) {
   const { songs, loading } = useRich(() => getCategorySongs(category), category);
-  if (!loading && songs.length === 0) {
-    return <EmptyState label="이 카테고리엔 아직 등록된 곡이 없어요" />;
-  }
+  if (loading) return null;
   return (
-    <>
-      {songs.map((song) => (
-        <SongListItem key={song.songId} song={song} />
-      ))}
-    </>
+    <DetailView title={category}>
+      {songs.length === 0 ? (
+        <EmptyState label="이 카테고리엔 아직 등록된 곡이 없어요" />
+      ) : (
+        songs.map((song) => <SongListItem key={song.songId} song={song} />)
+      )}
+    </DetailView>
   );
 }
 
@@ -255,16 +276,16 @@ function ArtistSongView({ artistNorm }: { artistNorm: string }) {
     () => getArtistSongs(artistNorm),
     artistNorm,
   );
+  if (loading) return null;
   const name = songs[0]?.artist ?? "";
   return (
-    <>
-      {name && <ViewHeader title={`${name}의 곡`} />}
-      {!loading && songs.length === 0 ? (
+    <DetailView title={name ? `${name}의 곡` : "가수"}>
+      {songs.length === 0 ? (
         <EmptyState label="곡을 찾을 수 없어요" />
       ) : (
         songs.map((song) => <SongListItem key={song.songId} song={song} />)
       )}
-    </>
+    </DetailView>
   );
 }
 
@@ -287,9 +308,18 @@ function ArtistFullView() {
   }, []);
 
   if (loading) return null;
-  if (artists.length === 0)
-    return <EmptyState label="가수를 찾을 수 없어요" />;
+  return (
+    <DetailView title="가수별 둘러보기">
+      {artists.length === 0 ? (
+        <EmptyState label="가수를 찾을 수 없어요" />
+      ) : (
+        <ArtistFullList artists={artists} />
+      )}
+    </DetailView>
+  );
+}
 
+function ArtistFullList({ artists }: { artists: ArtistItem[] }) {
   return (
     <div className="px-5 pt-2">
       {artists.map((a) => (

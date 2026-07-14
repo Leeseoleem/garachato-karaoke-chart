@@ -48,11 +48,11 @@ export default function ArtistList({ artists }: { artists: ArtistItem[] }) {
         ))}
       </div>
       {hasMore && (
-        <div className="px-5 pt-3.5">
+        <div className="px-5 pt-4">
           <button
             type="button"
             onClick={() => navigate("/explore?view=artists")}
-            className="w-full rounded-[14px] border border-white/[0.07] py-2.5 text-center text-[13px] font-medium text-content-secondary transition active:bg-gray-40"
+            className="w-full rounded-[14px] border border-white/[0.07] py-3 text-center text-[13px] font-medium text-content-secondary transition active:bg-gray-40"
           >
             가수 전체보기
           </button>

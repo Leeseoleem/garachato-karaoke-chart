@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Compass } from "lucide-react";
 import BackHeader from "@/components/common/headers/BackHeader";
 import ExploreHomeShell from "@/components/explore/ExploreHomeShell";
@@ -16,8 +17,10 @@ import {
   getCategorySongs,
   getTopArtists,
   getArtistSongs,
+  getAvailableCategories,
 } from "@/lib/explore/queries";
 import type { AiCategory } from "@/types/domain";
+import type { ExploreSong } from "@/lib/explore/queries";
 
 export default async function ExplorePage({
   searchParams,
@@ -31,47 +34,44 @@ export default async function ExplorePage({
   // 탐색 홈은 별개 탭이라 뒤로가기 없이 홈과 같은 검색 헤더 + 플로팅바를 공유한다.
   if (!view && !artist && !category) return <CurationHome />;
 
-  const headerTitle =
-    view === "recent"
-      ? "최근 노래방에 등록"
-      : view === "rising"
-        ? "요즘 순위가 오르는 곡"
-        : view === "vocaloid"
-          ? "보컬로이드 모음"
-          : view === "artists"
-            ? "가수별 둘러보기"
-            : category
-              ? category
-              : "탐색";
-
+  // 상세는 뒤로가기 헤더는 "탐색"으로 두고, 본문 상단에 큰 타이틀·칩을 고정하고 리스트만 스크롤한다.
   return (
     <div className="flex flex-col h-dvh min-h-0">
-      <BackHeader title={headerTitle} />
-      <div className="flex-1 overflow-y-auto pb-6">
-        {view === "recent" ? (
-          <RecentDetail />
-        ) : view === "rising" ? (
-          <RisingDetail />
-        ) : view === "vocaloid" ? (
-          <VocaloidDetail />
-        ) : view === "artists" ? (
-          <ArtistFullView />
-        ) : artist ? (
-          <ArtistSongView artistNorm={artist} />
-        ) : category ? (
-          <CategorySongView category={category} />
-        ) : null}
-      </div>
+      <BackHeader title="탐색" />
+      {view === "recent" ? (
+        <RecentDetail />
+      ) : view === "rising" ? (
+        <RisingDetail />
+      ) : view === "vocaloid" ? (
+        <VocaloidDetail />
+      ) : view === "artists" ? (
+        <ArtistFullView />
+      ) : artist ? (
+        <ArtistSongView artistNorm={artist} />
+      ) : category ? (
+        <CategorySongView category={category} />
+      ) : null}
+    </div>
+  );
+}
+
+// 상세 공통 레이아웃: 타이틀 고정 + 리스트 영역만 스크롤.
+function DetailView({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <ViewHeader title={title} />
+      <div className="flex-1 overflow-y-auto pb-6">{children}</div>
     </div>
   );
 }
 
 async function CurationHome() {
-  const [recent, rising, vocaloid, artists] = await Promise.all([
+  const [recent, rising, vocaloid, artists, categories] = await Promise.all([
     getRecentSongs(null, 12),
     getRisingSongs(12),
     getRecentSongs("보컬로이드", 12),
     getTopArtists(100),
+    getAvailableCategories(),
   ]);
 
   return (
@@ -91,16 +91,21 @@ async function CurationHome() {
         items={vocaloid}
         moreHref="/explore?view=vocaloid"
       />
-      <CategorySection />
+      <CategorySection categories={categories} />
       <ArtistList artists={artists} />
     </ExploreHomeShell>
   );
 }
 
+// 로드된 곡에 실제로 존재하는 카테고리만 칩으로 (빈 카테고리 숨김).
+function presentCategories(songs: ExploreSong[]): AiCategory[] {
+  return CATEGORIES.filter((c) => songs.some((s) => s.category === c));
+}
+
 // 드릴다운 화면의 얇은 큰 제목 (헤더에 담기 어려운 비동기 제목용).
 function ViewHeader({ title }: { title: string }) {
   return (
-    <h2 className="px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
+    <h2 className="shrink-0 px-5 pb-2 pt-4 text-[22px] font-light leading-tight tracking-[-0.02em] text-content-primary">
       {title}
     </h2>
   );
@@ -119,8 +124,9 @@ async function RecentDetail() {
   const songs = await getRecentRich();
   return (
     <FilteredSongList
+      title="최근 노래방에 등록"
       songs={songs}
-      chips={CATEGORIES}
+      chips={presentCategories(songs)}
       mode="category"
       emptyLabel="해당 곡이 없어요"
     />
@@ -131,8 +137,9 @@ async function RisingDetail() {
   const songs = await getRisingRich();
   return (
     <FilteredSongList
+      title="요즘 순위가 오르는 곡"
       songs={songs}
-      chips={CATEGORIES}
+      chips={presentCategories(songs)}
       mode="category"
       emptyLabel="해당 곡이 없어요"
     />
@@ -147,6 +154,7 @@ async function VocaloidDetail() {
   );
   return (
     <FilteredSongList
+      title="보컬로이드 모음"
       songs={songs}
       chips={chips}
       mode="character"
@@ -157,15 +165,14 @@ async function VocaloidDetail() {
 
 async function CategorySongView({ category }: { category: AiCategory }) {
   const songs = await getCategorySongs(category);
-  if (songs.length === 0) {
-    return <EmptyState label="이 카테고리엔 아직 등록된 곡이 없어요" />;
-  }
   return (
-    <>
-      {songs.map((song) => (
-        <SongListItem key={song.songId} song={song} />
-      ))}
-    </>
+    <DetailView title={category}>
+      {songs.length === 0 ? (
+        <EmptyState label="이 카테고리엔 아직 등록된 곡이 없어요" />
+      ) : (
+        songs.map((song) => <SongListItem key={song.songId} song={song} />)
+      )}
+    </DetailView>
   );
 }
 
@@ -173,27 +180,29 @@ async function ArtistSongView({ artistNorm }: { artistNorm: string }) {
   const songs = await getArtistSongs(artistNorm);
   const name = songs[0]?.artist ?? "";
   return (
-    <>
-      {name && <ViewHeader title={`${name}의 곡`} />}
+    <DetailView title={name ? `${name}의 곡` : "가수"}>
       {songs.length === 0 ? (
         <EmptyState label="곡을 찾을 수 없어요" />
       ) : (
         songs.map((song) => <SongListItem key={song.songId} song={song} />)
       )}
-    </>
+    </DetailView>
   );
 }
 
 async function ArtistFullView() {
   const artists = await getTopArtists(100);
-  if (artists.length === 0) {
-    return <EmptyState label="가수를 찾을 수 없어요" />;
-  }
   return (
-    <div className="px-5 pt-2">
-      {artists.map((a) => (
-        <ArtistRow key={a.artistNorm} artist={a} />
-      ))}
-    </div>
+    <DetailView title="가수별 둘러보기">
+      {artists.length === 0 ? (
+        <EmptyState label="가수를 찾을 수 없어요" />
+      ) : (
+        <div className="px-5 pt-2">
+          {artists.map((a) => (
+            <ArtistRow key={a.artistNorm} artist={a} />
+          ))}
+        </div>
+      )}
+    </DetailView>
   );
 }

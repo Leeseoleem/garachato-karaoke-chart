@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { VOCALOID_CHARACTERS } from "@/constants/explore";
+import { CATEGORIES, VOCALOID_CHARACTERS } from "@/constants/explore";
 import type { AiCategory, KaraokeProvider } from "@/types/domain";
 
 // 캐러셀 카드 (썸네일 미디어 카드)
@@ -340,4 +340,21 @@ export async function getTopArtists(limit = 100): Promise<ArtistItem[]> {
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
+}
+
+// 실제로 곡이 하나 이상 있는 카테고리만 (CATEGORIES 순서 유지). 빈 카테고리는 숨긴다.
+export async function getAvailableCategories(): Promise<AiCategory[]> {
+  const { data, error } = await supabase
+    .from("songs")
+    .select("ai_category")
+    .eq("ai_status", "done")
+    .not("ai_category", "is", null);
+  if (error) {
+    console.error("[explore] getAvailableCategories error", error.message);
+    return [];
+  }
+  const present = new Set(
+    ((data ?? []) as { ai_category: AiCategory }[]).map((r) => r.ai_category),
+  );
+  return CATEGORIES.filter((c) => present.has(c));
 }
