@@ -23,6 +23,8 @@ import {
 import type { AiCategory } from "@/types/domain";
 import type { ExploreSong } from "@/lib/explore/queries";
 
+const DETAIL_VIEWS = ["recent", "rising", "vocaloid", "artists"];
+
 export default async function ExplorePage({
   searchParams,
 }: {
@@ -33,7 +35,12 @@ export default async function ExplorePage({
     CATEGORIES.find((c) => c === categoryParam) ?? null;
 
   // 탐색 홈은 별개 탭이라 뒤로가기 없이 홈과 같은 검색 헤더 + 플로팅바를 공유한다.
-  if (!view && !artist && !category) return <CurationHome />;
+  // 지원하는 상세 view도 아니고 가수·카테고리도 없으면(알 수 없는 view 등) 홈으로 폴백한다.
+  const isDetail =
+    (view != null && DETAIL_VIEWS.includes(view)) ||
+    artist != null ||
+    category != null;
+  if (!isDetail) return <CurationHome />;
 
   // 상세는 뒤로가기 헤더는 "탐색"으로 두고, 본문 상단에 큰 타이틀·칩을 고정하고 리스트만 스크롤한다.
   return (

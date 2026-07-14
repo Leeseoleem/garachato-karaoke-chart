@@ -32,6 +32,8 @@ import {
 } from "@/lib/explore/queries";
 import type { AiCategory } from "@/types/domain";
 
+const DETAIL_VIEWS = ["recent", "rising", "vocaloid", "artists"];
+
 export default function Explore() {
   const [searchParams] = useSearchParams();
   const view = searchParams.get("view");
@@ -41,7 +43,12 @@ export default function Explore() {
     CATEGORIES.find((c) => c === categoryParam) ?? null;
 
   // 탐색 홈은 별개 탭이라 뒤로가기 없이 홈과 같은 검색 헤더 + 플로팅바를 공유한다.
-  if (!view && !artistNorm && !category) return <ExploreHome />;
+  // 지원하는 상세 view도 아니고 가수·카테고리도 없으면(알 수 없는 view 등) 홈으로 폴백한다.
+  const isDetail =
+    (view != null && DETAIL_VIEWS.includes(view)) ||
+    artistNorm != null ||
+    category != null;
+  if (!isDetail) return <ExploreHome />;
 
   // 상세는 뒤로가기 헤더는 "탐색"으로 두고, 본문 상단에 큰 타이틀·칩을 고정하고 리스트만 스크롤한다.
   return (
@@ -160,7 +167,8 @@ function CurationHome() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
+    // 섹션은 서로 독립적이라 한 조회가 실패해도 나머지 성공분은 반영한다(allSettled).
+    Promise.allSettled([
       getRecentSongs(null, 12),
       getRisingSongs(12),
       getRecentSongs("보컬로이드", 12),
@@ -169,13 +177,16 @@ function CurationHome() {
     ])
       .then(([r, u, v, a, c]) => {
         if (cancelled) return;
-        setRecent(r);
-        setRising(u);
-        setVocaloid(v);
-        setArtists(a);
-        setCategories(c);
+        if (r.status === "fulfilled") setRecent(r.value);
+        if (u.status === "fulfilled") setRising(u.value);
+        if (v.status === "fulfilled") setVocaloid(v.value);
+        if (a.status === "fulfilled") setArtists(a.value);
+        if (c.status === "fulfilled") setCategories(c.value);
+        for (const res of [r, u, v, a, c]) {
+          if (res.status === "rejected")
+            console.error("[Explore] 큐레이션 섹션 로드 실패", res.reason);
+        }
       })
-      .catch((e) => console.error("[Explore] 큐레이션 로드 실패", e))
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
