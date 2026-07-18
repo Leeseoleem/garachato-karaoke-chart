@@ -3,6 +3,65 @@ import { translateSongBatch } from "../gemini/translate";
 import { generateSongIntro } from "../gemini/describe";
 import { normalize } from "@/utils/string";
 import { deriveVocalTags } from "@/constants/vocaloid";
+import type { TranslateResult } from "@/types/gemini";
+
+// 청크 내 "대표 트랙과 제목/가수가 다른" 불일치 트랙을 곡마다가 아니라 한 번에 묶어 번역한다.
+// (곡당 개별 호출 → 청크당 1회로 Gemini 호출 수 대폭 감소 → 처리량 개선)
+async function translateUnmatchedTracks(
+  batchInputs: {
+    title: string;
+    artist: string;
+    allTracks: {
+      id: number;
+      title_in_provider: string;
+      artist_in_provider: string;
+      provider: string;
+    }[];
+  }[],
+  primaryResults: (TranslateResult | null)[],
+): Promise<Map<number, TranslateResult>> {
+  const unmatched: {
+    index: number;
+    trackId: number;
+    title: string;
+    artist: string;
+    provider: "TJ" | "KY";
+  }[] = [];
+  batchInputs.forEach((input, k) => {
+    if (!primaryResults[k]) return; // 대표 번역 실패한 곡은 스킵
+    for (const t of input.allTracks) {
+      if (
+        t.title_in_provider !== input.title ||
+        t.artist_in_provider !== input.artist
+      ) {
+        unmatched.push({
+          index: unmatched.length,
+          trackId: t.id,
+          title: t.title_in_provider,
+          artist: t.artist_in_provider,
+          provider: t.provider as "TJ" | "KY",
+        });
+      }
+    }
+  });
+
+  const map = new Map<number, TranslateResult>();
+  if (unmatched.length === 0) return map;
+
+  const results = await translateSongBatch(
+    unmatched.map((u) => ({
+      index: u.index,
+      title: u.title,
+      artist: u.artist,
+      provider: u.provider,
+    })),
+  );
+  unmatched.forEach((u, i) => {
+    const r = results[i];
+    if (r) map.set(u.trackId, r);
+  });
+  return map;
+}
 
 // 같은 가수(artist_norm)의 기존 곡에서 성별 태그(여성/남성)를 재사용 → 신규 곡 성별 자동 채움.
 // (보컬로이드는 하드코딩 맵으로, 사람 성별은 이 재사용으로. 완전 신규 가수는 null → 이후 수동/AI 보강.)
@@ -164,6 +223,12 @@ export const processPendingSongs = async (
       })),
     );
 
+    // 청크 전체 불일치 트랙을 한 번에 번역(곡마다 개별 호출 제거)
+    const unmatchedByTrackId = await translateUnmatchedTracks(
+      batchInputs,
+      results,
+    );
+
     for (let k = 0; k < batchInputs.length; k++) {
       // 곡 단위 시간 예산 체크 (한 청크가 60s를 넘길 수 있어 곡마다 확인)
       if (deadline !== undefined && Date.now() >= deadline) {
@@ -183,25 +248,6 @@ export const processPendingSongs = async (
         continue;
       }
 
-      // 불일치 트랙 수집 후 배치 번역
-      const unmatchedTracks = input.allTracks.filter(
-        (t) =>
-          t.title_in_provider !== input.title ||
-          t.artist_in_provider !== input.artist,
-      );
-
-      const unmatchedResults =
-        unmatchedTracks.length > 0
-          ? await translateSongBatch(
-              unmatchedTracks.map((t, idx) => ({
-                index: idx,
-                title: t.title_in_provider,
-                artist: t.artist_in_provider,
-                provider: t.provider as "TJ" | "KY",
-              })),
-            )
-          : [];
-
       // track 업데이트 먼저, 성공 후 song 확정
       let allTracksUpdated = true;
 
@@ -212,9 +258,7 @@ export const processPendingSongs = async (
 
         const trackResult = isMatched
           ? result
-          : unmatchedResults[
-              unmatchedTracks.findIndex((t) => t.id === track.id)
-            ];
+          : unmatchedByTrackId.get(track.id);
 
         if (!trackResult) {
           console.error(
@@ -480,6 +524,12 @@ export const processArtistKo = async (
       })),
     );
 
+    // 청크 전체 불일치 트랙을 한 번에 번역(곡마다 개별 호출 제거)
+    const unmatchedByTrackId = await translateUnmatchedTracks(
+      batchInputs,
+      results,
+    );
+
     for (let k = 0; k < batchInputs.length; k++) {
       if (deadline !== undefined && Date.now() >= deadline) {
         console.log(
@@ -496,25 +546,6 @@ export const processArtistKo = async (
         continue;
       }
 
-      // 불일치 트랙 수집 후 배치 번역
-      const unmatchedTracks = input.allTracks.filter(
-        (t) =>
-          t.title_in_provider !== input.title ||
-          t.artist_in_provider !== input.artist,
-      );
-
-      const unmatchedResults =
-        unmatchedTracks.length > 0
-          ? await translateSongBatch(
-              unmatchedTracks.map((t, idx) => ({
-                index: idx,
-                title: t.title_in_provider,
-                artist: t.artist_in_provider,
-                provider: t.provider as "TJ" | "KY",
-              })),
-            )
-          : [];
-
       // track 업데이트 먼저, 성공 후 song 확정
       let allTracksUpdated = true;
 
@@ -525,9 +556,7 @@ export const processArtistKo = async (
 
         const trackResult = isMatched
           ? result
-          : unmatchedResults[
-              unmatchedTracks.findIndex((t) => t.id === track.id)
-            ];
+          : unmatchedByTrackId.get(track.id);
 
         if (!trackResult) {
           console.error(
