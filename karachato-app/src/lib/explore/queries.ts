@@ -1,5 +1,13 @@
 import { supabase } from "@/lib/supabase/client";
-import { CATEGORIES, VOCALOID_CHARACTERS } from "@/constants/explore";
+import {
+  CATEGORIES,
+  VOCALOID_CHARACTERS,
+  RECENT_WINDOW_DAYS,
+} from "@/constants/explore";
+
+// 최근 진입 기준 시각(ISO): 지금으로부터 RECENT_WINDOW_DAYS일 전.
+const recentCutoffIso = () =>
+  new Date(Date.now() - RECENT_WINDOW_DAYS * 86_400_000).toISOString();
 import type { AiCategory, KaraokeProvider } from "@/types/domain";
 
 // 캐러셀 카드 (썸네일 미디어 카드)
@@ -131,7 +139,9 @@ export async function getRecentSongs(
     .eq("ai_status", "done")
     .order("created_at", { ascending: false })
     .limit(limit);
+  // 카테고리 지정(보컬로이드 모음 등)은 모음이라 컷 없음. 카테고리 없는 "최근 진입" 섹션만 최근 N일 컷.
   if (category) q = q.eq("ai_category", category);
+  else q = q.gte("created_at", recentCutoffIso());
   const { data, error } = await q;
   if (error) {
     console.error("[explore] getRecentSongs error", error.message);
@@ -241,12 +251,13 @@ async function fetchRichByIds(ids: string[]): Promise<ExploreSong[]> {
   return ids.map((id) => byId.get(id)).filter((s): s is ExploreSong => !!s);
 }
 
-// 최근 등록(리치, 전체). 카테고리 칩은 클라에서 category로 필터.
+// 최근 진입(리치). 최근 N일 이내 등록만. 카테고리 칩은 클라에서 category로 필터.
 export async function getRecentRich(limit = 200): Promise<ExploreSong[]> {
   const { data, error } = await supabase
     .from("songs")
     .select(SONG_SELECT)
     .eq("ai_status", "done")
+    .gte("created_at", recentCutoffIso())
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
