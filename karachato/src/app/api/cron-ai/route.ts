@@ -1,4 +1,8 @@
-import { processPendingSongs, processArtistKo } from "@/lib/ai/process";
+import {
+  processPendingSongs,
+  backfillSongIntros,
+  processArtistKo,
+} from "@/lib/ai/process";
 import { checkAuth } from "@/utils/auth";
 
 export const maxDuration = 60;
@@ -11,9 +15,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 두 작업이 같은 60s 예산을 공유 (앞 작업이 예산을 다 쓰면 뒤 작업은 즉시 이월)
+    // 세 작업이 같은 60s 예산을 공유. 번역(신규곡 done)을 최우선으로 두고,
+    // 남는 예산에서 리치 인트로 백필 → artist_ko 보강 순으로 이어받는다.
     const deadline = Date.now() + TIME_BUDGET_MS;
     await processPendingSongs(deadline);
+    await backfillSongIntros(deadline);
     await processArtistKo(deadline);
     return Response.json({ ok: true });
   } catch (error) {
