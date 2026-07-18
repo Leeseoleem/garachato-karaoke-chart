@@ -2,7 +2,7 @@ import type { AiCategory } from "@/types/domain";
 
 // "차트에 새로 진입했어요" 섹션 기준: created_at(=차트 첫 진입)이 최근 N일 이내인 곡만.
 // (안 그러면 전체 done 곡이 등록일순으로 다 나와 사실상 카탈로그가 됨)
-export const RECENT_WINDOW_DAYS = 30;
+export const RECENT_WINDOW_DAYS = 7;
 
 // 탐색 카테고리 (순서: 사용자 직관 우선 — 보컬로이드·애니 먼저).
 // J-POP은 제외(앱 전체가 J-POP이라 카테고리로서 무의미). 게임 OST는 곡이 생기면 자동 노출.
