@@ -254,13 +254,6 @@ export const processPendingSongs = async (
         continue;
       }
 
-      // 구글검색 그라운딩 기반 곡 소개(산문 + 구조화 리스트). 실패 시 번역 결과로 폴백
-      const intro = await generateSongIntro(
-        input.title,
-        input.artist,
-        result.ai_category,
-      );
-
       // 보컬 속성: 보컬로이드(캐릭터 맵) + 사람 성별을 합집합으로.
       // 성별은 같은 가수 기존 곡 재사용 우선 → 없으면 (보컬로이드는 맵이 담당) AI 유추.
       const vocaloidTags =
@@ -284,8 +277,10 @@ export const processPendingSongs = async (
           title_ko_norm: normalize(result.title_ko),
           artist_ko: songArtistKo,
           artist_ko_norm: normalize(songArtistKo),
-          description: intro?.description ?? result.description,
-          ai_intro: intro?.facts ?? null,
+          // 인트로(구글 검색, 무거움)는 done 경로에서 분리 → 번역 결과 설명으로 우선 채우고
+          // 리치 설명·사실 리스트는 backfillSongIntros가 남는 예산에 뒤따라 채운다.
+          description: result.description,
+          ai_intro: null,
           vocal_tags: vocalTags.length > 0 ? vocalTags : null,
           ai_category: result.ai_category,
           ai_traits: result.ai_traits,
@@ -310,18 +305,84 @@ export const processPendingSongs = async (
       console.log(`[processPendingSongs] 완료 - song_id: ${input.songId}`);
     }
 
-    if (
-      i + 10 < pendingSongs.length &&
-      (deadline === undefined || Date.now() < deadline)
-    ) {
-      console.log(
-        `[processPendingSongs] 다음 배치 대기 중... (${i + 10}/${pendingSongs.length})`,
-      );
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-    }
   }
 
   console.log("[processPendingSongs] 전체 처리 완료");
+};
+
+// done인데 리치 인트로(ai_intro)가 없는 곡에 구글 검색 기반 소개를 채운다(신규 우선).
+// 곡당 그라운딩 호출이 무거워 남는 예산에서 몇 곡씩 뒤따라 처리된다.
+export const backfillSongIntros = async (
+  deadline?: number,
+): Promise<void> => {
+  const supabase = createServerClient();
+
+  const { data: songs, error } = await supabase
+    .from("songs")
+    .select(
+      `id, ai_category,
+       karaoke_tracks!inner ( provider, title_in_provider, artist_in_provider )`,
+    )
+    .eq("ai_status", "done")
+    .is("ai_intro", null)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[backfillSongIntros] 곡 조회 실패", error);
+    return;
+  }
+  if (!songs || songs.length === 0) {
+    console.log("[backfillSongIntros] 채울 곡 없음");
+    return;
+  }
+
+  console.log(`[backfillSongIntros] 대상 ${songs.length}곡`);
+
+  for (const song of songs as unknown as {
+    id: string;
+    ai_category: string | null;
+    karaoke_tracks: {
+      provider: string;
+      title_in_provider: string;
+      artist_in_provider: string;
+    }[];
+  }[]) {
+    if (deadline !== undefined && Date.now() >= deadline) {
+      console.log("[backfillSongIntros] 시간 예산 초과 - 나머지는 다음 실행으로 이월");
+      return;
+    }
+
+    const tracks = song.karaoke_tracks ?? [];
+    const primary = tracks.find((t) => t.provider === "TJ") ?? tracks[0];
+    if (!primary) continue;
+
+    const intro = await generateSongIntro(
+      primary.title_in_provider,
+      primary.artist_in_provider,
+      song.ai_category ?? "",
+    );
+    if (!intro) {
+      // 실패 시 이번엔 건너뛰고 다음 실행에서 재시도
+      console.error(`[backfillSongIntros] 인트로 생성 실패 - song_id: ${song.id}`);
+      continue;
+    }
+
+    const { error: upError } = await supabase
+      .from("songs")
+      .update({ description: intro.description, ai_intro: intro.facts })
+      .eq("id", song.id);
+
+    if (upError) {
+      console.error(
+        `[backfillSongIntros] songs 업데이트 실패 - song_id: ${song.id}`,
+        upError,
+      );
+      continue;
+    }
+    console.log(`[backfillSongIntros] 완료 - song_id: ${song.id}`);
+  }
+
+  console.log("[backfillSongIntros] 전체 처리 완료");
 };
 
 // artist_ko가 없는 기존 곡 재처리 (ai_status 변경 없이 artist_ko만 채움)
@@ -522,15 +583,6 @@ export const processArtistKo = async (
       console.log(`[processArtistKo] 완료 - song_id: ${input.songId}`);
     }
 
-    if (
-      i + 10 < songs.length &&
-      (deadline === undefined || Date.now() < deadline)
-    ) {
-      console.log(
-        `[processArtistKo] 다음 배치 대기 중... (${i + 10}/${songs.length})`,
-      );
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-    }
   }
 
   console.log("[processArtistKo] 전체 처리 완료");
