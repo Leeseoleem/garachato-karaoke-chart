@@ -87,6 +87,7 @@ export const generateSongIntro = async (
   title: string,
   artist: string,
   category: string,
+  timeoutMs?: number,
 ): Promise<SongIntro | null> => {
   try {
     const gemini = getGemini();
@@ -98,7 +99,10 @@ export const generateSongIntro = async (
     });
 
     const result = await withRetry(
-      () => model.generateContent(buildIntroPrompt(title, artist, category)),
+      () =>
+        model.generateContent(buildIntroPrompt(title, artist, category), {
+          timeout: timeoutMs,
+        }),
       { label: `songIntro:${title}`, attempts: 2 },
     );
     const intro = parseIntro(result.response.text());

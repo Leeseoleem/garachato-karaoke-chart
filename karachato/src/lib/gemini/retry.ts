@@ -17,8 +17,18 @@ function statusOf(err: unknown): number | undefined {
   return undefined;
 }
 
-// status를 못 읽으면 네트워크 오류로 보고 재시도
+// 타임아웃/취소로 인한 abort는 재시도하지 않는다.
+// (남은 시간 예산으로 timeout을 걸었을 때, 재시도로 예산을 배로 먹는 것을 방지)
+// SDK는 GoogleGenerativeAIAbortError를 던지지만 .name을 세팅하지 않아 메시지로 판별한다.
+function isAbort(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const msg = (err as { message?: unknown }).message;
+  return typeof msg === "string" && /abort/i.test(msg);
+}
+
+// status를 못 읽으면 네트워크 오류로 보고 재시도. 단 abort(타임아웃/취소)는 제외.
 function isRetryable(err: unknown): boolean {
+  if (isAbort(err)) return false;
   const s = statusOf(err);
   return s === undefined || RETRYABLE_STATUS.has(s);
 }

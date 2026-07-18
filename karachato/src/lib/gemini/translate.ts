@@ -227,8 +227,10 @@ export const translateSong = async (
 };
 
 // 배치 번역 함수 (10곡씩 묶어서 호출)
+// timeoutMs: 단일 Gemini 호출의 상한(ms). 남은 시간 예산을 넘겨 호출이 매달리는 것을 막는다.
 export const translateSongBatch = async (
   songs: BatchInput[],
+  timeoutMs?: number,
 ): Promise<BatchResult[]> => {
   if (songs.length === 0) return [];
 
@@ -243,9 +245,10 @@ export const translateSongBatch = async (
     });
 
     const prompt = buildBatchPrompt(songs);
-    const result = await withRetry(() => model.generateContent(prompt), {
-      label: `translateSongBatch(${songs.length})`,
-    });
+    const result = await withRetry(
+      () => model.generateContent(prompt, { timeout: timeoutMs }),
+      { label: `translateSongBatch(${songs.length})` },
+    );
     const text = result.response.text().trim();
 
     let parsed: (TranslateResult & { index: number })[];
