@@ -5,6 +5,12 @@ import { normalize } from "@/utils/string";
 import { deriveVocalTags } from "@/constants/vocaloid";
 import type { TranslateResult } from "@/types/gemini";
 
+// 남은 시간 예산을 단일 Gemini 호출의 timeout(ms)으로 환산한다.
+// deadline이 없으면 undefined(무제한 유지) → cron 밖 호출은 기존 동작 그대로.
+// 호출 하나가 예산을 넘겨 매달리는 것을 막고, abort는 retry.ts에서 재시도 제외한다.
+const budgetTimeout = (deadline?: number): number | undefined =>
+  deadline === undefined ? undefined : Math.max(0, deadline - Date.now());
+
 // 청크 내 "대표 트랙과 제목/가수가 다른" 불일치 트랙을 곡마다가 아니라 한 번에 묶어 번역한다.
 // (곡당 개별 호출 → 청크당 1회로 Gemini 호출 수 대폭 감소 → 처리량 개선)
 async function translateUnmatchedTracks(
@@ -19,6 +25,7 @@ async function translateUnmatchedTracks(
     }[];
   }[],
   primaryResults: (TranslateResult | null)[],
+  deadline?: number,
 ): Promise<Map<number, TranslateResult>> {
   const unmatched: {
     index: number;
@@ -55,6 +62,7 @@ async function translateUnmatchedTracks(
       artist: u.artist,
       provider: u.provider,
     })),
+    budgetTimeout(deadline),
   );
   unmatched.forEach((u, i) => {
     const r = results[i];
@@ -221,12 +229,14 @@ export const processPendingSongs = async (
         artist: b.artist,
         provider: b.provider,
       })),
+      budgetTimeout(deadline),
     );
 
     // 청크 전체 불일치 트랙을 한 번에 번역(곡마다 개별 호출 제거)
     const unmatchedByTrackId = await translateUnmatchedTracks(
       batchInputs,
       results,
+      deadline,
     );
 
     for (let k = 0; k < batchInputs.length; k++) {
@@ -404,6 +414,7 @@ export const backfillSongIntros = async (
       primary.title_in_provider,
       primary.artist_in_provider,
       song.ai_category ?? "",
+      budgetTimeout(deadline),
     );
     if (!intro) {
       // 실패 시 이번엔 건너뛰고 다음 실행에서 재시도
@@ -522,12 +533,14 @@ export const processArtistKo = async (
         artist: b.artist,
         provider: b.provider,
       })),
+      budgetTimeout(deadline),
     );
 
     // 청크 전체 불일치 트랙을 한 번에 번역(곡마다 개별 호출 제거)
     const unmatchedByTrackId = await translateUnmatchedTracks(
       batchInputs,
       results,
+      deadline,
     );
 
     for (let k = 0; k < batchInputs.length; k++) {
